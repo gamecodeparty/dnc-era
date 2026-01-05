@@ -16,7 +16,7 @@ The game follows a three-era structure: **Build → Expand → Survive** (Peace 
 - **Cache**: Redis 7
 - **Auth**: NextAuth.js (credentials)
 - **State**: Zustand
-- **UI**: Tailwind CSS + shadcn/ui
+- **UI**: Tailwind CSS + shadcn/ui + Framer Motion
 - **Deploy**: Docker Compose + Coolify + Traefik
 - **Package Manager**: pnpm
 
@@ -90,6 +90,7 @@ All persistent data lives in `./data/` (gitignored). The `init` service in Docke
 
 - **MVP Scope**: `specs/DRAFT-1-MVP.md` - Defines minimal viable game
 - **Full Design**: `specs/DRAFT-1.md` - Complete game design document
+- **Art Direction**: `specs/ART-DIRECTION.md` - Visual design guide (colors, typography, animations)
 - **Deploy Pattern**: `DEPLOY_PATTERN.md` - Coolify/Docker deployment standard
 - **Deploy Config**: `DEPLOY.md` - Project-specific deployment details
 
@@ -107,17 +108,19 @@ src/
 │       └── health/         # Health check
 ├── components/
 │   ├── ui/                 # shadcn/ui components (Button, Card, etc)
+│   │   └── medieval/       # Medieval-themed components (MedievalCard, MedievalButton, etc)
 │   └── game/               # Game-specific components
 │       ├── map/            # GameMap, Territory
 │       ├── sidebar/        # ResourcePanel, ClanPanel
-│       └── hud/            # EraIndicator, EndTurnButton
+│       ├── hud/            # EraIndicator, EndTurnButton
+│       └── fx/             # Animation effects (ResourcePopup, TurnBanner, etc)
 ├── game/                   # Core game engine
 │   ├── engine/             # GameEngine, TurnSystem, CombatSystem, etc
 │   ├── ai/                 # AIController, personalities
 │   ├── constants/          # Balance values, origins, structures, units, cards
 │   └── types/              # TypeScript interfaces
-├── lib/                    # Utilities (db, redis, auth, utils)
-├── hooks/                  # React hooks
+├── lib/                    # Utilities (db, redis, auth, utils, animations)
+├── hooks/                  # React hooks (useGameAnimations, useReducedMotion)
 └── stores/                 # Zustand stores
 
 prisma/
