@@ -1,0 +1,52 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs
+.next
+out
+build
+dist
+
+# Data
+data/
+
+# Environment
+.env.local
+.env*.local
+.env.secrets
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary
+.tmp/
+tmp/
+temp/
+
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# Specs and refs (not needed in production)
+specs/
+refs/
