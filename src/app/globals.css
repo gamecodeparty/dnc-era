@@ -4,25 +4,26 @@
 
 @layer base {
   :root {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 6%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 6%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 43 96% 56%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    /* Medieval Dark Theme */
+    --background: 24 25% 4%;
+    --foreground: 35 45% 93%;
+    --card: 28 22% 13%;
+    --card-foreground: 35 45% 93%;
+    --popover: 28 22% 13%;
+    --popover-foreground: 35 45% 93%;
+    --primary: 32 48% 64%;
+    --primary-foreground: 24 25% 4%;
+    --secondary: 28 22% 18%;
+    --secondary-foreground: 35 45% 93%;
+    --muted: 28 22% 18%;
+    --muted-foreground: 32 25% 55%;
+    --accent: 350 75% 40%;
+    --accent-foreground: 35 45% 93%;
     --destructive: 0 62.8% 50%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 43 96% 56%;
+    --destructive-foreground: 35 45% 93%;
+    --border: 28 22% 22%;
+    --input: 28 22% 18%;
+    --ring: 32 48% 64%;
     --radius: 0.5rem;
   }
 }
@@ -32,62 +33,328 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-medieval-bg-deep text-medieval-text-primary font-crimson;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-cinzel;
   }
 }
 
-/* Custom scrollbar for dark theme */
+/* Medieval scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: hsl(222.2 84% 6%);
+  background: #1a1612;
+  border-left: 1px solid #2a2318;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(217.2 32.6% 25%);
+  background: linear-gradient(to bottom, #4a3c2a, #3d3428);
   border-radius: 4px;
+  border: 1px solid #5a4a38;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(217.2 32.6% 35%);
+  background: linear-gradient(to bottom, #5a4c3a, #4d4438);
 }
 
-/* Game-specific utilities */
+/* Medieval utilities */
 @layer utilities {
+  /* Text colors */
   .text-grain {
-    @apply text-amber-400;
+    @apply text-grain-DEFAULT;
   }
   .text-wood {
-    @apply text-lime-400;
+    @apply text-wood-DEFAULT;
   }
   .text-gold {
-    @apply text-yellow-400;
+    @apply text-gold-DEFAULT;
   }
 
-  .bg-territory {
-    @apply bg-slate-800/50 backdrop-blur-sm;
+  /* Parchment texture background */
+  .bg-parchment {
+    background:
+      linear-gradient(135deg, rgba(61,52,40,0.9) 0%, rgba(42,35,24,0.95) 100%);
+    position: relative;
   }
 
-  .border-territory {
-    @apply border-slate-700/50;
+  .bg-parchment::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: 0.05;
+    pointer-events: none;
   }
 
-  .glow-amber {
-    box-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+  /* Metal border effect */
+  .border-metal {
+    border: 3px solid #d4a574;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.15),
+      inset 0 -1px 0 rgba(0,0,0,0.3),
+      0 4px 8px rgba(0,0,0,0.5);
+    position: relative;
   }
 
-  .glow-red {
-    box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+  .border-metal::before {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: inherit;
+    pointer-events: none;
   }
 
-  .glow-green {
-    box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+  /* Glow effects */
+  .glow-golden {
+    box-shadow: 0 0 20px rgba(212, 165, 116, 0.4);
   }
 
-  .glow-purple {
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+  .glow-golden-lg {
+    box-shadow: 0 0 40px rgba(212, 165, 116, 0.6);
+  }
+
+  .glow-crimson {
+    box-shadow: 0 0 20px rgba(196, 30, 58, 0.4);
+  }
+
+  .glow-era-peace {
+    box-shadow: 0 0 20px rgba(74, 124, 89, 0.4);
+  }
+
+  .glow-era-war {
+    box-shadow: 0 0 20px rgba(164, 30, 30, 0.4);
+  }
+
+  .glow-era-invasion {
+    box-shadow: 0 0 20px rgba(107, 45, 107, 0.4);
+  }
+
+  /* Medieval panel styles */
+  .panel-medieval {
+    @apply bg-medieval-bg-card border-2 border-medieval-primary/30 rounded-lg;
+    background: linear-gradient(
+      180deg,
+      rgba(42, 35, 24, 0.95) 0%,
+      rgba(26, 22, 18, 0.98) 100%
+    );
+    box-shadow:
+      inset 0 1px 0 rgba(212, 165, 116, 0.1),
+      0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Header ornament */
+  .header-medieval {
+    @apply relative;
+  }
+
+  .header-medieval::after {
+    content: "";
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      #d4a574 50%,
+      transparent 100%
+    );
+  }
+
+  /* Divider ornament */
+  .divider-ornament {
+    @apply relative h-4 w-full;
+  }
+
+  .divider-ornament::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      #d4a574 20%,
+      #d4a574 80%,
+      transparent 100%
+    );
+  }
+
+  .divider-ornament::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    background: #d4a574;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  }
+
+  /* Territory tile base */
+  .territory-tile {
+    @apply relative overflow-hidden transition-all duration-300;
+    background: linear-gradient(
+      135deg,
+      rgba(42, 35, 24, 0.8) 0%,
+      rgba(26, 22, 18, 0.9) 100%
+    );
+  }
+
+  .territory-tile::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      circle at 30% 30%,
+      rgba(255, 255, 255, 0.05) 0%,
+      transparent 60%
+    );
+    pointer-events: none;
+  }
+
+  /* Resource badge */
+  .badge-resource {
+    @apply inline-flex items-center gap-1 px-2 py-1 rounded text-sm font-medium;
+    background: linear-gradient(
+      180deg,
+      rgba(42, 35, 24, 0.9) 0%,
+      rgba(26, 22, 18, 0.95) 100%
+    );
+    border: 1px solid rgba(212, 165, 116, 0.3);
+  }
+
+  /* Button medieval base */
+  .btn-medieval {
+    @apply relative px-6 py-3 font-cinzel font-semibold uppercase tracking-wide;
+    @apply bg-gradient-to-b from-medieval-bg-parchment to-medieval-bg-card;
+    @apply border-2 border-medieval-primary/50 rounded;
+    @apply text-medieval-text-primary;
+    @apply transition-all duration-200;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      0 4px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .btn-medieval:hover {
+    @apply border-medieval-primary bg-gradient-to-b from-medieval-bg-parchment to-medieval-bg-parchment;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.15),
+      0 0 20px rgba(212, 165, 116, 0.3),
+      0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  .btn-medieval:active {
+    @apply scale-[0.98];
+    box-shadow:
+      inset 0 2px 4px rgba(0, 0, 0, 0.3),
+      0 0 15px rgba(212, 165, 116, 0.2);
+  }
+
+  .btn-medieval-primary {
+    @apply btn-medieval;
+    @apply bg-gradient-to-b from-medieval-primary to-medieval-primary/80;
+    @apply text-medieval-bg-deep border-medieval-primary-bright/50;
+  }
+
+  .btn-medieval-primary:hover {
+    @apply bg-gradient-to-b from-medieval-primary-bright to-medieval-primary;
+    @apply border-medieval-primary-bright;
+  }
+
+  .btn-medieval-danger {
+    @apply btn-medieval;
+    @apply bg-gradient-to-b from-medieval-accent/80 to-medieval-accent/60;
+    @apply text-medieval-text-primary border-medieval-accent/50;
+  }
+
+  .btn-medieval-danger:hover {
+    @apply bg-gradient-to-b from-medieval-accent to-medieval-accent/80;
+    @apply border-medieval-accent;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.15),
+      0 0 20px rgba(196, 30, 58, 0.4),
+      0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Card medieval */
+  .card-medieval {
+    @apply bg-medieval-bg-card border border-medieval-primary/20 rounded-lg overflow-hidden;
+    background: linear-gradient(
+      180deg,
+      rgba(42, 35, 24, 0.95) 0%,
+      rgba(26, 22, 18, 0.98) 100%
+    );
+    box-shadow:
+      0 4px 12px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(212, 165, 116, 0.1);
+  }
+
+  .card-medieval-header {
+    @apply px-4 py-3 border-b border-medieval-primary/20;
+    background: linear-gradient(
+      180deg,
+      rgba(61, 52, 40, 0.5) 0%,
+      rgba(42, 35, 24, 0.3) 100%
+    );
+  }
+
+  .card-medieval-content {
+    @apply p-4;
+  }
+
+  /* Era-specific backgrounds */
+  .bg-era-peace {
+    background: linear-gradient(
+      135deg,
+      rgba(74, 124, 89, 0.15) 0%,
+      rgba(42, 35, 24, 0.95) 100%
+    );
+  }
+
+  .bg-era-war {
+    background: linear-gradient(
+      135deg,
+      rgba(164, 30, 30, 0.15) 0%,
+      rgba(42, 35, 24, 0.95) 100%
+    );
+  }
+
+  .bg-era-invasion {
+    background: linear-gradient(
+      135deg,
+      rgba(107, 45, 107, 0.15) 0%,
+      rgba(42, 35, 24, 0.95) 100%
+    );
+  }
+
+  /* Text gradients */
+  .text-gradient-golden {
+    @apply bg-gradient-to-r from-medieval-primary to-medieval-primary-bright bg-clip-text text-transparent;
+  }
+
+  .text-gradient-crimson {
+    @apply bg-gradient-to-r from-medieval-accent to-medieval-accent-glow bg-clip-text text-transparent;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
