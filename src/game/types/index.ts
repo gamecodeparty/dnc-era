@@ -176,9 +176,13 @@ export interface AIAction {
   data?: Record<string, unknown>;
 }
 
+export interface TerritoryWithStructures extends Territory {
+  structures: Structure[];
+}
+
 export interface AIDecisionContext {
   clan: Clan;
-  territories: Territory[];
+  territories: TerritoryWithStructures[];
   units: Unit[];
   resources: Resources;
   enemies: Clan[];
