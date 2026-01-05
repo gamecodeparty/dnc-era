@@ -1,0 +1,88 @@
+# ==============================================================================
+# RYUDRAGON - DEVELOPMENT
+# ==============================================================================
+# Infraestrutura para desenvolvimento local (sem o app)
+# O app roda localmente via `npm run dev`
+#
+# Uso:
+#   npm run dev:infra    # Levanta infraestrutura
+#   npm run dev          # Roda app localmente
+#
+# Portas (padrao X0XX derivado de 8000):
+#   App (local):     8000
+#   PostgreSQL:      8032
+#   Redis:           8079
+# ==============================================================================
+
+name: ryudragon-dev
+
+services:
+  # ============================================================================
+  # INIT - Cria estrutura de pastas com permissoes corretas
+  # ============================================================================
+  ryudragon-dev-init:
+    image: busybox:latest
+    container_name: ryudragon-dev-init
+    command: |
+      sh -c "
+        mkdir -p /data/redis /data/postgres &&
+        chmod -R 777 /data &&
+        echo 'Init complete'
+      "
+    volumes:
+      - ./data:/data
+    restart: "no"
+
+  # ============================================================================
+  # REDIS
+  # ============================================================================
+  ryudragon-dev-redis:
+    image: redis:7-alpine
+    container_name: ryudragon-dev-redis
+    restart: unless-stopped
+    depends_on:
+      ryudragon-dev-init:
+        condition: service_completed_successfully
+    command: redis-server --appendonly yes
+    ports:
+      - "8079:6379"
+    volumes:
+      - ./data/redis:/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================================
+  # POSTGRESQL
+  # ============================================================================
+  ryudragon-dev-postgres:
+    image: postgres:16-alpine
+    container_name: ryudragon-dev-postgres
+    restart: unless-stopped
+    depends_on:
+      ryudragon-dev-init:
+        condition: service_completed_successfully
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: main
+    ports:
+      - "8032:5432"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+networks:
+  internal:
+    driver: bridge

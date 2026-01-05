@@ -1,0 +1,124 @@
+# ==============================================================================
+# RYUDRAGON - PRODUCTION
+# ==============================================================================
+# Stack completa: Redis, PostgreSQL, App
+# Dominio: ryudragon.dev (ajustar conforme necessario)
+#
+# Uso:
+#   docker compose up -d ryudragon-app
+#   docker compose logs -f ryudragon-app
+# ==============================================================================
+
+name: ryudragon
+
+services:
+  # ============================================================================
+  # INIT - Cria estrutura de pastas com permissoes corretas
+  # ============================================================================
+  ryudragon-init:
+    image: busybox:latest
+    container_name: ryudragon-init
+    command: |
+      sh -c "
+        mkdir -p /data/redis /data/postgres &&
+        chown -R 70:70 /data/postgres && chmod 700 /data/postgres &&
+        chmod -R 777 /data/redis &&
+        echo 'Init complete'
+      "
+    volumes:
+      - ./data:/data
+    restart: "no"
+
+  # ============================================================================
+  # REDIS
+  # ============================================================================
+  ryudragon-redis:
+    image: redis:7-alpine
+    container_name: ryudragon-redis
+    restart: unless-stopped
+    depends_on:
+      ryudragon-init:
+        condition: service_completed_successfully
+    command: redis-server --appendonly yes
+    volumes:
+      - ./data/redis:/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================================
+  # POSTGRESQL
+  # ============================================================================
+  ryudragon-postgres:
+    image: postgres:16-alpine
+    container_name: ryudragon-postgres
+    restart: unless-stopped
+    depends_on:
+      ryudragon-init:
+        condition: service_completed_successfully
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: main
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ============================================================================
+  # APP - Next.js
+  # ============================================================================
+  ryudragon-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ryudragon-app:latest
+    container_name: ryudragon-app
+    restart: unless-stopped
+    depends_on:
+      ryudragon-postgres:
+        condition: service_healthy
+      ryudragon-redis:
+        condition: service_healthy
+    env_file:
+      - .env
+      - .env.production
+      - .env.secrets
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD:-postgres}@ryudragon-postgres:5432/main?sslmode=disable
+      - REDIS_URL=redis://ryudragon-redis:6379
+      - NEXTAUTH_URL=https://ryudragon.dev
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=codr-net
+      - traefik.http.routers.ryudragon-app.rule=Host(`ryudragon.dev`)
+      - traefik.http.routers.ryudragon-app.entrypoints=websecure
+      - traefik.http.routers.ryudragon-app.tls.certresolver=letsencrypt
+      - traefik.http.services.ryudragon-app.loadbalancer.server.port=8000
+    networks:
+      - internal
+      - codr-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+networks:
+  internal:
+    driver: bridge
+  codr-net:
+    external: true
