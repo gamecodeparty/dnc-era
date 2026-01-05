@@ -1,19 +1,63 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Hammer, Shield, Sword, Wheat, TreePine, Coins, Check, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useGameStore, STRUCTURE_COSTS, UNIT_COSTS, UNIT_STATS, StructureType, UnitType } from "@/stores/gameStore";
-import { toast, GameToastContainer } from "@/components/game/GameToast";
+import Image from "next/image";
+import { motion } from "framer-motion";
+import {
+  ArrowLeft,
+  Hammer,
+  Shield,
+  Sword,
+  Wheat,
+  TreePine,
+  Coins,
+  Check,
+  Castle,
+  Users,
+} from "lucide-react";
+import {
+  useGameStore,
+  STRUCTURE_COSTS,
+  UNIT_COSTS,
+  UNIT_STATS,
+  StructureType,
+  UnitType,
+} from "@/stores/gameStore";
 
-const STRUCTURE_INFO: Record<StructureType, { name: string; description: string; icon: typeof Wheat }> = {
+// Medieval components
+import { MedievalButton } from "@/components/ui/medieval";
+import {
+  MedievalCard,
+  MedievalCardContent,
+  MedievalCardHeader,
+  MedievalCardTitle,
+} from "@/components/ui/medieval";
+import {
+  ParchmentPanel,
+  PanelHeader,
+  PanelContent,
+  PanelSection,
+  AnimatedList,
+  AnimatedListItem,
+} from "@/components/ui/medieval";
+import { OrnamentDivider } from "@/components/ui/medieval";
+
+// FX components
+import { useGameAnimationContext, Sparkles } from "@/components/game/fx";
+
+// Animations
+import { staggerContainer, staggerItem, transitions } from "@/lib/animations";
+
+const STRUCTURE_INFO: Record<
+  StructureType,
+  { name: string; description: string; icon: typeof Wheat }
+> = {
   FARM: { name: "Fazenda", description: "Produz +10 graos/turno", icon: Wheat },
   SAWMILL: { name: "Serraria", description: "Produz +8 madeira/turno", icon: TreePine },
   MINE: { name: "Mina", description: "Produz +5 ouro/turno", icon: Coins },
-  BARRACKS: { name: "Quartel", description: "Permite treinar Soldados e Arqueiros", icon: Sword },
-  STABLE: { name: "Estabulo", description: "Permite treinar Cavaleiros", icon: Shield },
-  WALL: { name: "Muralha", description: "+20% defesa por nivel", icon: Shield },
+  BARRACKS: { name: "Quartel", description: "Treina Soldados e Arqueiros", icon: Sword },
+  STABLE: { name: "Estabulo", description: "Treina Cavaleiros", icon: Shield },
+  WALL: { name: "Muralha", description: "+20% defesa por nivel", icon: Castle },
 };
 
 const UNIT_INFO: Record<UnitType, { name: string; requires: StructureType }> = {
@@ -27,6 +71,9 @@ export default function TerritoryPage() {
   const router = useRouter();
   const territoryId = params.id as string;
 
+  const { triggerBuildComplete, triggerAchievement, triggerResourcePopup } =
+    useGameAnimationContext();
+
   const { territories, getPlayerClan, build, train, canAfford } = useGameStore();
   const territory = territories.find((t) => t.id === territoryId);
   const player = getPlayerClan();
@@ -34,7 +81,20 @@ export default function TerritoryPage() {
   if (!territory) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-slate-400">Territorio nao encontrado</p>
+        <MedievalCard variant="elevated" className="max-w-md">
+          <MedievalCardContent className="text-center py-8">
+            <p className="text-medieval-text-secondary font-crimson">
+              Territorio nao encontrado
+            </p>
+            <MedievalButton
+              variant="primary"
+              className="mt-4"
+              onClick={() => router.push("/game")}
+            >
+              Voltar ao Jogo
+            </MedievalButton>
+          </MedievalCardContent>
+        </MedievalCard>
       </div>
     );
   }
@@ -42,151 +102,225 @@ export default function TerritoryPage() {
   if (territory.ownerId !== "player") {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-slate-400 mb-4">Voce nao controla este territorio!</p>
-          <Button onClick={() => router.push("/game")}>Voltar ao Jogo</Button>
-        </div>
+        <MedievalCard variant="elevated" className="max-w-md">
+          <MedievalCardContent className="text-center py-8">
+            <Shield className="w-12 h-12 text-medieval-accent mx-auto mb-4" />
+            <p className="text-medieval-text-secondary font-crimson mb-4">
+              Voce nao controla este territorio!
+            </p>
+            <MedievalButton variant="primary" onClick={() => router.push("/game")}>
+              Voltar ao Jogo
+            </MedievalButton>
+          </MedievalCardContent>
+        </MedievalCard>
       </div>
     );
   }
 
   const handleBuild = (structureType: StructureType) => {
+    const cost = STRUCTURE_COSTS[structureType];
     const success = build(territoryId, structureType);
+
     if (success) {
-      toast.build(`${STRUCTURE_INFO[structureType].name} construida!`);
-    } else {
-      toast.error("Recursos insuficientes ou slots cheios!");
+      // Trigger build animation
+      triggerBuildComplete(territoryId, structureType);
+
+      // Trigger resource deduction animations
+      if (cost.grain) triggerResourcePopup("GRAIN", -cost.grain);
+      if (cost.wood) triggerResourcePopup("WOOD", -cost.wood);
+      if (cost.gold) triggerResourcePopup("GOLD", -cost.gold);
+
+      // Achievement for first building
+      if (territory.structures.length === 0) {
+        triggerAchievement("Primeira Construcao!", `${STRUCTURE_INFO[structureType].name} erguida!`);
+      }
     }
   };
 
   const handleTrain = (unitType: UnitType) => {
+    const cost = UNIT_COSTS[unitType];
     const success = train(territoryId, unitType, 1);
+
     if (success) {
-      toast.success(`${UNIT_INFO[unitType].name} treinado!`);
-    } else {
-      toast.error("Recursos insuficientes ou falta estrutura!");
+      // Trigger resource deduction animations
+      if (cost.grain) triggerResourcePopup("GRAIN", -cost.grain);
+      if (cost.wood) triggerResourcePopup("WOOD", -cost.wood);
+      if (cost.gold) triggerResourcePopup("GOLD", -cost.gold);
+
+      // First unit achievement
+      const existingUnits = territory.units.reduce((sum, u) => sum + u.quantity, 0);
+      if (existingUnits === 0) {
+        triggerAchievement("Exercito Nascente!", `Primeiro ${UNIT_INFO[unitType].name} treinado!`);
+      }
     }
   };
 
-  const hasStructure = (type: StructureType) => territory.structures.some((s) => s.type === type);
+  const hasStructure = (type: StructureType) =>
+    territory.structures.some((s) => s.type === type);
   const isFull = territory.structures.length >= 4;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      <GameToastContainer />
-      <div className="fixed inset-0 bg-[url('/grid.svg')] opacity-5 pointer-events-none" />
+    <div className="min-h-screen relative">
+      {/* Background */}
+      <div className="fixed inset-0 z-0">
+        <Image
+          src="/bg/territory-village.png"
+          alt="Territory village"
+          fill
+          className="object-cover object-center"
+          quality={85}
+        />
+        <div className="absolute inset-0 bg-medieval-bg-deep/80" />
+        <div className="absolute inset-0 bg-gradient-to-t from-medieval-bg-deep via-transparent to-medieval-bg-deep/50" />
+      </div>
 
       {/* Header */}
-      <header className="border-b border-slate-700 bg-slate-900/80 backdrop-blur-sm relative z-10">
-        <div className="container mx-auto px-4 py-4">
+      <header className="border-b border-medieval-primary/20 bg-medieval-bg-panel/90 backdrop-blur-md relative z-20">
+        <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={() => router.push("/game")}>
-                <ArrowLeft className="w-4 h-4 mr-2" />
+              <MedievalButton
+                variant="ghost"
+                size="sm"
+                onClick={() => router.push("/game")}
+                icon={<ArrowLeft className="w-4 h-4" />}
+              >
                 Voltar
-              </Button>
+              </MedievalButton>
               <div>
-                <h1 className="text-xl font-bold text-slate-100">
+                <h1 className="text-xl font-cinzel font-bold text-medieval-text-primary">
                   Territorio {territory.position + 1}
                 </h1>
-                <p className="text-sm text-slate-400">
-                  Bonus: +25% {territory.bonusResource}
+                <p className="text-sm text-medieval-text-secondary">
+                  Bonus: +25%{" "}
+                  <span className="text-medieval-primary">{territory.bonusResource}</span>
                 </p>
               </div>
             </div>
 
             {/* Recursos do jogador */}
-            <div className="flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-1">
-                <Wheat className="w-4 h-4 text-amber-400" />
-                <span className="text-amber-400 font-bold">{Math.floor(player.grain)}</span>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-medieval-bg-card/80 rounded-lg border border-grain/30">
+                <Wheat className="w-4 h-4 text-grain" />
+                <span className="text-grain font-bold font-mono">
+                  {Math.floor(player.grain)}
+                </span>
               </div>
-              <div className="flex items-center gap-1">
-                <TreePine className="w-4 h-4 text-green-400" />
-                <span className="text-green-400 font-bold">{Math.floor(player.wood)}</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-medieval-bg-card/80 rounded-lg border border-wood-light/30">
+                <TreePine className="w-4 h-4 text-wood-light" />
+                <span className="text-wood-light font-bold font-mono">
+                  {Math.floor(player.wood)}
+                </span>
               </div>
-              <div className="flex items-center gap-1">
-                <Coins className="w-4 h-4 text-yellow-400" />
-                <span className="text-yellow-400 font-bold">{Math.floor(player.gold)}</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-medieval-bg-card/80 rounded-lg border border-gold/30">
+                <Coins className="w-4 h-4 text-gold" />
+                <span className="text-gold font-bold font-mono">
+                  {Math.floor(player.gold)}
+                </span>
               </div>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-6 relative z-10">
+      <motion.div
+        className="container mx-auto px-4 py-6 relative z-10"
+        variants={staggerContainer}
+        initial="initial"
+        animate="animate"
+      >
         <div className="grid grid-cols-12 gap-6">
           {/* Coluna 1: Info do territorio */}
-          <div className="col-span-4 space-y-4">
+          <motion.div className="col-span-4 space-y-4" variants={staggerItem}>
             {/* Estruturas existentes */}
-            <Card className="bg-slate-800/80 border-slate-700">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Estruturas</span>
-                  <span className="text-sm text-slate-400">{territory.structures.length}/4</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
+            <ParchmentPanel animated>
+              <PanelHeader
+                title="Estruturas"
+                icon={<Castle className="w-4 h-4" />}
+                action={
+                  <span className="text-sm text-medieval-text-muted">
+                    {territory.structures.length}/4
+                  </span>
+                }
+              />
+              <PanelContent>
                 {territory.structures.length > 0 ? (
-                  territory.structures.map((s, i) => {
-                    const info = STRUCTURE_INFO[s.type];
-                    const Icon = info.icon;
-                    return (
-                      <div key={i} className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <Icon className="w-5 h-5 text-amber-400" />
-                          <div>
-                            <p className="font-medium text-slate-200">{info.name}</p>
-                            <p className="text-xs text-slate-400">Nivel {s.level}</p>
+                  <AnimatedList className="space-y-2">
+                    {territory.structures.map((s, i) => {
+                      const info = STRUCTURE_INFO[s.type];
+                      const Icon = info.icon;
+                      return (
+                        <AnimatedListItem
+                          key={i}
+                          className="flex items-center justify-between p-3 bg-medieval-bg-deep/50 rounded-lg border border-medieval-primary/20"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Icon className="w-5 h-5 text-medieval-primary" />
+                            <div>
+                              <p className="font-cinzel font-medium text-medieval-text-primary">
+                                {info.name}
+                              </p>
+                              <p className="text-xs text-medieval-text-muted">
+                                Nivel {s.level}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                        <Check className="w-5 h-5 text-green-400" />
-                      </div>
-                    );
-                  })
+                          <Check className="w-5 h-5 text-era-peace" />
+                        </AnimatedListItem>
+                      );
+                    })}
+                  </AnimatedList>
                 ) : (
-                  <p className="text-slate-500 text-center py-4">Nenhuma estrutura construida</p>
+                  <p className="text-medieval-text-muted text-center py-6 font-crimson italic">
+                    Nenhuma estrutura construida
+                  </p>
                 )}
-              </CardContent>
-            </Card>
+              </PanelContent>
+            </ParchmentPanel>
 
             {/* Unidades */}
-            <Card className="bg-slate-800/80 border-slate-700">
-              <CardHeader>
-                <CardTitle>Unidades</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
+            <ParchmentPanel animated>
+              <PanelHeader title="Unidades" icon={<Users className="w-4 h-4" />} />
+              <PanelContent>
                 {territory.units.length > 0 ? (
-                  territory.units.map((u, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Sword className="w-5 h-5 text-red-400" />
-                        <div>
-                          <p className="font-medium text-slate-200">{u.quantity}x {UNIT_INFO[u.type].name}</p>
-                          <p className="text-xs text-slate-400">
-                            ATK: {UNIT_STATS[u.type].atk} | DEF: {UNIT_STATS[u.type].def}
-                          </p>
+                  <AnimatedList className="space-y-2">
+                    {territory.units.map((u, i) => (
+                      <AnimatedListItem
+                        key={i}
+                        className="flex items-center justify-between p-3 bg-medieval-bg-deep/50 rounded-lg border border-medieval-accent/20"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Sword className="w-5 h-5 text-medieval-accent" />
+                          <div>
+                            <p className="font-cinzel font-medium text-medieval-text-primary">
+                              {u.quantity}x {UNIT_INFO[u.type].name}
+                            </p>
+                            <p className="text-xs text-medieval-text-muted">
+                              ATK: {UNIT_STATS[u.type].atk} | DEF:{" "}
+                              {UNIT_STATS[u.type].def}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  ))
+                      </AnimatedListItem>
+                    ))}
+                  </AnimatedList>
                 ) : (
-                  <p className="text-slate-500 text-center py-4">Nenhuma unidade</p>
+                  <p className="text-medieval-text-muted text-center py-6 font-crimson italic">
+                    Nenhuma unidade
+                  </p>
                 )}
-              </CardContent>
-            </Card>
-          </div>
+              </PanelContent>
+            </ParchmentPanel>
+          </motion.div>
 
           {/* Coluna 2: Construir */}
-          <div className="col-span-4">
-            <Card className="bg-slate-800/80 border-slate-700">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Hammer className="w-5 h-5 text-amber-400" />
-                  Construir
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
+          <motion.div className="col-span-4" variants={staggerItem}>
+            <ParchmentPanel animated>
+              <PanelHeader
+                title="Construir"
+                icon={<Hammer className="w-4 h-4 text-medieval-primary" />}
+              />
+              <PanelContent className="space-y-3">
                 {(Object.keys(STRUCTURE_INFO) as StructureType[]).map((type) => {
                   const info = STRUCTURE_INFO[type];
                   const cost = STRUCTURE_COSTS[type];
@@ -196,68 +330,95 @@ export default function TerritoryPage() {
                   const canBuild = !alreadyBuilt && !isFull && affordable;
 
                   return (
-                    <div key={type} className={`p-3 rounded-lg ${canBuild ? "bg-slate-700/50" : "bg-slate-800/30 opacity-60"}`}>
+                    <motion.div
+                      key={type}
+                      className={`p-3 rounded-lg border transition-all ${
+                        canBuild
+                          ? "bg-medieval-bg-card/80 border-medieval-primary/30 hover:border-medieval-primary/60"
+                          : "bg-medieval-bg-deep/30 border-medieval-text-muted/20 opacity-60"
+                      }`}
+                      whileHover={canBuild ? { scale: 1.02 } : {}}
+                      whileTap={canBuild ? { scale: 0.98 } : {}}
+                    >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <Icon className="w-5 h-5 text-amber-400" />
-                          <span className="font-medium text-slate-200">{info.name}</span>
+                          <Icon className="w-5 h-5 text-medieval-primary" />
+                          <span className="font-cinzel font-medium text-medieval-text-primary">
+                            {info.name}
+                          </span>
                         </div>
                         {alreadyBuilt ? (
-                          <span className="text-xs text-green-400 flex items-center gap-1">
+                          <span className="text-xs text-era-peace flex items-center gap-1">
                             <Check className="w-3 h-3" /> Construido
                           </span>
                         ) : (
-                          <Button
+                          <MedievalButton
                             size="sm"
+                            variant={canBuild ? "primary" : "ghost"}
                             onClick={() => handleBuild(type)}
                             disabled={!canBuild}
-                            className={canBuild ? "bg-amber-500 hover:bg-amber-400 text-slate-900" : ""}
                           >
                             Construir
-                          </Button>
+                          </MedievalButton>
                         )}
                       </div>
-                      <p className="text-xs text-slate-400 mb-2">{info.description}</p>
+                      <p className="text-xs text-medieval-text-muted mb-2 font-crimson">
+                        {info.description}
+                      </p>
                       <div className="flex gap-3 text-xs">
                         {cost.grain && (
-                          <span className={player.grain >= cost.grain ? "text-amber-400" : "text-red-400"}>
+                          <span
+                            className={
+                              player.grain >= cost.grain ? "text-grain" : "text-medieval-accent"
+                            }
+                          >
                             {cost.grain} graos
                           </span>
                         )}
                         {cost.wood && (
-                          <span className={player.wood >= cost.wood ? "text-green-400" : "text-red-400"}>
+                          <span
+                            className={
+                              player.wood >= cost.wood
+                                ? "text-wood-light"
+                                : "text-medieval-accent"
+                            }
+                          >
                             {cost.wood} madeira
                           </span>
                         )}
                         {cost.gold && (
-                          <span className={player.gold >= cost.gold ? "text-yellow-400" : "text-red-400"}>
+                          <span
+                            className={
+                              player.gold >= cost.gold ? "text-gold" : "text-medieval-accent"
+                            }
+                          >
                             {cost.gold} ouro
                           </span>
                         )}
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })}
 
                 {isFull && (
-                  <p className="text-center text-amber-400 text-sm py-2">
-                    Territorio cheio! (4/4 estruturas)
-                  </p>
+                  <div className="text-center py-2">
+                    <p className="text-medieval-primary text-sm font-cinzel">
+                      Territorio cheio! (4/4)
+                    </p>
+                  </div>
                 )}
-              </CardContent>
-            </Card>
-          </div>
+              </PanelContent>
+            </ParchmentPanel>
+          </motion.div>
 
           {/* Coluna 3: Treinar */}
-          <div className="col-span-4">
-            <Card className="bg-slate-800/80 border-slate-700">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Sword className="w-5 h-5 text-red-400" />
-                  Treinar Unidades
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
+          <motion.div className="col-span-4" variants={staggerItem}>
+            <ParchmentPanel animated>
+              <PanelHeader
+                title="Treinar Unidades"
+                icon={<Sword className="w-4 h-4 text-medieval-accent" />}
+              />
+              <PanelContent className="space-y-3">
                 {(Object.keys(UNIT_INFO) as UnitType[]).map((type) => {
                   const info = UNIT_INFO[type];
                   const cost = UNIT_COSTS[type];
@@ -267,59 +428,85 @@ export default function TerritoryPage() {
                   const canTrain = hasRequired && affordable;
 
                   return (
-                    <div key={type} className={`p-3 rounded-lg ${canTrain ? "bg-slate-700/50" : "bg-slate-800/30 opacity-60"}`}>
+                    <motion.div
+                      key={type}
+                      className={`p-3 rounded-lg border transition-all ${
+                        canTrain
+                          ? "bg-medieval-bg-card/80 border-medieval-accent/30 hover:border-medieval-accent/60"
+                          : "bg-medieval-bg-deep/30 border-medieval-text-muted/20 opacity-60"
+                      }`}
+                      whileHover={canTrain ? { scale: 1.02 } : {}}
+                      whileTap={canTrain ? { scale: 0.98 } : {}}
+                    >
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium text-slate-200">{info.name}</span>
-                        <Button
+                        <span className="font-cinzel font-medium text-medieval-text-primary">
+                          {info.name}
+                        </span>
+                        <MedievalButton
                           size="sm"
+                          variant={canTrain ? "danger" : "ghost"}
                           onClick={() => handleTrain(type)}
                           disabled={!canTrain}
-                          className={canTrain ? "bg-red-500 hover:bg-red-400 text-white" : ""}
                         >
                           Treinar
-                        </Button>
+                        </MedievalButton>
                       </div>
-                      <div className="flex gap-4 text-xs text-slate-400 mb-2">
+                      <div className="flex gap-4 text-xs text-medieval-text-secondary mb-2">
                         <span>ATK: {stats.atk}</span>
                         <span>DEF: {stats.def}</span>
                       </div>
                       {!hasRequired && (
-                        <p className="text-xs text-red-400 mb-2">
+                        <p className="text-xs text-medieval-accent mb-2">
                           Requer: {STRUCTURE_INFO[info.requires].name}
                         </p>
                       )}
                       <div className="flex gap-3 text-xs">
                         {cost.grain && (
-                          <span className={player.grain >= cost.grain ? "text-amber-400" : "text-red-400"}>
+                          <span
+                            className={
+                              player.grain >= cost.grain ? "text-grain" : "text-medieval-accent"
+                            }
+                          >
                             {cost.grain} graos
                           </span>
                         )}
                         {cost.wood && (
-                          <span className={player.wood >= cost.wood ? "text-green-400" : "text-red-400"}>
+                          <span
+                            className={
+                              player.wood >= cost.wood
+                                ? "text-wood-light"
+                                : "text-medieval-accent"
+                            }
+                          >
                             {cost.wood} madeira
                           </span>
                         )}
                         {cost.gold && (
-                          <span className={player.gold >= cost.gold ? "text-yellow-400" : "text-red-400"}>
+                          <span
+                            className={
+                              player.gold >= cost.gold ? "text-gold" : "text-medieval-accent"
+                            }
+                          >
                             {cost.gold} ouro
                           </span>
                         )}
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })}
 
-                <div className="pt-4 border-t border-slate-700">
-                  <p className="text-xs text-slate-500">
-                    Dica: Construa um Quartel para treinar Soldados e Arqueiros.
-                    Construa um Estabulo para treinar Cavaleiros.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                <OrnamentDivider variant="dots" size="sm" className="my-4" />
+
+                <p className="text-xs text-medieval-text-muted font-crimson text-center">
+                  Construa um Quartel para Soldados e Arqueiros.
+                  <br />
+                  Construa um Estabulo para Cavaleiros.
+                </p>
+              </PanelContent>
+            </ParchmentPanel>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

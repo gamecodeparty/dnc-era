@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useGameStore, TURN_INTERVAL_MS, TOTAL_TURNS } from "@/stores/gameStore";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import {
   LogOut,
   Scroll,
@@ -23,8 +22,43 @@ import {
   RefreshCw,
   Trophy,
   Skull,
+  ChevronRight,
 } from "lucide-react";
-import { toast, GameToastContainer } from "@/components/game/GameToast";
+
+// Medieval components
+import { MedievalButton } from "@/components/ui/medieval";
+import {
+  MedievalCard,
+  MedievalCardContent,
+} from "@/components/ui/medieval";
+import {
+  ParchmentPanel,
+  PanelHeader,
+  PanelContent,
+  PanelSection,
+  AnimatedList,
+  AnimatedListItem,
+  InfoRow,
+} from "@/components/ui/medieval";
+
+// FX components
+import { EraBadge, Sparkles, useGameAnimationContext } from "@/components/game/fx";
+import type { EraType } from "@/components/game/fx";
+
+// Animations
+import {
+  staggerContainer,
+  staggerItem,
+  transitions,
+} from "@/lib/animations";
+import { Progress } from "@/components/ui/progress";
+
+// Era backgrounds
+const eraBackgrounds: Record<EraType, string> = {
+  PEACE: "/bg/era-peace.png",
+  WAR: "/bg/era-war.png",
+  INVASION: "/bg/era-invasion.png",
+};
 
 function formatTime(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
@@ -33,28 +67,34 @@ function formatTime(ms: number): string {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
-function getEraInfo(era: "PEACE" | "WAR" | "INVASION") {
+function getEraInfo(era: EraType) {
   switch (era) {
     case "PEACE":
       return {
         name: "Paz das Cinzas",
         description: "O Pacto impede ataques. Foque em construir e expandir.",
-        color: "text-blue-400",
-        bgColor: "bg-blue-500/10",
+        color: "text-era-peace",
+        bgColor: "bg-era-peace/20",
+        borderColor: "border-era-peace/40",
+        glowClass: "glow-era-peace",
       };
     case "WAR":
       return {
         name: "Era da Guerra",
         description: "O Pacto foi rompido! Ataque e defenda seus territorios.",
-        color: "text-red-400",
-        bgColor: "bg-red-500/10",
+        color: "text-era-war",
+        bgColor: "bg-era-war/20",
+        borderColor: "border-era-war/40",
+        glowClass: "glow-era-war",
       };
     case "INVASION":
       return {
         name: "A Invasao",
         description: "A Horda ataca a cada 3 turnos! Sobreviva!",
-        color: "text-purple-400",
-        bgColor: "bg-purple-500/10",
+        color: "text-era-invasion",
+        bgColor: "bg-era-invasion/20",
+        borderColor: "border-era-invasion/40",
+        glowClass: "glow-era-invasion",
       };
   }
 }
@@ -63,6 +103,9 @@ export default function GamePage() {
   const { data: session } = useSession();
   const [selectedTerritoryId, setSelectedTerritoryId] = useState<string | null>(null);
   const [timeToNextTurn, setTimeToNextTurn] = useState(TURN_INTERVAL_MS);
+
+  // Animation context - all animations are handled by the provider
+  const { triggerCombatFeedback, triggerBuildComplete, triggerAchievement } = useGameAnimationContext();
 
   const {
     currentTurn,
@@ -80,7 +123,7 @@ export default function GamePage() {
 
   const player = getPlayerClan();
   const playerTerritories = getPlayerTerritories();
-  const eraInfo = getEraInfo(currentEra);
+  const eraInfo = getEraInfo(currentEra as EraType);
 
   // Timer para proximo turno
   useEffect(() => {
@@ -114,79 +157,162 @@ export default function GamePage() {
 
   const handleAttack = (toTerritoryId: string) => {
     if (!selectedTerritoryId) return;
+    const fromTerritory = territories.find((t) => t.id === selectedTerritoryId);
+    const toTerritory = territories.find((t) => t.id === toTerritoryId);
+
     const result = attack(selectedTerritoryId, toTerritoryId);
-    if (result.success) {
-      toast.combat(result.message);
-    } else {
-      toast.error(result.message);
+
+    // Trigger combat animation
+    if (fromTerritory && toTerritory) {
+      triggerCombatFeedback(result.success, fromTerritory.position, toTerritory.position);
+
+      // Achievement on first conquest
+      if (result.success) {
+        triggerAchievement("Conquista!", `Territorio ${toTerritory.position + 1} conquistado!`);
+      }
     }
   };
 
   // Game Over / Victory Screen
   if (gameOver) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-        <Card className={`max-w-lg w-full ${winner ? "bg-green-500/10 border-green-500/30" : "bg-red-500/10 border-red-500/30"}`}>
-          <CardContent className="pt-8 text-center space-y-6">
-            {winner ? (
-              <>
-                <Trophy className="w-20 h-20 text-amber-400 mx-auto" />
-                <h1 className="text-4xl font-bold text-amber-400">VITORIA!</h1>
-                <p className="text-slate-300">Voce sobreviveu ate o turno {currentTurn}!</p>
-                <p className="text-slate-400">Territorios: {playerTerritories.length} | Recursos finais: {player.grain} graos, {player.wood} madeira, {player.gold} ouro</p>
-              </>
-            ) : (
-              <>
-                <Skull className="w-20 h-20 text-red-400 mx-auto" />
-                <h1 className="text-4xl font-bold text-red-400">GAME OVER</h1>
-                <p className="text-slate-300">Voce foi derrotado no turno {currentTurn}.</p>
-                <p className="text-slate-400">Todos os seus territorios foram perdidos!</p>
-              </>
-            )}
-            <Button onClick={resetGame} className="bg-amber-500 hover:bg-amber-400 text-slate-900">
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Jogar Novamente
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen flex items-center justify-center relative">
+        {/* Background */}
+        <div className="absolute inset-0 z-0">
+          <Image
+            src={eraBackgrounds[currentEra as EraType]}
+            alt="Game background"
+            fill
+            className="object-cover object-center"
+            quality={85}
+          />
+          <div className="absolute inset-0 bg-medieval-bg-deep/90" />
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={transitions.springSmooth}
+          className="relative z-10"
+        >
+          <MedievalCard
+            variant="elevated"
+            className={`max-w-lg w-full ${
+              winner ? "border-era-peace/50" : "border-medieval-accent/50"
+            }`}
+          >
+            <MedievalCardContent className="pt-8 text-center space-y-6">
+              {winner ? (
+                <>
+                  <div className="relative inline-block">
+                    <Trophy className="w-24 h-24 text-gold mx-auto" />
+                    <Sparkles color="#ffd700" count={12} />
+                  </div>
+                  <h1 className="text-5xl font-cinzel-decorative font-bold text-gold">
+                    VITORIA!
+                  </h1>
+                  <p className="text-medieval-text-secondary font-crimson text-lg">
+                    Voce sobreviveu ate o turno {currentTurn}!
+                  </p>
+                  <p className="text-medieval-text-muted">
+                    Territorios: {playerTerritories.length} | Recursos finais:{" "}
+                    {player.grain} graos, {player.wood} madeira, {player.gold} ouro
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Skull className="w-24 h-24 text-medieval-accent mx-auto" />
+                  <h1 className="text-5xl font-cinzel-decorative font-bold text-medieval-accent">
+                    GAME OVER
+                  </h1>
+                  <p className="text-medieval-text-secondary font-crimson text-lg">
+                    Voce foi derrotado no turno {currentTurn}.
+                  </p>
+                  <p className="text-medieval-text-muted">
+                    Todos os seus territorios foram perdidos!
+                  </p>
+                </>
+              )}
+              <MedievalButton
+                variant="primary"
+                size="lg"
+                onClick={resetGame}
+                icon={<RefreshCw className="w-5 h-5" />}
+              >
+                Jogar Novamente
+              </MedievalButton>
+            </MedievalCardContent>
+          </MedievalCard>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      <GameToastContainer />
-      <div className="fixed inset-0 bg-[url('/grid.svg')] opacity-5 pointer-events-none" />
+    <div className="min-h-screen flex flex-col relative">
+      {/* Dynamic Background */}
+      <div className="fixed inset-0 z-0">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentEra}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1 }}
+            className="absolute inset-0"
+          >
+            <Image
+              src={eraBackgrounds[currentEra as EraType]}
+              alt={`${currentEra} era background`}
+              fill
+              className="object-cover object-center"
+              quality={85}
+              priority
+            />
+          </motion.div>
+        </AnimatePresence>
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-medieval-bg-deep/70" />
+        <div className="absolute inset-0 bg-gradient-to-t from-medieval-bg-deep via-transparent to-medieval-bg-deep/50" />
+      </div>
+
+      {/* FX Layers are now handled by GameAnimationProvider in layout */}
 
       {/* Header */}
-      <header className="border-b border-slate-700 bg-slate-900/80 backdrop-blur-sm relative z-10">
+      <header className="border-b border-medieval-primary/20 bg-medieval-bg-panel/90 backdrop-blur-md relative z-20">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h1 className="text-xl font-bold text-amber-400">Dice&Cards Era</h1>
+              <h1 className="text-2xl font-cinzel-decorative font-bold text-gradient-golden">
+                Dice&Cards Era
+              </h1>
               <Link href="/game/como-jogar">
-                <Button variant="ghost" size="sm" className="text-slate-400 hover:text-amber-400">
+                <MedievalButton variant="ghost" size="sm">
                   <HelpCircle className="w-4 h-4 mr-1" />
                   Como Jogar
-                </Button>
+                </MedievalButton>
               </Link>
             </div>
 
-            {/* Turn Timer */}
+            {/* Turn Timer & Era */}
             <div className="flex items-center gap-4">
-              <div className={`px-4 py-2 rounded-lg ${eraInfo.bgColor} border border-slate-700`}>
-                <div className="flex items-center gap-2">
-                  <span className={`font-bold ${eraInfo.color}`}>{eraInfo.name}</span>
-                  <span className="text-slate-400">|</span>
-                  <span className="text-slate-300">Turno {currentTurn}/{TOTAL_TURNS}</span>
-                </div>
+              <EraBadge era={currentEra as EraType} />
+
+              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-medieval-bg-card/80 border border-medieval-primary/30">
+                <span className="text-medieval-text-secondary text-sm">Turno</span>
+                <span className="text-xl font-cinzel font-bold text-medieval-primary">
+                  {currentTurn}
+                </span>
+                <span className="text-medieval-text-muted text-sm">/{TOTAL_TURNS}</span>
               </div>
 
-              <div className="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-lg">
-                <Clock className="w-4 h-4 text-amber-400" />
+              <div className="flex items-center gap-2 bg-medieval-bg-card/80 px-4 py-2 rounded-lg border border-medieval-primary/30">
+                <Clock className="w-4 h-4 text-medieval-primary" />
                 <div className="w-20">
-                  <div className="text-xs text-slate-400">Proximo</div>
-                  <div className="text-lg font-mono text-amber-400">{formatTime(timeToNextTurn)}</div>
+                  <div className="text-xs text-medieval-text-muted">Proximo</div>
+                  <div className="text-lg font-mono text-medieval-primary">
+                    {formatTime(timeToNextTurn)}
+                  </div>
                 </div>
                 <Progress value={timerProgress} className="w-16 h-2" />
               </div>
@@ -194,285 +320,376 @@ export default function GamePage() {
 
             <div className="flex items-center gap-4">
               {session?.user && (
-                <span className="text-sm text-slate-400">{session.user.name || session.user.email}</span>
+                <span className="text-sm text-medieval-text-secondary">
+                  {session.user.name || session.user.email}
+                </span>
               )}
-              <Button variant="ghost" size="sm" onClick={() => signOut({ callbackUrl: "/landing" })}>
+              <MedievalButton
+                variant="ghost"
+                size="sm"
+                onClick={() => signOut({ callbackUrl: "/landing" })}
+              >
                 <LogOut className="w-4 h-4 mr-2" />
                 Sair
-              </Button>
+              </MedievalButton>
             </div>
           </div>
         </div>
       </header>
 
       {/* Main content */}
-      <div className="flex-1 container mx-auto px-4 py-4 relative z-10">
+      <motion.div
+        className="flex-1 container mx-auto px-4 py-4 relative z-10"
+        variants={staggerContainer}
+        initial="initial"
+        animate="animate"
+      >
         <div className="grid grid-cols-12 gap-4">
           {/* Left sidebar */}
-          <div className="col-span-3 space-y-4">
+          <motion.div className="col-span-3 space-y-4" variants={staggerItem}>
             {/* Objetivo */}
-            <Card className={`${eraInfo.bgColor} border-slate-700`}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Target className="w-4 h-4" />
-                  Objetivo
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className={`text-sm ${eraInfo.color}`}>{eraInfo.description}</p>
-              </CardContent>
-            </Card>
+            <ParchmentPanel animated>
+              <PanelHeader
+                title="Objetivo"
+                icon={<Target className="w-4 h-4" />}
+              />
+              <PanelContent>
+                <p className={`text-sm font-crimson ${eraInfo.color}`}>
+                  {eraInfo.description}
+                </p>
+              </PanelContent>
+            </ParchmentPanel>
 
             {/* Recursos */}
-            <Card className="bg-slate-800/80 border-slate-700">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Recursos</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
+            <ParchmentPanel animated>
+              <PanelHeader title="Recursos" />
+              <PanelContent className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Wheat className="w-5 h-5 text-amber-400" />
-                    <span className="text-slate-300">Graos</span>
+                    <Wheat className="w-5 h-5 text-grain" />
+                    <span className="text-medieval-text-secondary">Graos</span>
                   </div>
                   <div className="text-right">
-                    <span className="font-bold text-amber-400">{Math.floor(player.grain)}</span>
-                    <span className="text-xs text-green-400 ml-1">+{Math.floor(grainProd)}/turno</span>
+                    <span className="font-bold font-mono text-grain text-lg">
+                      {Math.floor(player.grain)}
+                    </span>
+                    <span className="text-xs text-era-peace ml-2">
+                      +{Math.floor(grainProd)}/turno
+                    </span>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <TreePine className="w-5 h-5 text-green-400" />
-                    <span className="text-slate-300">Madeira</span>
+                    <TreePine className="w-5 h-5 text-wood-light" />
+                    <span className="text-medieval-text-secondary">Madeira</span>
                   </div>
                   <div className="text-right">
-                    <span className="font-bold text-green-400">{Math.floor(player.wood)}</span>
-                    <span className="text-xs text-green-400 ml-1">+{Math.floor(woodProd)}/turno</span>
+                    <span className="font-bold font-mono text-wood-light text-lg">
+                      {Math.floor(player.wood)}
+                    </span>
+                    <span className="text-xs text-era-peace ml-2">
+                      +{Math.floor(woodProd)}/turno
+                    </span>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Coins className="w-5 h-5 text-yellow-400" />
-                    <span className="text-slate-300">Ouro</span>
+                    <Coins className="w-5 h-5 text-gold" />
+                    <span className="text-medieval-text-secondary">Ouro</span>
                   </div>
                   <div className="text-right">
-                    <span className="font-bold text-yellow-400">{Math.floor(player.gold)}</span>
-                    <span className="text-xs text-green-400 ml-1">+{Math.floor(goldProd)}/turno</span>
+                    <span className="font-bold font-mono text-gold text-lg">
+                      {Math.floor(player.gold)}
+                    </span>
+                    <span className="text-xs text-era-peace ml-2">
+                      +{Math.floor(goldProd)}/turno
+                    </span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </PanelContent>
+            </ParchmentPanel>
 
             {/* Info do Cla */}
-            <Card className="bg-slate-800/80 border-slate-700">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Seu Cla</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-slate-300">Territorios: <span className="text-amber-400 font-bold">{playerTerritories.length}</span></p>
-              </CardContent>
-            </Card>
+            <ParchmentPanel animated>
+              <PanelHeader title="Seu Cla" />
+              <PanelContent>
+                <InfoRow
+                  label="Territorios"
+                  value={
+                    <span className="text-medieval-primary font-bold text-xl">
+                      {playerTerritories.length}
+                    </span>
+                  }
+                />
+              </PanelContent>
+            </ParchmentPanel>
 
             {/* Acoes */}
-            <Card className="bg-slate-800/80 border-slate-700">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Acoes</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
+            <ParchmentPanel animated>
+              <PanelHeader title="Acoes" />
+              <PanelContent className="space-y-2">
                 <Link href="/game/cards" className="block">
-                  <Button variant="outline" className="w-full justify-start text-sm h-9">
-                    <Scroll className="w-4 h-4 mr-2 text-purple-400" />
+                  <MedievalButton
+                    variant="secondary"
+                    className="w-full justify-start"
+                    icon={<Scroll className="w-4 h-4 text-era-invasion" />}
+                  >
                     Cartas
-                  </Button>
+                  </MedievalButton>
                 </Link>
                 <Link href="/game/diplomacy" className="block">
-                  <Button variant="outline" className="w-full justify-start text-sm h-9">
-                    <Users className="w-4 h-4 mr-2 text-green-400" />
+                  <MedievalButton
+                    variant="secondary"
+                    className="w-full justify-start"
+                    icon={<Users className="w-4 h-4 text-era-peace" />}
+                  >
                     Diplomacia
-                  </Button>
+                  </MedievalButton>
                 </Link>
                 <Link href="/game/army" className="block">
-                  <Button variant="outline" className="w-full justify-start text-sm h-9">
-                    <Swords className="w-4 h-4 mr-2 text-red-400" />
+                  <MedievalButton
+                    variant="secondary"
+                    className="w-full justify-start"
+                    icon={<Swords className="w-4 h-4 text-era-war" />}
+                  >
                     Exercito
-                  </Button>
+                  </MedievalButton>
                 </Link>
-              </CardContent>
-            </Card>
-          </div>
+              </PanelContent>
+            </ParchmentPanel>
+          </motion.div>
 
           {/* Main map area */}
-          <div className="col-span-6">
-            <div className="mb-3 text-center">
-              <p className="text-sm text-slate-400">Clique em um territorio para ver detalhes</p>
+          <motion.div className="col-span-6" variants={staggerItem}>
+            <div className="mb-4 text-center">
+              <p className="text-sm text-medieval-text-muted font-crimson">
+                Clique em um territorio para ver detalhes
+              </p>
             </div>
 
             {/* Mapa 4x3 */}
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-4 gap-3">
               {territories.map((territory) => {
                 const isPlayer = territory.ownerId === "player";
                 const isSelected = selectedTerritoryId === territory.id;
                 const isNeutral = territory.ownerId === null;
 
+                const bgClass = isPlayer
+                  ? "bg-medieval-primary/20 border-medieval-primary"
+                  : isNeutral
+                  ? "bg-medieval-bg-card/50 border-medieval-text-muted/30"
+                  : "bg-medieval-accent/20 border-medieval-accent";
+
                 return (
-                  <div
+                  <motion.div
                     key={territory.id}
                     onClick={() => setSelectedTerritoryId(territory.id)}
                     className={`
-                      aspect-square rounded-lg border-2 cursor-pointer transition-all p-2
-                      ${isPlayer ? "bg-amber-500/20 border-amber-500 hover:bg-amber-500/30" : ""}
-                      ${isNeutral ? "bg-slate-500/20 border-slate-500 hover:bg-slate-500/30" : ""}
-                      ${!isPlayer && !isNeutral ? "bg-red-500/20 border-red-500 hover:bg-red-500/30" : ""}
-                      ${isSelected ? "ring-2 ring-white scale-105" : ""}
+                      aspect-square rounded-lg border-2 cursor-pointer
+                      transition-all duration-200 p-3 relative
+                      territory-tile ${bgClass}
+                      ${isSelected ? "ring-2 ring-medieval-primary-bright scale-105 shadow-golden-glow" : ""}
                     `}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.98 }}
+                    {...(isSelected && {
+                      animate: {
+                        boxShadow: [
+                          "0 0 0 0 rgba(212,165,116,0)",
+                          "0 0 0 8px rgba(212,165,116,0.3)",
+                          "0 0 0 0 rgba(212,165,116,0)",
+                        ],
+                      },
+                      transition: { duration: 2, repeat: Infinity },
+                    })}
                   >
-                    <div className="text-xs text-center">
-                      <div className="font-bold">{territory.position + 1}</div>
-                      <div className="text-[10px] truncate">{territory.ownerName}</div>
-                      {territory.bonusResource === "GRAIN" && <Wheat className="w-3 h-3 mx-auto text-amber-400" />}
-                      {territory.bonusResource === "WOOD" && <TreePine className="w-3 h-3 mx-auto text-green-400" />}
-                      {territory.bonusResource === "GOLD" && <Coins className="w-3 h-3 mx-auto text-yellow-400" />}
+                    <div className="text-center h-full flex flex-col justify-between">
+                      <div className="font-cinzel font-bold text-medieval-text-primary">
+                        {territory.position + 1}
+                      </div>
+                      <div className="text-[10px] text-medieval-text-secondary truncate">
+                        {territory.ownerName}
+                      </div>
+                      <div className="flex justify-center">
+                        {territory.bonusResource === "GRAIN" && (
+                          <Wheat className="w-4 h-4 text-grain" />
+                        )}
+                        {territory.bonusResource === "WOOD" && (
+                          <TreePine className="w-4 h-4 text-wood-light" />
+                        )}
+                        {territory.bonusResource === "GOLD" && (
+                          <Coins className="w-4 h-4 text-gold" />
+                        )}
+                      </div>
                       {territory.units.length > 0 && (
-                        <div className="flex items-center justify-center gap-1 mt-1">
-                          <Swords className="w-3 h-3 text-red-400" />
-                          <span className="text-[10px]">{territory.units.reduce((sum, u) => sum + u.quantity, 0)}</span>
+                        <div className="flex items-center justify-center gap-1">
+                          <Swords className="w-3 h-3 text-medieval-accent" />
+                          <span className="text-[10px] text-medieval-text-primary">
+                            {territory.units.reduce((sum, u) => sum + u.quantity, 0)}
+                          </span>
                         </div>
                       )}
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
 
             {/* Legenda */}
-            <div className="mt-4 flex justify-center gap-6 text-xs">
+            <div className="mt-6 flex justify-center gap-8 text-sm">
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-amber-500/30 border border-amber-500"></div>
-                <span className="text-slate-400">Seu</span>
+                <div className="w-5 h-5 rounded bg-medieval-primary/30 border-2 border-medieval-primary" />
+                <span className="text-medieval-text-secondary">Seu</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-red-500/30 border border-red-500"></div>
-                <span className="text-slate-400">Inimigo</span>
+                <div className="w-5 h-5 rounded bg-medieval-accent/30 border-2 border-medieval-accent" />
+                <span className="text-medieval-text-secondary">Inimigo</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-slate-500/30 border border-slate-500"></div>
-                <span className="text-slate-400">Neutro</span>
+                <div className="w-5 h-5 rounded bg-medieval-bg-card/50 border-2 border-medieval-text-muted/30" />
+                <span className="text-medieval-text-secondary">Neutro</span>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Right sidebar */}
-          <div className="col-span-3 space-y-4">
+          <motion.div className="col-span-3 space-y-4" variants={staggerItem}>
             {selectedTerritory ? (
-              <Card className="bg-slate-800/80 border-slate-700">
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center justify-between text-base">
-                    <span>Territorio {selectedTerritory.position + 1}</span>
-                    <span className={`text-sm font-normal px-2 py-1 rounded ${
-                      selectedTerritory.ownerId === "player"
-                        ? "bg-amber-500/20 text-amber-400"
-                        : selectedTerritory.ownerId
-                          ? "bg-red-500/20 text-red-400"
-                          : "bg-slate-500/20 text-slate-400"
-                    }`}>
+              <ParchmentPanel animated>
+                <PanelHeader
+                  title={`Territorio ${selectedTerritory.position + 1}`}
+                  action={
+                    <span
+                      className={`text-xs font-medium px-2 py-1 rounded ${
+                        selectedTerritory.ownerId === "player"
+                          ? "bg-medieval-primary/20 text-medieval-primary"
+                          : selectedTerritory.ownerId
+                          ? "bg-medieval-accent/20 text-medieval-accent"
+                          : "bg-medieval-bg-card text-medieval-text-muted"
+                      }`}
+                    >
                       {selectedTerritory.ownerName}
                     </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center gap-2 p-2 bg-slate-700/50 rounded">
-                    {selectedTerritory.bonusResource === "GRAIN" && <Wheat className="w-5 h-5 text-amber-400" />}
-                    {selectedTerritory.bonusResource === "WOOD" && <TreePine className="w-5 h-5 text-green-400" />}
-                    {selectedTerritory.bonusResource === "GOLD" && <Coins className="w-5 h-5 text-yellow-400" />}
-                    <span className="text-amber-400 text-sm">+25% {selectedTerritory.bonusResource}</span>
+                  }
+                />
+                <PanelContent className="space-y-4">
+                  <div className="flex items-center gap-2 p-2 bg-medieval-bg-deep/50 rounded border border-medieval-primary/20">
+                    {selectedTerritory.bonusResource === "GRAIN" && (
+                      <Wheat className="w-5 h-5 text-grain" />
+                    )}
+                    {selectedTerritory.bonusResource === "WOOD" && (
+                      <TreePine className="w-5 h-5 text-wood-light" />
+                    )}
+                    {selectedTerritory.bonusResource === "GOLD" && (
+                      <Coins className="w-5 h-5 text-gold" />
+                    )}
+                    <span className="text-medieval-primary text-sm font-medium">
+                      +25% {selectedTerritory.bonusResource}
+                    </span>
                   </div>
 
-                  <div>
-                    <h4 className="text-xs font-medium text-slate-500 mb-2">ESTRUTURAS ({selectedTerritory.structures.length}/4)</h4>
+                  <PanelSection title={`Estruturas (${selectedTerritory.structures.length}/4)`}>
                     {selectedTerritory.structures.length > 0 ? (
-                      <ul className="space-y-1">
+                      <AnimatedList>
                         {selectedTerritory.structures.map((s, i) => (
-                          <li key={i} className="text-sm flex items-center gap-2">
-                            <Shield className="w-3 h-3 text-slate-400" />
+                          <AnimatedListItem
+                            key={i}
+                            className="text-sm flex items-center gap-2 text-medieval-text-secondary"
+                          >
+                            <Shield className="w-3 h-3 text-medieval-primary" />
                             {s.type} Nv{s.level}
-                          </li>
+                          </AnimatedListItem>
                         ))}
-                      </ul>
+                      </AnimatedList>
                     ) : (
-                      <p className="text-sm text-slate-500 italic">Nenhuma</p>
+                      <p className="text-sm text-medieval-text-muted italic">Nenhuma</p>
                     )}
-                  </div>
+                  </PanelSection>
 
-                  <div>
-                    <h4 className="text-xs font-medium text-slate-500 mb-2">UNIDADES</h4>
+                  <PanelSection title="Unidades">
                     {selectedTerritory.units.length > 0 ? (
-                      <ul className="space-y-1">
+                      <AnimatedList>
                         {selectedTerritory.units.map((u, i) => (
-                          <li key={i} className="text-sm flex items-center gap-2">
-                            <Swords className="w-3 h-3 text-red-400" />
+                          <AnimatedListItem
+                            key={i}
+                            className="text-sm flex items-center gap-2 text-medieval-text-secondary"
+                          >
+                            <Swords className="w-3 h-3 text-medieval-accent" />
                             {u.quantity}x {u.type}
-                          </li>
+                          </AnimatedListItem>
                         ))}
-                      </ul>
+                      </AnimatedList>
                     ) : (
-                      <p className="text-sm text-slate-500 italic">Nenhuma</p>
+                      <p className="text-sm text-medieval-text-muted italic">Nenhuma</p>
                     )}
-                  </div>
+                  </PanelSection>
 
                   {selectedTerritory.ownerId === "player" ? (
                     <Link href={`/game/territory/${selectedTerritory.id}`} className="block">
-                      <Button className="w-full bg-amber-500 hover:bg-amber-400 text-slate-900">
+                      <MedievalButton variant="primary" className="w-full">
                         Gerenciar Territorio
-                      </Button>
+                        <ChevronRight className="w-4 h-4 ml-1" />
+                      </MedievalButton>
                     </Link>
                   ) : (
-                    <Button
-                      className="w-full bg-red-500/20 text-red-400 hover:bg-red-500/30"
-                      disabled={currentEra === "PEACE" || !playerTerritories.some((t) => t.units.length > 0)}
+                    <MedievalButton
+                      variant="danger"
+                      className="w-full"
+                      disabled={
+                        currentEra === "PEACE" ||
+                        !playerTerritories.some((t) => t.units.length > 0)
+                      }
                       onClick={() => handleAttack(selectedTerritory.id)}
                     >
                       {currentEra === "PEACE" ? "Bloqueado na Paz" : "Atacar"}
-                    </Button>
+                    </MedievalButton>
                   )}
-                </CardContent>
-              </Card>
+                </PanelContent>
+              </ParchmentPanel>
             ) : (
-              <Card className="bg-slate-800/80 border-slate-700">
-                <CardContent className="py-8 text-center">
-                  <Target className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                  <p className="text-slate-500 text-sm">Selecione um territorio</p>
-                </CardContent>
-              </Card>
+              <ParchmentPanel animated>
+                <PanelContent className="py-12 text-center">
+                  <Target className="w-10 h-10 text-medieval-text-muted mx-auto mb-3" />
+                  <p className="text-medieval-text-muted font-crimson">
+                    Selecione um territorio
+                  </p>
+                </PanelContent>
+              </ParchmentPanel>
             )}
 
             {/* Eventos */}
-            <Card className="bg-slate-800/80 border-slate-700">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-amber-400" />
-                  Eventos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-1 text-xs max-h-40 overflow-auto">
-                  {events.map((event, i) => (
-                    <li
-                      key={i}
-                      className={`py-1 border-b border-slate-700 last:border-0 ${
-                        event.type === "success" ? "text-green-400" :
-                        event.type === "danger" ? "text-red-400" :
-                        event.type === "warning" ? "text-amber-400" :
-                        "text-slate-400"
-                      }`}
-                    >
-                      [{event.turn}] {event.message}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
+            <ParchmentPanel animated>
+              <PanelHeader
+                title="Eventos"
+                icon={<AlertTriangle className="w-4 h-4 text-medieval-primary" />}
+              />
+              <PanelContent>
+                <div className="space-y-1 text-xs max-h-48 overflow-y-auto">
+                  <AnimatedList>
+                    {events.slice(0, 10).map((event, i) => (
+                      <AnimatedListItem
+                        key={i}
+                        className={`py-1.5 border-b border-medieval-primary/10 last:border-0 ${
+                          event.type === "success"
+                            ? "text-era-peace"
+                            : event.type === "danger"
+                            ? "text-medieval-accent"
+                            : event.type === "warning"
+                            ? "text-gold"
+                            : "text-medieval-text-secondary"
+                        }`}
+                      >
+                        <span className="text-medieval-text-muted">[{event.turn}]</span>{" "}
+                        {event.message}
+                      </AnimatedListItem>
+                    ))}
+                  </AnimatedList>
+                </div>
+              </PanelContent>
+            </ParchmentPanel>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
