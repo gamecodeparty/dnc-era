@@ -3,10 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Crown, Loader2, AlertCircle, CheckCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
+import { Crown, AlertCircle, CheckCircle, ArrowLeft } from "lucide-react";
+import { MedievalButton } from "@/components/ui/medieval";
+import { MedievalCard, MedievalCardContent, MedievalCardHeader, MedievalCardTitle } from "@/components/ui/medieval";
+import { OrnamentDivider, CornerOrnaments } from "@/components/ui/medieval";
+import { Sparkles } from "@/components/game/fx";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { staggerContainer, staggerItem, scaleUp } from "@/lib/animations";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -62,154 +68,203 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-4">
-      <div className="fixed inset-0 bg-[url('/grid.svg')] opacity-5 pointer-events-none" />
+    <main className="min-h-screen flex items-center justify-center px-4 py-8 relative">
+      {/* Background Image */}
+      <div className="absolute inset-0 z-0">
+        <Image
+          src="/bg/auth-guild-hall.png"
+          alt="Medieval guild hall"
+          fill
+          className="object-cover object-center"
+          priority
+          quality={85}
+        />
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-medieval-bg-deep/80" />
+        {/* Vignette */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(13,11,9,0.9)_100%)]" />
+      </div>
 
-      <div className="w-full max-w-md space-y-8 relative">
+      <motion.div
+        className="w-full max-w-md space-y-6 relative z-10"
+        variants={staggerContainer}
+        initial="initial"
+        animate="animate"
+      >
         {/* Logo */}
-        <div className="text-center space-y-2">
+        <motion.div className="text-center space-y-2" variants={staggerItem}>
           <Link href="/landing" className="inline-block">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 bg-clip-text text-transparent">
+            <h1 className="text-4xl font-cinzel-decorative font-bold text-gradient-golden">
               Dice&Cards Era
             </h1>
           </Link>
-          <p className="text-slate-400">Crie seu cla e domine o reino</p>
-        </div>
+          <p className="text-medieval-text-secondary font-crimson italic">
+            Crie seu cla e domine o reino
+          </p>
+        </motion.div>
 
-        {/* Register Form */}
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-              <Crown className="w-5 h-5 text-amber-400" />
-            </div>
-            <h2 className="text-xl font-bold text-slate-100">Criar Conta</h2>
-          </div>
+        {/* Register Form Card */}
+        <motion.div variants={staggerItem}>
+          <MedievalCard variant="elevated" className="relative overflow-visible">
+            <CornerOrnaments />
 
-          {success ? (
-            <div className="flex flex-col items-center gap-4 py-8">
-              <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
-                <CheckCircle className="w-8 h-8 text-green-400" />
-              </div>
-              <div className="text-center">
-                <h3 className="text-lg font-bold text-slate-100">
-                  Conta criada!
-                </h3>
-                <p className="text-slate-400 text-sm mt-1">
-                  Redirecionando para login...
-                </p>
-              </div>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>{error}</span>
+            <MedievalCardHeader ornament>
+              <MedievalCardTitle className="justify-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-medieval-primary/10 flex items-center justify-center">
+                  <Crown className="w-5 h-5 text-medieval-primary" />
                 </div>
-              )}
+                <span className="text-xl">Criar Conta</span>
+              </MedievalCardTitle>
+            </MedievalCardHeader>
 
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-slate-300">
-                  Nome
-                </Label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="Seu nome"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  className="bg-slate-900/50 border-slate-600 text-slate-100 placeholder:text-slate-500 focus:border-amber-400"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-slate-300">
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="seu@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="bg-slate-900/50 border-slate-600 text-slate-100 placeholder:text-slate-500 focus:border-amber-400"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-slate-300">
-                  Senha
-                </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Min. 8 caracteres"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="bg-slate-900/50 border-slate-600 text-slate-100 placeholder:text-slate-500 focus:border-amber-400"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-slate-300">
-                  Confirmar Senha
-                </Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="Repita a senha"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  className="bg-slate-900/50 border-slate-600 text-slate-100 placeholder:text-slate-500 focus:border-amber-400"
-                />
-              </div>
-
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-6 text-lg bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold transition-all hover:scale-105 hover:shadow-lg hover:shadow-amber-500/25 disabled:opacity-50 disabled:hover:scale-100"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Criando...
-                  </>
+            <MedievalCardContent className="p-6">
+              <AnimatePresence mode="wait">
+                {success ? (
+                  <motion.div
+                    key="success"
+                    variants={scaleUp}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    className="flex flex-col items-center gap-4 py-8"
+                  >
+                    <div className="relative w-20 h-20 rounded-full bg-era-peace/20 flex items-center justify-center">
+                      <CheckCircle className="w-10 h-10 text-era-peace" />
+                      <Sparkles color="#4a7c59" count={8} />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-xl font-cinzel font-bold text-medieval-text-primary">
+                        Conta criada!
+                      </h3>
+                      <p className="text-medieval-text-secondary text-sm mt-2 font-crimson">
+                        Redirecionando para login...
+                      </p>
+                    </div>
+                  </motion.div>
                 ) : (
-                  "Criar Conta"
-                )}
-              </Button>
-            </form>
-          )}
+                  <motion.form
+                    key="form"
+                    onSubmit={handleSubmit}
+                    className="space-y-4"
+                    initial={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    {error && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center gap-2 p-3 bg-medieval-accent/10 border border-medieval-accent/30 rounded-lg text-medieval-accent text-sm"
+                      >
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        <span>{error}</span>
+                      </motion.div>
+                    )}
 
-          {!success && (
-            <div className="mt-6 text-center">
-              <p className="text-slate-400 text-sm">
-                Ja tem conta?{" "}
-                <Link
-                  href="/auth/login"
-                  className="text-amber-400 hover:text-amber-300 font-medium"
-                >
-                  Entrar
-                </Link>
-              </p>
-            </div>
-          )}
-        </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="name" className="text-medieval-text-secondary font-cinzel text-sm">
+                        Nome do Lider
+                      </Label>
+                      <Input
+                        id="name"
+                        type="text"
+                        placeholder="Seu nome"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        required
+                        className="bg-medieval-bg-deep/50 border-medieval-primary/30 text-medieval-text-primary placeholder:text-medieval-text-muted focus:border-medieval-primary focus:ring-medieval-primary/20"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="text-medieval-text-secondary font-cinzel text-sm">
+                        Email
+                      </Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        className="bg-medieval-bg-deep/50 border-medieval-primary/30 text-medieval-text-primary placeholder:text-medieval-text-muted focus:border-medieval-primary focus:ring-medieval-primary/20"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="password" className="text-medieval-text-secondary font-cinzel text-sm">
+                        Senha
+                      </Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="Min. 8 caracteres"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className="bg-medieval-bg-deep/50 border-medieval-primary/30 text-medieval-text-primary placeholder:text-medieval-text-muted focus:border-medieval-primary focus:ring-medieval-primary/20"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword" className="text-medieval-text-secondary font-cinzel text-sm">
+                        Confirmar Senha
+                      </Label>
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        placeholder="Repita a senha"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        className="bg-medieval-bg-deep/50 border-medieval-primary/30 text-medieval-text-primary placeholder:text-medieval-text-muted focus:border-medieval-primary focus:ring-medieval-primary/20"
+                      />
+                    </div>
+
+                    <MedievalButton
+                      type="submit"
+                      variant="primary"
+                      size="lg"
+                      loading={isLoading}
+                      className="w-full"
+                    >
+                      {isLoading ? "Criando..." : "Criar Conta"}
+                    </MedievalButton>
+                  </motion.form>
+                )}
+              </AnimatePresence>
+
+              {!success && (
+                <>
+                  <OrnamentDivider variant="dots" size="sm" className="my-6" />
+
+                  <div className="text-center">
+                    <p className="text-medieval-text-muted text-sm font-crimson">
+                      Ja tem conta?{" "}
+                      <Link
+                        href="/auth/login"
+                        className="text-medieval-primary hover:text-medieval-primary-bright font-medium transition-colors"
+                      >
+                        Entrar
+                      </Link>
+                    </p>
+                  </div>
+                </>
+              )}
+            </MedievalCardContent>
+          </MedievalCard>
+        </motion.div>
 
         {/* Back to landing */}
-        <div className="text-center">
+        <motion.div className="text-center" variants={staggerItem}>
           <Link
             href="/landing"
-            className="text-slate-500 hover:text-slate-400 text-sm"
+            className="inline-flex items-center gap-2 text-medieval-text-muted hover:text-medieval-primary text-sm transition-colors"
           >
-            ← Voltar para pagina inicial
+            <ArrowLeft className="w-4 h-4" />
+            Voltar para pagina inicial
           </Link>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </main>
   );
 }
