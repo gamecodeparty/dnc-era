@@ -353,7 +353,7 @@ export class GameEngine {
         gameId: this.gameId,
         turn: game.currentTurn,
         type: type as any,
-        data,
+        data: data as any,
       },
     });
   }
