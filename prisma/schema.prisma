@@ -1,0 +1,313 @@
+// ==============================================================================
+// DICE&CARDS ERA - DATABASE SCHEMA
+// ==============================================================================
+// Turn-based strategy game with clans, territories, combat, and diplomacy
+// ==============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==============================================================================
+// AUTHENTICATION
+// ==============================================================================
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String?
+  passwordHash String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  games GamePlayer[]
+
+  @@map("users")
+}
+
+// ==============================================================================
+// GAME
+// ==============================================================================
+
+model Game {
+  id          String     @id @default(cuid())
+  status      GameStatus @default(SETUP)
+  currentTurn Int        @default(1)
+  currentEra  Era        @default(PEACE)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  players     GamePlayer[]
+  clans       Clan[]
+  territories Territory[]
+  events      GameEvent[]
+
+  @@map("games")
+}
+
+enum GameStatus {
+  SETUP
+  IN_PROGRESS
+  FINISHED
+}
+
+enum Era {
+  PEACE     // Era 1: Paz das Cinzas (15 turns) - no attacks allowed
+  WAR       // Era 2: Era da Guerra (20 turns) - full warfare
+  INVASION  // Era 3: Invasao (15 turns) - Horda attacks
+}
+
+model GamePlayer {
+  id     String  @id @default(cuid())
+  userId String
+  gameId String
+  clanId String? @unique
+  isHost Boolean @default(false)
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game Game  @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  clan Clan? @relation(fields: [clanId], references: [id])
+
+  @@unique([userId, gameId])
+  @@map("game_players")
+}
+
+// ==============================================================================
+// CLANS
+// ==============================================================================
+
+model Clan {
+  id            String         @id @default(cuid())
+  gameId        String
+  name          String
+  origin        ClanOrigin
+  isAI          Boolean        @default(false)
+  aiPersonality AIPersonality?
+  isAlive       Boolean        @default(true)
+
+  // Resources
+  grain Int @default(100)
+  wood  Int @default(50)
+  gold  Int @default(50)
+
+  // Stats
+  population Int        @default(100)
+  reputation Reputation @default(NEUTRAL)
+
+  // Active effects (turns remaining)
+  harvestBoostTurns Int @default(0) // Colheita Farta card effect
+  truceBlockTurns   Int @default(0) // Tregua Forcada card effect
+
+  // Relationships
+  game        Game        @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  player      GamePlayer?
+  territories Territory[]
+  units       Unit[]
+  cards       ClanCard[]
+
+  // Diplomacy (as initiator)
+  diplomacyFrom DiplomacyRelation[] @relation("DiplomacyFrom")
+  // Diplomacy (as target)
+  diplomacyTo   DiplomacyRelation[] @relation("DiplomacyTo")
+
+  @@unique([gameId, name])
+  @@map("clans")
+}
+
+enum ClanOrigin {
+  FERRONATOS // +20% military strength
+  VERDANEOS  // +20% grain production
+  UMBRAL     // +30% spy efficiency
+}
+
+enum AIPersonality {
+  CONQUEROR   // Attacks frequently, expands aggressively
+  DEFENDER    // Fortifies, only attacks if threatened
+  OPPORTUNIST // Attacks the weak, allies with the strong
+  MERCHANT    // Economy focus, avoids war
+}
+
+enum Reputation {
+  TRUSTED // Others accept proposals, bonus in treaties
+  NEUTRAL // Normal interactions
+  HOSTILE // No one accepts peace/alliance, targeted
+}
+
+// ==============================================================================
+// TERRITORIES
+// ==============================================================================
+
+model Territory {
+  id      String  @id @default(cuid())
+  gameId  String
+  ownerId String? // null = neutral
+
+  // Position in 4x3 grid (0-11)
+  // Layout:
+  //  [0] [1] [2]
+  //  [3] [4] [5]
+  //  [6] [7] [8]
+  //  [9] [10][11]
+  position Int
+
+  // Bonus resource type for this territory
+  bonusResource  ResourceType
+  structureSlots Int          @default(4)
+
+  game       Game        @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  owner      Clan?       @relation(fields: [ownerId], references: [id])
+  structures Structure[]
+  units      Unit[]
+
+  @@unique([gameId, position])
+  @@map("territories")
+}
+
+enum ResourceType {
+  GRAIN
+  WOOD
+  GOLD
+}
+
+// ==============================================================================
+// STRUCTURES
+// ==============================================================================
+
+model Structure {
+  id          String        @id @default(cuid())
+  territoryId String
+  type        StructureType
+  level       Int           @default(1) // 1-3
+
+  territory Territory @relation(fields: [territoryId], references: [id], onDelete: Cascade)
+
+  @@map("structures")
+}
+
+enum StructureType {
+  FARM         // Produces grain
+  SAWMILL      // Produces wood
+  MINE         // Produces gold
+  BARRACKS     // Trains Soldiers, Archers
+  STABLE       // Trains Knights
+  WALL         // Defense bonus (+20% per level)
+  TAVERN       // Recruits population
+  SHADOW_GUILD // Espionage, trains Spies
+}
+
+// ==============================================================================
+// UNITS
+// ==============================================================================
+
+model Unit {
+  id          String   @id @default(cuid())
+  clanId      String
+  territoryId String
+  type        UnitType
+  quantity    Int      @default(1)
+
+  clan      Clan      @relation(fields: [clanId], references: [id], onDelete: Cascade)
+  territory Territory @relation(fields: [territoryId], references: [id], onDelete: Cascade)
+
+  @@unique([clanId, territoryId, type])
+  @@map("units")
+}
+
+enum UnitType {
+  SOLDIER // 2 ATK, 2 DEF, cost: 10 grain, 5 gold
+  ARCHER  // 3 ATK, 1 DEF, cost: 10 grain, 8 gold (attacks first)
+  KNIGHT  // 4 ATK, 3 DEF, cost: 15 grain, 15 gold (+30% attack bonus)
+  SPY     // 0 ATK, 0 DEF, cost: 5 grain, 10 gold (reveals enemy)
+}
+
+// ==============================================================================
+// CARDS
+// ==============================================================================
+
+model ClanCard {
+  id     String   @id @default(cuid())
+  clanId String
+  type   CardType
+  used   Boolean  @default(false)
+
+  clan Clan @relation(fields: [clanId], references: [id], onDelete: Cascade)
+
+  @@map("clan_cards")
+}
+
+enum CardType {
+  REINFORCEMENTS    // +50% troops in battle
+  IMPROVISED_WALLS  // +100% defense in one attack
+  BOUNTIFUL_HARVEST // Double grain for 3 turns
+  INFORMANT         // Reveal all troops of a clan
+  SABOTAGE          // Destroy 1 enemy structure
+  FORCED_TRUCE      // Prevents attacks on you for 3 turns
+}
+
+// ==============================================================================
+// DIPLOMACY
+// ==============================================================================
+
+model DiplomacyRelation {
+  id            String          @id @default(cuid())
+  fromClanId    String
+  toClanId      String
+  status        DiplomacyStatus @default(NEUTRAL)
+  expiresAtTurn Int? // For temporary treaties (peace = 5 turns)
+
+  fromClan Clan @relation("DiplomacyFrom", fields: [fromClanId], references: [id], onDelete: Cascade)
+  toClan   Clan @relation("DiplomacyTo", fields: [toClanId], references: [id], onDelete: Cascade)
+
+  @@unique([fromClanId, toClanId])
+  @@map("diplomacy_relations")
+}
+
+enum DiplomacyStatus {
+  NEUTRAL  // Default state
+  PEACE    // No attacks for 5 turns
+  WAR      // Open hostility
+  ALLIANCE // Mutual defense (Era 3 only)
+}
+
+// ==============================================================================
+// GAME EVENTS
+// ==============================================================================
+
+model GameEvent {
+  id        String    @id @default(cuid())
+  gameId    String
+  turn      Int
+  type      EventType
+  data      Json // Event-specific data
+  createdAt DateTime  @default(now())
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@index([gameId, turn])
+  @@map("game_events")
+}
+
+enum EventType {
+  TURN_START
+  TURN_END
+  ERA_TRANSITION
+  COMBAT
+  STRUCTURE_BUILT
+  STRUCTURE_UPGRADED
+  STRUCTURE_DESTROYED
+  UNIT_TRAINED
+  UNIT_MOVED
+  DIPLOMACY_PROPOSED
+  DIPLOMACY_ACCEPTED
+  DIPLOMACY_REJECTED
+  DIPLOMACY_BROKEN
+  CARD_USED
+  HORDA_ATTACK
+  CLAN_DEFEATED
+  GAME_END
+}
