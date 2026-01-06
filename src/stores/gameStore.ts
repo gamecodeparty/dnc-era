@@ -5,6 +5,47 @@ export type Era = "PEACE" | "WAR" | "INVASION";
 export type ResourceType = "GRAIN" | "WOOD" | "GOLD";
 export type StructureType = "FARM" | "SAWMILL" | "MINE" | "BARRACKS" | "STABLE" | "WALL";
 export type UnitType = "SOLDIER" | "ARCHER" | "KNIGHT";
+export type DiplomacyRelation = "TRUSTED" | "NEUTRAL" | "HOSTILE";
+export type AIPersonality = "CONQUEROR" | "DEFENDER" | "OPPORTUNIST" | "MERCHANT";
+export type ClanOrigin = "FERRONATOS" | "VERDANEOS" | "UMBRAL";
+export type ExpeditionType = "ATTACK" | "EXPLORE" | "RETURN_VICTORY" | "RETURN_DEFEAT" | "RETURN_EXPLORE" | "REINFORCE";
+
+// Tipos de locais de exploracao
+export type ExplorationSiteType =
+  | "ABANDONED_MINE"
+  | "SPIRIT_FOREST"
+  | "ARCANE_RUINS"
+  | "GHOST_FARM"
+  | "WYRM_CAVE"
+  | "BANDIT_CAMP"
+  | "SUNKEN_SHIP"
+  | "HERMIT_TOWER";
+
+export interface ExplorationSite {
+  id: string;
+  type: ExplorationSiteType;
+  name: string;
+  description: string;
+  position: number;
+  difficulty: 1 | 2 | 3 | 4 | 5;
+  minUnits: number;
+  rewards: {
+    grainMin: number;
+    grainMax: number;
+    woodMin: number;
+    woodMax: number;
+    goldMin: number;
+    goldMax: number;
+  };
+  cooldownTurns: number;
+  lastExploredTurn: number | null;
+  narratives: {
+    intro: string;
+    success: string;
+    partial: string;
+    failure: string;
+  };
+}
 
 export interface Structure {
   id: string;
@@ -34,12 +75,38 @@ export interface Clan {
   grain: number;
   wood: number;
   gold: number;
+  origin?: ClanOrigin;
+  personality?: AIPersonality;
+}
+
+export interface DiplomacyState {
+  [clanId: string]: DiplomacyRelation;
 }
 
 export interface GameEvent {
   turn: number;
   message: string;
   type: "info" | "success" | "warning" | "danger";
+}
+
+export interface Expedition {
+  id: string;
+  ownerId: string;
+  ownerName: string;
+  fromTerritoryId: string;
+  toTerritoryId: string;
+  fromPosition: number;
+  toPosition: number;
+  units: Unit[];
+  carriedResources: {
+    grain: number;
+    wood: number;
+    gold: number;
+  };
+  turnsRemaining: number;
+  totalTurns: number;
+  departedTurn: number;
+  type: ExpeditionType;
 }
 
 // Constantes
@@ -70,11 +137,218 @@ export const UNIT_COSTS: Record<UnitType, { grain?: number; wood?: number; gold?
   KNIGHT: { grain: 20, gold: 25 },
 };
 
-export const UNIT_STATS: Record<UnitType, { atk: number; def: number }> = {
-  SOLDIER: { atk: 10, def: 8 },
-  ARCHER: { atk: 12, def: 5 },
-  KNIGHT: { atk: 20, def: 15 },
+export const UNIT_STATS: Record<UnitType, { atk: number; def: number; speed: number; carryCapacity: number }> = {
+  SOLDIER: { atk: 10, def: 8, speed: 1, carryCapacity: 20 },
+  ARCHER: { atk: 12, def: 5, speed: 1, carryCapacity: 10 },
+  KNIGHT: { atk: 20, def: 15, speed: 2, carryCapacity: 30 },
 };
+
+// Constantes de mapa (4 colunas x 3 linhas = 12 territórios)
+export const MAP_COLUMNS = 4;
+export const MAP_ROWS = 3;
+
+// Dados dos locais de exploracao (8 tipos, 5 sorteados por partida)
+export const EXPLORATION_SITES_DATA: Record<ExplorationSiteType, Omit<ExplorationSite, "id" | "position" | "lastExploredTurn">> = {
+  ABANDONED_MINE: {
+    type: "ABANDONED_MINE",
+    name: "Mina Abandonada dos Anoes",
+    description: "Dizem que os anoes deixaram tesouros quando fugiram da Horda ha geracoes...",
+    difficulty: 2,
+    minUnits: 5,
+    rewards: { grainMin: 0, grainMax: 0, woodMin: 0, woodMax: 10, goldMin: 30, goldMax: 60 },
+    cooldownTurns: 5,
+    narratives: {
+      intro: "Seus soldados entram nas galerias escuras, tochas tremendo...",
+      success: "Veios de ouro brilham nas paredes! Seus homens enchem os sacos com riquezas esquecidas.",
+      partial: "Encontraram algo, mas criaturas das profundezas atacaram. Alguns nao voltaram.",
+      failure: "As galerias desabaram! O eco dos gritos ainda ressoa... poucos escaparam com vida.",
+    },
+  },
+  SPIRIT_FOREST: {
+    type: "SPIRIT_FOREST",
+    name: "Floresta dos Espiritos",
+    description: "Os druidas antigos deixaram oferendas aos espiritos da floresta...",
+    difficulty: 1,
+    minUnits: 3,
+    rewards: { grainMin: 0, grainMax: 20, woodMin: 40, woodMax: 80, goldMin: 0, goldMax: 10 },
+    cooldownTurns: 4,
+    narratives: {
+      intro: "A neblina envolve suas tropas enquanto entram na floresta ancestral...",
+      success: "Os espiritos guiaram suas tropas ate clareiras sagradas, cheias de madeira nobre!",
+      partial: "Alguns homens se perderam seguindo luzes enganosas, mas trouxeram algo.",
+      failure: "A floresta rejeitou os intrusos. Seus homens vagaram em circulos ate o desespero.",
+    },
+  },
+  ARCANE_RUINS: {
+    type: "ARCANE_RUINS",
+    name: "Ruinas do Templo Arcano",
+    description: "Magos de eras passadas selaram conhecimento proibido nestas pedras...",
+    difficulty: 4,
+    minUnits: 8,
+    rewards: { grainMin: 0, grainMax: 0, woodMin: 0, woodMax: 0, goldMin: 40, goldMax: 100 },
+    cooldownTurns: 6,
+    narratives: {
+      intro: "Runas antigas brilham quando suas tropas se aproximam das ruinas...",
+      success: "Entre runas brilhantes, seus homens encontraram artefatos de valor inestimavel!",
+      partial: "Armadilhas magicas cobraram seu preco, mas alguns tesouros foram resgatados.",
+      failure: "Um feitico de protecao foi ativado! Relampagos arcanos dizimaram seus homens.",
+    },
+  },
+  GHOST_FARM: {
+    type: "GHOST_FARM",
+    name: "Fazenda Fantasma",
+    description: "Os fazendeiros fugiram, mas os celeiros ainda guardam provisoes...",
+    difficulty: 1,
+    minUnits: 2,
+    rewards: { grainMin: 50, grainMax: 100, woodMin: 0, woodMax: 20, goldMin: 0, goldMax: 10 },
+    cooldownTurns: 3,
+    narratives: {
+      intro: "Uma fazenda abandonada surge no horizonte, seus campos ainda verdes...",
+      success: "Celeiros intocados ha anos, cheios de graos preservados! Uma fortuna em comida.",
+      partial: "Parte dos graos estava estragada, mas ainda trouxeram algo util.",
+      failure: "Ratos e pragas consumiram tudo. Seus homens voltaram de maos vazias.",
+    },
+  },
+  WYRM_CAVE: {
+    type: "WYRM_CAVE",
+    name: "Caverna do Wyrm",
+    description: "Um dragao adormecido guarda tesouros de reis caidos...",
+    difficulty: 5,
+    minUnits: 15,
+    rewards: { grainMin: 0, grainMax: 0, woodMin: 0, woodMax: 0, goldMin: 100, goldMax: 200 },
+    cooldownTurns: 8,
+    narratives: {
+      intro: "O calor aumenta conforme suas tropas descem para a caverna do wyrm...",
+      success: "O wyrm dormia profundamente... seus homens sairam ricos, pisando suavemente!",
+      partial: "O dragao se mexeu! Alguns conseguiram pegar ouro antes de fugir em panico.",
+      failure: "O RUGIDO ecoou pela montanha! Chamas consumiram a maioria. Poucos escaparam...",
+    },
+  },
+  BANDIT_CAMP: {
+    type: "BANDIT_CAMP",
+    name: "Acampamento de Bandidos",
+    description: "Saqueadores acumularam espolios de viajantes incautos...",
+    difficulty: 3,
+    minUnits: 8,
+    rewards: { grainMin: 20, grainMax: 40, woodMin: 0, woodMax: 20, goldMin: 40, goldMax: 70 },
+    cooldownTurns: 4,
+    narratives: {
+      intro: "Fumaca de fogueiras revela o acampamento dos bandidos...",
+      success: "Um combate rapido e brutal! Os bandidos fugiram deixando seus espolios.",
+      partial: "A luta foi dura. Alguns homens cairam, mas trouxeram parte do butim.",
+      failure: "Os bandidos estavam preparados! Uma emboscada devastou suas tropas.",
+    },
+  },
+  SUNKEN_SHIP: {
+    type: "SUNKEN_SHIP",
+    name: "Navio Naufragado",
+    description: "Na costa, os restos de um navio mercante ainda guardam carga...",
+    difficulty: 2,
+    minUnits: 4,
+    rewards: { grainMin: 0, grainMax: 20, woodMin: 30, woodMax: 50, goldMin: 30, goldMax: 50 },
+    cooldownTurns: 5,
+    narratives: {
+      intro: "As ondas batem contra o casco partido do navio mercante...",
+      success: "Entre os destrocos, barris de especiarias e madeira nobre foram resgatados!",
+      partial: "A mare subiu rapido. Conseguiram salvar algo antes de recuar.",
+      failure: "Uma onda gigante varreu seus homens. O mar cobrou seu tributo.",
+    },
+  },
+  HERMIT_TOWER: {
+    type: "HERMIT_TOWER",
+    name: "Torre do Eremita",
+    description: "Um sabio recluso mora ali. Dizem que ensina segredos aos dignos...",
+    difficulty: 1,
+    minUnits: 2,
+    rewards: { grainMin: 30, grainMax: 50, woodMin: 10, woodMax: 30, goldMin: 10, goldMax: 30 },
+    cooldownTurns: 4,
+    narratives: {
+      intro: "Uma torre solitaria se ergue no topo da colina, luz brilhando na janela...",
+      success: "O eremita sorriu e compartilhou provisoes e conhecimentos ancestrais.",
+      partial: "O sabio estava de mau humor, mas ainda ofereceu algo aos visitantes.",
+      failure: "A torre estava vazia. O eremita partiu, levando seus segredos consigo.",
+    },
+  },
+};
+
+// Funções utilitárias de mapa
+export function getDistance(fromPosition: number, toPosition: number): number {
+  const fromRow = Math.floor(fromPosition / MAP_COLUMNS);
+  const fromCol = fromPosition % MAP_COLUMNS;
+  const toRow = Math.floor(toPosition / MAP_COLUMNS);
+  const toCol = toPosition % MAP_COLUMNS;
+  return Math.abs(fromRow - toRow) + Math.abs(fromCol - toCol);
+}
+
+// Shuffle array (Fisher-Yates)
+function shuffleArray<T>(array: T[]): T[] {
+  const result = [...array];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+// Cria 5 locais de exploracao aleatorios para a partida
+function createRandomExplorationSites(): ExplorationSite[] {
+  const allTypes: ExplorationSiteType[] = [
+    "ABANDONED_MINE", "SPIRIT_FOREST", "ARCANE_RUINS", "GHOST_FARM",
+    "WYRM_CAVE", "BANDIT_CAMP", "SUNKEN_SHIP", "HERMIT_TOWER",
+  ];
+
+  // Sorteia 5 tipos
+  const selectedTypes = shuffleArray(allTypes).slice(0, 5);
+
+  // Posicoes preferenciais: territorios neutros e dos cantos
+  const availablePositions = shuffleArray([0, 2, 3, 5, 6, 8, 9, 11]).slice(0, 5);
+
+  return selectedTypes.map((type, i) => ({
+    ...EXPLORATION_SITES_DATA[type],
+    id: `site-${i}-${Date.now()}`,
+    position: availablePositions[i],
+    lastExploredTurn: null,
+  }));
+}
+
+export function getTravelTime(distance: number, units: Unit[]): number {
+  if (units.length === 0) return distance;
+
+  // Expedição viaja na velocidade do mais lento
+  let minSpeed = Infinity;
+  for (const unit of units) {
+    const speed = UNIT_STATS[unit.type].speed;
+    if (speed < minSpeed) minSpeed = speed;
+  }
+
+  // Tempo = distância / velocidade (arredonda pra cima)
+  return Math.ceil(distance / minSpeed);
+}
+
+export function getCarryCapacity(units: Unit[]): number {
+  let capacity = 0;
+  for (const unit of units) {
+    capacity += unit.quantity * UNIT_STATS[unit.type].carryCapacity;
+  }
+  return capacity;
+}
+
+export function getAttackPower(units: Unit[]): number {
+  let power = 0;
+  for (const unit of units) {
+    power += unit.quantity * UNIT_STATS[unit.type].atk;
+  }
+  return power;
+}
+
+export function getDefensePower(units: Unit[], wallLevel: number = 0): number {
+  let power = 0;
+  for (const unit of units) {
+    power += unit.quantity * UNIT_STATS[unit.type].def;
+  }
+  // Bonus de muralha: +20% por nível
+  return Math.floor(power * (1 + wallLevel * 0.2));
+}
 
 // Estado inicial
 function createInitialTerritories(): Territory[] {
@@ -93,12 +367,21 @@ function createInitialTerritories(): Territory[] {
 
 function createInitialClans(): Clan[] {
   return [
-    { id: "player", name: "Voce", isPlayer: true, grain: 100, wood: 50, gold: 30 },
-    { id: "ai1", name: "Cla do Norte", isPlayer: false, grain: 100, wood: 50, gold: 30 },
-    { id: "ai2", name: "Cla do Sul", isPlayer: false, grain: 100, wood: 50, gold: 30 },
-    { id: "ai3", name: "Cla do Leste", isPlayer: false, grain: 100, wood: 50, gold: 30 },
-    { id: "ai4", name: "Cla do Oeste", isPlayer: false, grain: 100, wood: 50, gold: 30 },
+    { id: "player", name: "Voce", isPlayer: true, grain: 100, wood: 50, gold: 30, origin: "FERRONATOS" },
+    { id: "ai1", name: "Cla do Norte", isPlayer: false, grain: 100, wood: 50, gold: 30, origin: "VERDANEOS", personality: "DEFENDER" },
+    { id: "ai2", name: "Cla do Sul", isPlayer: false, grain: 100, wood: 50, gold: 30, origin: "UMBRAL", personality: "OPPORTUNIST" },
+    { id: "ai3", name: "Cla do Leste", isPlayer: false, grain: 100, wood: 50, gold: 30, origin: "FERRONATOS", personality: "CONQUEROR" },
+    { id: "ai4", name: "Cla do Oeste", isPlayer: false, grain: 100, wood: 50, gold: 30, origin: "VERDANEOS", personality: "MERCHANT" },
   ];
+}
+
+function createInitialDiplomacy(): DiplomacyState {
+  return {
+    ai1: "NEUTRAL",
+    ai2: "HOSTILE",
+    ai3: "NEUTRAL",
+    ai4: "NEUTRAL",
+  };
 }
 
 // Store
@@ -111,17 +394,34 @@ interface GameState {
   events: GameEvent[];
   gameOver: boolean;
   winner: string | null;
+  diplomacy: DiplomacyState;
+  expeditions: Expedition[];
+  explorationSites: ExplorationSite[];
 
   // Getters
   getPlayerClan: () => Clan;
   getPlayerTerritories: () => Territory[];
   getTerritory: (id: string) => Territory | undefined;
   canAfford: (costs: { grain?: number; wood?: number; gold?: number }) => boolean;
+  getDiplomacy: (clanId: string) => DiplomacyRelation;
+  getAIClans: () => Clan[];
+  getExpeditions: () => Expedition[];
+  getPlayerExpeditions: () => Expedition[];
+  getIncomingAttacks: (territoryId: string) => Expedition[];
+  getExplorationSites: () => ExplorationSite[];
+  getExplorationSite: (id: string) => ExplorationSite | undefined;
 
   // Acoes
   build: (territoryId: string, structureType: StructureType) => boolean;
   train: (territoryId: string, unitType: UnitType, quantity: number) => boolean;
-  attack: (fromTerritoryId: string, toTerritoryId: string) => { success: boolean; message: string };
+  sendExpedition: (
+    fromTerritoryId: string,
+    toTerritoryId: string,
+    units: { type: UnitType; quantity: number }[]
+  ) => { success: boolean; message: string; expeditionId?: string };
+  cancelExpedition: (expeditionId: string) => { success: boolean; message: string };
+  declareWar: (clanId: string) => { success: boolean; message: string };
+  proposePeace: (clanId: string) => { success: boolean; message: string };
   processTurn: () => void;
   resetGame: () => void;
 }
@@ -134,6 +434,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   events: [{ turn: 1, message: "Jogo iniciado! Construa e expanda seu imperio.", type: "info" }],
   gameOver: false,
   winner: null,
+  diplomacy: createInitialDiplomacy(),
+  expeditions: [],
 
   getPlayerClan: () => {
     return get().clans.find((c) => c.isPlayer)!;
@@ -153,6 +455,28 @@ export const useGameStore = create<GameState>((set, get) => ({
       (costs.grain || 0) <= player.grain &&
       (costs.wood || 0) <= player.wood &&
       (costs.gold || 0) <= player.gold
+    );
+  },
+
+  getDiplomacy: (clanId: string) => {
+    return get().diplomacy[clanId] || "NEUTRAL";
+  },
+
+  getAIClans: () => {
+    return get().clans.filter((c) => !c.isPlayer);
+  },
+
+  getExpeditions: () => {
+    return get().expeditions;
+  },
+
+  getPlayerExpeditions: () => {
+    return get().expeditions.filter((e) => e.ownerId === "player");
+  },
+
+  getIncomingAttacks: (territoryId: string) => {
+    return get().expeditions.filter(
+      (e) => e.toTerritoryId === territoryId && e.type === "ATTACK"
     );
   },
 
@@ -258,88 +582,203 @@ export const useGameStore = create<GameState>((set, get) => ({
     return true;
   },
 
-  attack: (fromTerritoryId, toTerritoryId) => {
+  sendExpedition: (fromTerritoryId, toTerritoryId, units) => {
     const state = get();
 
+    // Validações
     if (state.currentEra === "PEACE") {
-      return { success: false, message: "Ataques bloqueados na Era da Paz!" };
+      return { success: false, message: "Expedicoes bloqueadas na Era da Paz!" };
     }
 
     const from = state.territories.find((t) => t.id === fromTerritoryId);
     const to = state.territories.find((t) => t.id === toTerritoryId);
 
     if (!from || !to) return { success: false, message: "Territorio invalido" };
-    if (from.ownerId !== "player") return { success: false, message: "Voce so pode atacar de seus territorios" };
+    if (from.ownerId !== "player") return { success: false, message: "Voce so pode enviar de seus territorios" };
     if (to.ownerId === "player") return { success: false, message: "Nao pode atacar a si mesmo" };
 
-    // Calcula poder de ataque
-    let attackPower = 0;
-    from.units.forEach((u) => {
-      attackPower += u.quantity * UNIT_STATS[u.type].atk;
-    });
-
-    // Calcula poder de defesa
-    let defensePower = 0;
-    to.units.forEach((u) => {
-      defensePower += u.quantity * UNIT_STATS[u.type].def;
-    });
-
-    // Bonus de muralha
-    const wallLevel = to.structures.find((s) => s.type === "WALL")?.level || 0;
-    defensePower *= 1 + wallLevel * 0.2;
-
-    if (attackPower <= 0) {
-      return { success: false, message: "Sem unidades para atacar!" };
+    // Validar unidades disponíveis
+    for (const unit of units) {
+      const available = from.units.find((u) => u.type === unit.type);
+      if (!available || available.quantity < unit.quantity) {
+        return { success: false, message: `Unidades insuficientes: ${unit.type}` };
+      }
     }
 
-    const victory = attackPower > defensePower;
+    // Validar que está enviando pelo menos uma unidade
+    const totalUnits = units.reduce((sum, u) => sum + u.quantity, 0);
+    if (totalUnits <= 0) {
+      return { success: false, message: "Selecione pelo menos uma unidade!" };
+    }
 
-    if (victory) {
-      // Conquista territorio
+    // Calcular distância e tempo
+    const distance = getDistance(from.position, to.position);
+    const expeditionUnits: Unit[] = units.map((u) => ({ type: u.type, quantity: u.quantity }));
+    const travelTime = getTravelTime(distance, expeditionUnits);
+
+    // Criar expedição
+    const expeditionId = `exp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const expedition: Expedition = {
+      id: expeditionId,
+      ownerId: "player",
+      ownerName: "Voce",
+      fromTerritoryId,
+      toTerritoryId,
+      fromPosition: from.position,
+      toPosition: to.position,
+      units: expeditionUnits,
+      carriedResources: { grain: 0, wood: 0, gold: 0 },
+      turnsRemaining: travelTime,
+      totalTurns: travelTime,
+      departedTurn: state.currentTurn,
+      type: "ATTACK",
+    };
+
+    // Remover unidades do território de origem
+    set((state) => ({
+      territories: state.territories.map((t) => {
+        if (t.id === fromTerritoryId) {
+          const newUnits = t.units.map((u) => {
+            const sent = units.find((sent) => sent.type === u.type);
+            if (sent) {
+              return { ...u, quantity: u.quantity - sent.quantity };
+            }
+            return u;
+          }).filter((u) => u.quantity > 0);
+          return { ...t, units: newUnits };
+        }
+        return t;
+      }),
+      expeditions: [...state.expeditions, expedition],
+      events: [
+        {
+          turn: state.currentTurn,
+          message: `Expedicao enviada! ${totalUnits} tropas marcham para territorio ${to.position + 1}. Chegada em ${travelTime} turno(s).`,
+          type: "info" as const,
+        },
+        ...state.events.slice(0, 9),
+      ],
+    }));
+
+    return {
+      success: true,
+      message: `Expedicao enviada! Chegada em ${travelTime} turno(s).`,
+      expeditionId,
+    };
+  },
+
+  cancelExpedition: (expeditionId: string) => {
+    const state = get();
+    const expedition = state.expeditions.find((e) => e.id === expeditionId);
+
+    if (!expedition) {
+      return { success: false, message: "Expedicao nao encontrada" };
+    }
+    if (expedition.ownerId !== "player") {
+      return { success: false, message: "Voce so pode cancelar suas expedicoes" };
+    }
+    if (expedition.type !== "ATTACK") {
+      return { success: false, message: "Nao pode cancelar expedicoes de retorno" };
+    }
+
+    // Tropas voltam imediatamente para o território de origem
+    set((state) => ({
+      territories: state.territories.map((t) => {
+        if (t.id === expedition.fromTerritoryId) {
+          // Adicionar unidades de volta
+          const newUnits = [...t.units];
+          for (const unit of expedition.units) {
+            const existing = newUnits.find((u) => u.type === unit.type);
+            if (existing) {
+              existing.quantity += unit.quantity;
+            } else {
+              newUnits.push({ ...unit });
+            }
+          }
+          return { ...t, units: newUnits };
+        }
+        return t;
+      }),
+      expeditions: state.expeditions.filter((e) => e.id !== expeditionId),
+      events: [
+        {
+          turn: state.currentTurn,
+          message: `Expedicao cancelada! Tropas retornaram ao territorio de origem.`,
+          type: "warning" as const,
+        },
+        ...state.events.slice(0, 9),
+      ],
+    }));
+
+    return { success: true, message: "Expedicao cancelada!" };
+  },
+
+  declareWar: (clanId: string) => {
+    const state = get();
+    const clan = state.clans.find((c) => c.id === clanId);
+
+    if (!clan) return { success: false, message: "Cla nao encontrado" };
+    if (clan.isPlayer) return { success: false, message: "Nao pode declarar guerra a si mesmo" };
+
+    const currentRelation = state.diplomacy[clanId];
+    if (currentRelation === "HOSTILE") {
+      return { success: false, message: "Voce ja esta em guerra com este cla!" };
+    }
+
+    set((state) => ({
+      diplomacy: {
+        ...state.diplomacy,
+        [clanId]: "HOSTILE",
+      },
+      events: [
+        { turn: state.currentTurn, message: `GUERRA! Voce declarou guerra ao ${clan.name}!`, type: "danger" as const },
+        ...state.events.slice(0, 9),
+      ],
+    }));
+
+    return { success: true, message: `Guerra declarada ao ${clan.name}!` };
+  },
+
+  proposePeace: (clanId: string) => {
+    const state = get();
+    const clan = state.clans.find((c) => c.id === clanId);
+
+    if (!clan) return { success: false, message: "Cla nao encontrado" };
+    if (clan.isPlayer) return { success: false, message: "Nao pode propor paz a si mesmo" };
+
+    const currentRelation = state.diplomacy[clanId];
+    if (currentRelation === "TRUSTED") {
+      return { success: false, message: "Voce ja e aliado deste cla!" };
+    }
+
+    // 50% chance de aceitar paz (dependendo da personalidade)
+    const acceptChance = clan.personality === "MERCHANT" ? 0.8 :
+                         clan.personality === "DEFENDER" ? 0.6 :
+                         clan.personality === "OPPORTUNIST" ? 0.4 : 0.2;
+
+    const accepted = Math.random() < acceptChance;
+
+    if (accepted) {
+      const newRelation: DiplomacyRelation = currentRelation === "HOSTILE" ? "NEUTRAL" : "TRUSTED";
       set((state) => ({
-        territories: state.territories.map((t) => {
-          if (t.id === fromTerritoryId) {
-            // Perde metade das unidades
-            return {
-              ...t,
-              units: t.units.map((u) => ({ ...u, quantity: Math.ceil(u.quantity / 2) })),
-            };
-          }
-          if (t.id === toTerritoryId) {
-            // Conquista
-            return {
-              ...t,
-              ownerId: "player",
-              ownerName: "Voce",
-              units: [],
-            };
-          }
-          return t;
-        }),
+        diplomacy: {
+          ...state.diplomacy,
+          [clanId]: newRelation,
+        },
         events: [
-          { turn: state.currentTurn, message: `VITORIA! Conquistou territorio ${to.position + 1}!`, type: "success" as const },
+          { turn: state.currentTurn, message: `PAZ! ${clan.name} aceitou sua proposta de paz!`, type: "success" as const },
           ...state.events.slice(0, 9),
         ],
       }));
-      return { success: true, message: `Vitoria! Territorio ${to.position + 1} conquistado!` };
+      return { success: true, message: `${clan.name} aceitou sua proposta de paz!` };
     } else {
-      // Derrota - perde unidades
       set((state) => ({
-        territories: state.territories.map((t) => {
-          if (t.id === fromTerritoryId) {
-            return {
-              ...t,
-              units: t.units.map((u) => ({ ...u, quantity: Math.floor(u.quantity / 3) })).filter((u) => u.quantity > 0),
-            };
-          }
-          return t;
-        }),
         events: [
-          { turn: state.currentTurn, message: `DERROTA! Ataque ao territorio ${to.position + 1} falhou!`, type: "danger" as const },
+          { turn: state.currentTurn, message: `${clan.name} rejeitou sua proposta de paz.`, type: "warning" as const },
           ...state.events.slice(0, 9),
         ],
       }));
-      return { success: false, message: `Derrota! Defesa muito forte.` };
+      return { success: false, message: `${clan.name} rejeitou sua proposta de paz.` };
     }
   },
 
@@ -385,10 +824,204 @@ export const useGameStore = create<GameState>((set, get) => ({
       type: "info",
     });
 
-    // IA faz acoes simples
-    const aiActions = processAI(state.territories, state.clans, newEra);
+    // Processar expedições
+    let updatedExpeditions: Expedition[] = [];
+    const expeditionEvents: GameEvent[] = [];
+    const conqueredTerritories: { id: string; newOwnerId: string; newOwnerName: string }[] = [];
+    const returnedTroops: { territoryId: string; units: Unit[]; resources: { grain: number; wood: number; gold: number } }[] = [];
+    const lootedClans: { clanId: string; grain: number; wood: number; gold: number }[] = [];
+
+    for (const exp of state.expeditions) {
+      const newTurnsRemaining = exp.turnsRemaining - 1;
+
+      if (newTurnsRemaining <= 0) {
+        // Expedição chegou ao destino!
+        if (exp.type === "ATTACK") {
+          // Executar combate
+          const targetTerritory = state.territories.find((t) => t.id === exp.toTerritoryId);
+          if (targetTerritory) {
+            const attackPower = getAttackPower(exp.units);
+            const wallLevel = targetTerritory.structures.find((s) => s.type === "WALL")?.level || 0;
+            const defensePower = getDefensePower(targetTerritory.units, wallLevel);
+
+            const victory = attackPower > defensePower;
+            const ratio = defensePower > 0 ? attackPower / defensePower : 10;
+
+            if (victory) {
+              // Calcular perdas (20-40% baseado na proporção)
+              const lossRate = Math.max(0.1, Math.min(0.4, 0.5 / ratio));
+              const survivors: Unit[] = exp.units.map((u) => ({
+                type: u.type,
+                quantity: Math.ceil(u.quantity * (1 - lossRate)),
+              })).filter((u) => u.quantity > 0);
+
+              // Saquear recursos (30-50% do clã inimigo)
+              const targetClan = state.clans.find((c) => c.id === targetTerritory.ownerId);
+              const carryCapacity = getCarryCapacity(survivors);
+              let lootGrain = 0, lootWood = 0, lootGold = 0;
+
+              if (targetClan && !targetClan.isPlayer) {
+                const lootRate = 0.4;
+                lootGrain = Math.min(Math.floor(targetClan.grain * lootRate), Math.floor(carryCapacity / 3));
+                lootWood = Math.min(Math.floor(targetClan.wood * lootRate), Math.floor(carryCapacity / 3));
+                lootGold = Math.min(Math.floor(targetClan.gold * lootRate), Math.floor(carryCapacity / 3));
+
+                // Registrar saque do clã inimigo
+                lootedClans.push({ clanId: targetClan.id, grain: lootGrain, wood: lootWood, gold: lootGold });
+              }
+
+              // Marcar território como conquistado
+              conqueredTerritories.push({
+                id: exp.toTerritoryId,
+                newOwnerId: exp.ownerId,
+                newOwnerName: exp.ownerName,
+              });
+
+              // Criar expedição de retorno com saque
+              const returnTime = exp.totalTurns;
+              updatedExpeditions.push({
+                id: `ret-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                ownerId: exp.ownerId,
+                ownerName: exp.ownerName,
+                fromTerritoryId: exp.toTerritoryId,
+                toTerritoryId: exp.fromTerritoryId,
+                fromPosition: exp.toPosition,
+                toPosition: exp.fromPosition,
+                units: survivors,
+                carriedResources: { grain: lootGrain, wood: lootWood, gold: lootGold },
+                turnsRemaining: returnTime,
+                totalTurns: returnTime,
+                departedTurn: newTurn,
+                type: "RETURN_VICTORY",
+              });
+
+              expeditionEvents.push({
+                turn: newTurn,
+                message: `VITORIA! Territorio ${targetTerritory.position + 1} conquistado! Tropas retornando com saque.`,
+                type: "success",
+              });
+            } else {
+              // Derrota - calcular perdas (60-80%)
+              const lossRate = Math.min(0.9, 0.5 + (1 - ratio) * 0.3);
+              const survivors: Unit[] = exp.units.map((u) => ({
+                type: u.type,
+                quantity: Math.floor(u.quantity * (1 - lossRate)),
+              })).filter((u) => u.quantity > 0);
+
+              if (survivors.length > 0) {
+                // Criar expedição de retorno (fuga - 1 turno mais rápido)
+                const returnTime = Math.max(1, exp.totalTurns - 1);
+                updatedExpeditions.push({
+                  id: `ret-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                  ownerId: exp.ownerId,
+                  ownerName: exp.ownerName,
+                  fromTerritoryId: exp.toTerritoryId,
+                  toTerritoryId: exp.fromTerritoryId,
+                  fromPosition: exp.toPosition,
+                  toPosition: exp.fromPosition,
+                  units: survivors,
+                  carriedResources: { grain: 0, wood: 0, gold: 0 },
+                  turnsRemaining: returnTime,
+                  totalTurns: returnTime,
+                  departedTurn: newTurn,
+                  type: "RETURN_DEFEAT",
+                });
+              }
+
+              expeditionEvents.push({
+                turn: newTurn,
+                message: `DERROTA! Ataque ao territorio ${targetTerritory.position + 1} falhou! Sobreviventes em fuga.`,
+                type: "danger",
+              });
+            }
+          }
+        } else if (exp.type === "RETURN_VICTORY" || exp.type === "RETURN_DEFEAT") {
+          // Tropas chegando em casa
+          const totalLoot = exp.carriedResources.grain + exp.carriedResources.wood + exp.carriedResources.gold;
+          const totalTroops = exp.units.reduce((sum, u) => sum + u.quantity, 0);
+
+          // Registrar retorno de tropas
+          returnedTroops.push({
+            territoryId: exp.toTerritoryId,
+            units: exp.units,
+            resources: exp.carriedResources,
+          });
+
+          if (exp.type === "RETURN_VICTORY" && totalLoot > 0) {
+            expeditionEvents.push({
+              turn: newTurn,
+              message: `Tropas retornaram com saque! +${exp.carriedResources.grain} graos, +${exp.carriedResources.wood} madeira, +${exp.carriedResources.gold} ouro`,
+              type: "success",
+            });
+          } else if (totalTroops > 0) {
+            expeditionEvents.push({
+              turn: newTurn,
+              message: `${totalTroops} tropas retornaram ao territorio de origem.`,
+              type: "info",
+            });
+          }
+        }
+      } else {
+        // Expedição ainda em trânsito
+        updatedExpeditions.push({
+          ...exp,
+          turnsRemaining: newTurnsRemaining,
+        });
+      }
+    }
+
+    // Aplicar conquistas de territórios
     let updatedTerritories = [...state.territories];
+    for (const conquest of conqueredTerritories) {
+      updatedTerritories = updatedTerritories.map((t) =>
+        t.id === conquest.id
+          ? { ...t, ownerId: conquest.newOwnerId, ownerName: conquest.newOwnerName, units: [] }
+          : t
+      );
+    }
+
+    // Aplicar tropas retornando
+    for (const returned of returnedTroops) {
+      updatedTerritories = updatedTerritories.map((t) => {
+        if (t.id !== returned.territoryId) return t;
+        const newUnits = [...t.units];
+        for (const unit of returned.units) {
+          const existing = newUnits.find((u) => u.type === unit.type);
+          if (existing) {
+            existing.quantity += unit.quantity;
+          } else {
+            newUnits.push({ ...unit });
+          }
+        }
+        return { ...t, units: newUnits };
+      });
+    }
+
+    // Calcular recursos de saque a adicionar ao jogador
+    let lootGrainTotal = 0, lootWoodTotal = 0, lootGoldTotal = 0;
+    for (const returned of returnedTroops) {
+      lootGrainTotal += returned.resources.grain;
+      lootWoodTotal += returned.resources.wood;
+      lootGoldTotal += returned.resources.gold;
+    }
+
+    // Atualizar clãs (remover saque dos inimigos)
     let updatedClans = [...state.clans];
+    for (const loot of lootedClans) {
+      updatedClans = updatedClans.map((c) =>
+        c.id === loot.clanId
+          ? {
+              ...c,
+              grain: Math.max(0, c.grain - loot.grain),
+              wood: Math.max(0, c.wood - loot.wood),
+              gold: Math.max(0, c.gold - loot.gold),
+            }
+          : c
+      );
+    }
+
+    // IA faz acoes simples
+    const aiActions = processAI(updatedTerritories, updatedClans, newEra);
 
     aiActions.forEach((action) => {
       newEvents.push({ turn: newTurn, message: action.message, type: "warning" });
@@ -446,6 +1079,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       return;
     }
 
+    // Combinar todos os eventos
+    const allEvents = [...expeditionEvents, ...newEvents];
+
     // Atualiza estado
     set((state) => ({
       currentTurn: newTurn,
@@ -455,13 +1091,14 @@ export const useGameStore = create<GameState>((set, get) => ({
         c.isPlayer
           ? {
               ...c,
-              grain: c.grain + grainProd,
-              wood: c.wood + woodProd,
-              gold: c.gold + goldProd,
+              grain: c.grain + grainProd + lootGrainTotal,
+              wood: c.wood + woodProd + lootWoodTotal,
+              gold: c.gold + goldProd + lootGoldTotal,
             }
           : c
       ),
-      events: [...newEvents, ...state.events.slice(0, 10 - newEvents.length)],
+      expeditions: updatedExpeditions,
+      events: [...allEvents, ...state.events.slice(0, 10 - allEvents.length)],
     }));
 
     // Verifica vitoria
@@ -483,6 +1120,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       events: [{ turn: 1, message: "Novo jogo iniciado!", type: "info" }],
       gameOver: false,
       winner: null,
+      diplomacy: createInitialDiplomacy(),
+      expeditions: [],
     });
   },
 }));
