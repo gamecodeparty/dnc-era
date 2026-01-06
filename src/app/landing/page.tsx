@@ -44,71 +44,28 @@ export default function LandingPage() {
         >
           {/* Logo/Title */}
           <motion.div className="space-y-4" variants={staggerItem}>
-            <h1 className="text-7xl md:text-8xl font-cinzel-decorative font-bold text-gradient-golden drop-shadow-2xl">
+            <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-cinzel-decorative font-bold text-gradient-golden drop-shadow-2xl">
               Dice&Cards Era
             </h1>
-            <p className="text-2xl text-medieval-text-secondary font-crimson italic">
+            <p className="text-lg sm:text-xl md:text-2xl text-medieval-text-secondary font-crimson italic">
               Lidere seu cla em um mundo medieval dark-fantasy
             </p>
           </motion.div>
 
           {/* Era Flow */}
           <motion.div
-            className="flex items-center justify-center gap-4 text-lg"
+            className="flex items-center justify-center gap-2 sm:gap-4 text-sm sm:text-base md:text-lg flex-wrap"
             variants={staggerItem}
           >
             <span className="text-era-peace font-cinzel font-semibold">Construa</span>
-            <ChevronDown className="w-5 h-5 text-medieval-text-muted rotate-[-90deg]" />
+            <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-medieval-text-muted rotate-[-90deg]" />
             <span className="text-era-war font-cinzel font-semibold">Expanda</span>
-            <ChevronDown className="w-5 h-5 text-medieval-text-muted rotate-[-90deg]" />
+            <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-medieval-text-muted rotate-[-90deg]" />
             <span className="text-era-invasion font-cinzel font-semibold">Sobreviva</span>
           </motion.div>
 
           <motion.div variants={staggerItem}>
             <OrnamentDivider variant="sword" size="lg" />
-          </motion.div>
-
-          {/* Features Grid */}
-          <motion.div
-            className="grid grid-cols-2 md:grid-cols-3 gap-4 py-4"
-            variants={staggerContainer}
-          >
-            <FeatureCard
-              icon={Shield}
-              title="3 Eras"
-              description="Paz, Guerra e Invasao"
-              color="text-era-peace"
-            />
-            <FeatureCard
-              icon={Swords}
-              title="Combate Tatico"
-              description="Soldados, Arqueiros, Cavaleiros"
-              color="text-era-war"
-            />
-            <FeatureCard
-              icon={Users}
-              title="4 Clas IA"
-              description="Conquistador, Defensor, Oportunista"
-              color="text-clan-verdaneos"
-            />
-            <FeatureCard
-              icon={Crown}
-              title="3 Origens"
-              description="Ferronatos, Verdaneos, Umbral"
-              color="text-medieval-primary"
-            />
-            <FeatureCard
-              icon={Scroll}
-              title="6 Cartas"
-              description="Poderes especiais unicos"
-              color="text-era-invasion"
-            />
-            <FeatureCard
-              icon={Skull}
-              title="A Horda"
-              description="Sobreviva a invasao final"
-              color="text-medieval-accent"
-            />
           </motion.div>
 
           {/* CTA Buttons */}
@@ -146,8 +103,8 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      {/* Game Overview Section */}
-      <section className="py-24 px-4 relative">
+      {/* Game Constraints */}
+      <section className="py-12 sm:py-16 md:py-24 px-4 relative">
         {/* Subtle texture */}
         <div className="absolute inset-0 bg-parchment opacity-30" />
 
@@ -158,7 +115,83 @@ export default function LandingPage() {
             viewport={{ once: true }}
             transition={transitions.standard}
           >
-            <h2 className="text-5xl font-cinzel-decorative font-bold text-center mb-4 text-gradient-golden">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-cinzel-decorative font-bold text-center mb-4 text-gradient-golden">
+              Forje Seu Destino
+            </h2>
+            <p className="text-center text-medieval-text-secondary mb-8 max-w-2xl mx-auto font-crimson text-lg">
+              Domine as mecanicas de um reino em conflito e conduza seu cla a gloria ou a ruina
+            </p>
+            <div className="flex justify-center mb-16">
+              <OrnamentDivider variant="diamond" />
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={transitions.standard}
+          >
+
+            {/* Features Grid */}
+            <motion.div
+              className="grid grid-cols-2 md:grid-cols-3 gap-4 py-4"
+              variants={staggerContainer}
+            >
+              <FeatureCard
+                icon={Shield}
+                title="3 Eras"
+                description="Paz, Guerra e Invasao"
+                color="text-era-peace"
+              />
+              <FeatureCard
+                icon={Swords}
+                title="Combate Tatico"
+                description="Soldados, Arqueiros, Cavaleiros"
+                color="text-era-war"
+              />
+              <FeatureCard
+                icon={Users}
+                title="4 Clas IA"
+                description="Conquistador, Defensor, Oportunista"
+                color="text-clan-verdaneos"
+              />
+              <FeatureCard
+                icon={Crown}
+                title="3 Origens"
+                description="Ferronatos, Verdaneos, Umbral"
+                color="text-medieval-primary"
+              />
+              <FeatureCard
+                icon={Scroll}
+                title="6 Cartas"
+                description="Poderes especiais unicos"
+                color="text-era-invasion"
+              />
+              <FeatureCard
+                icon={Skull}
+                title="A Horda"
+                description="Sobreviva a invasao final"
+                color="text-medieval-accent"
+              />
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Game Overview Section */}
+      <section className="py-12 sm:py-16 md:py-24 px-4 relative">
+        {/* Subtle texture */}
+        <div className="absolute inset-0 bg-parchment opacity-30" />
+
+        <div className="max-w-6xl mx-auto relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={transitions.standard}
+          >
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-cinzel-decorative font-bold text-center mb-4 text-gradient-golden">
               As Tres Eras
             </h2>
             <p className="text-center text-medieval-text-secondary mb-8 max-w-2xl mx-auto font-crimson text-lg">
@@ -169,7 +202,7 @@ export default function LandingPage() {
             </div>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
             <EraCard
               era="1"
               title="Paz das Cinzas"
