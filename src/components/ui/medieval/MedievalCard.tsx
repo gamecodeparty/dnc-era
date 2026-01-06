@@ -144,7 +144,7 @@ export const MedievalCardContent = forwardRef<
   HTMLDivElement,
   HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("p-4", className)} {...props} />
+  <div ref={ref} className={cn("p-3 sm:p-4", className)} {...props} />
 ));
 
 MedievalCardContent.displayName = "MedievalCardContent";
@@ -204,7 +204,7 @@ export function StatCard({
         <div className="flex-1 min-w-0">
           <p className="text-sm text-medieval-text-muted truncate">{label}</p>
           <div className="flex items-baseline gap-2">
-            <span className={cn("text-2xl font-bold font-mono", color)}>
+            <span className={cn("text-xl sm:text-2xl font-bold font-mono", color)}>
               {value}
             </span>
             {change !== undefined && (

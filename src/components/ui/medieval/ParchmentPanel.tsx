@@ -107,8 +107,8 @@ export function PanelHeader({
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-4",
-        "px-4 py-3 border-b border-medieval-primary/20",
+        "flex items-center justify-between gap-2 sm:gap-4",
+        "px-3 sm:px-4 py-2 sm:py-3 border-b border-medieval-primary/20",
         "bg-gradient-to-b from-medieval-bg-parchment/40 to-transparent",
         className
       )}
@@ -142,7 +142,7 @@ export const PanelContent = forwardRef<
   HTMLDivElement,
   HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("p-4", className)} {...props} />
+  <div ref={ref} className={cn("p-3 sm:p-4", className)} {...props} />
 ));
 
 PanelContent.displayName = "PanelContent";

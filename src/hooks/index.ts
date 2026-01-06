@@ -13,3 +13,7 @@ export type {
 } from "./useGameAnimations";
 
 export { useReducedMotion } from "./useReducedMotion";
+
+// PWA hooks
+export { usePWAInstall } from "./usePWAInstall";
+export { useHaptic, triggerHaptic } from "./useHaptic";
