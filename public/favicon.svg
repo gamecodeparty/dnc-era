@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1612"/>
+      <stop offset="100%" style="stop-color:#0d0b09"/>
+    </linearGradient>
+    <linearGradient id="dragonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e8c79a"/>
+      <stop offset="50%" style="stop-color:#d4a574"/>
+      <stop offset="100%" style="stop-color:#b8a082"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff4d6d"/>
+      <stop offset="100%" style="stop-color:#c41e3a"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="512" height="512" rx="64" fill="url(#bgGrad)"/>
+  
+  <!-- Decorative border -->
+  <rect x="16" y="16" width="480" height="480" rx="48" fill="none" stroke="#3d3428" stroke-width="2"/>
+  <rect x="24" y="24" width="464" height="464" rx="40" fill="none" stroke="#d4a574" stroke-width="1" opacity="0.3"/>
+  
+  <!-- Dragon silhouette - stylized medieval dragon -->
+  <g transform="translate(256, 256)" filter="url(#glow)">
+    <!-- Dragon body -->
+    <path d="M-80,-120 
+             C-120,-100 -140,-60 -130,-20
+             C-120,20 -100,60 -60,80
+             C-20,100 40,100 80,80
+             C120,60 140,20 130,-20
+             C120,-60 100,-100 60,-120
+             C20,-140 -40,-140 -80,-120Z" 
+          fill="url(#dragonGrad)" opacity="0.9"/>
+    
+    <!-- Dragon head -->
+    <path d="M80,-80 
+             C100,-70 120,-50 130,-30
+             C140,-10 140,10 130,30
+             L100,10
+             C90,0 90,-20 100,-40
+             C110,-60 100,-70 80,-80Z"
+          fill="url(#dragonGrad)"/>
+    
+    <!-- Dragon eye -->
+    <ellipse cx="105" cy="-30" rx="8" ry="10" fill="url(#accentGrad)"/>
+    <ellipse cx="107" cy="-32" rx="3" ry="4" fill="#fff" opacity="0.8"/>
+    
+    <!-- Dragon wings -->
+    <path d="M-40,-80 
+             C-80,-120 -120,-140 -140,-120
+             C-160,-100 -160,-60 -140,-40
+             C-120,-20 -80,-20 -40,-40
+             L-40,-80Z"
+          fill="url(#dragonGrad)" opacity="0.8"/>
+    
+    <path d="M40,-80 
+             C60,-100 80,-110 100,-100
+             C120,-90 130,-70 120,-50
+             C110,-30 80,-30 60,-50
+             L40,-80Z"
+          fill="url(#dragonGrad)" opacity="0.7"/>
+    
+    <!-- Dragon tail -->
+    <path d="M-60,80 
+             C-80,100 -100,120 -80,140
+             C-60,160 -20,150 0,130
+             C20,110 10,90 -20,80
+             L-60,80Z"
+          fill="url(#dragonGrad)" opacity="0.8"/>
+    
+    <!-- Fire breath accent -->
+    <path d="M130,0 
+             C150,-10 170,-5 180,10
+             C190,25 185,40 170,45
+             C155,50 140,40 135,25
+             C130,10 130,0 130,0Z"
+          fill="url(#accentGrad)" opacity="0.9"/>
+    
+    <!-- Dragon horns -->
+    <path d="M90,-60 L100,-90 L95,-55" fill="url(#dragonGrad)"/>
+    <path d="M70,-70 L75,-95 L72,-65" fill="url(#dragonGrad)"/>
+  </g>
+  
+  <!-- Corner ornaments -->
+  <g fill="#d4a574" opacity="0.4">
+    <path d="M40,40 L60,40 L40,60 Z"/>
+    <path d="M472,40 L452,40 L472,60 Z"/>
+    <path d="M40,472 L60,472 L40,452 Z"/>
+    <path d="M472,472 L452,472 L472,452 Z"/>
+  </g>
+</svg>
