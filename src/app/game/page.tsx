@@ -45,6 +45,23 @@ import {
 import { EraBadge, Sparkles, useGameAnimationContext } from "@/components/game/fx";
 import type { EraType } from "@/components/game/fx";
 
+// Mobile components
+import {
+  MobileGameHeader,
+  MobileTabBar,
+  TabContentSheet,
+  TerritoryBottomSheet,
+  MobileDrawer,
+  TabContent,
+} from "@/components/game/mobile";
+import type { TabId } from "@/components/game/mobile";
+
+// PWA components
+import { PWAInstallPrompt, PWAInstallBanner } from "@/components/pwa";
+
+// Expedition components
+import { ExpeditionModal, ExpeditionsPanel } from "@/components/game/expedition";
+
 // Animations
 import {
   staggerContainer,
@@ -104,6 +121,14 @@ export default function GamePage() {
   const [selectedTerritoryId, setSelectedTerritoryId] = useState<string | null>(null);
   const [timeToNextTurn, setTimeToNextTurn] = useState(TURN_INTERVAL_MS);
 
+  // Mobile state
+  const [activeTab, setActiveTab] = useState<TabId | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  // Expedition modal state
+  const [expeditionTarget, setExpeditionTarget] = useState<string | null>(null);
+  const [expeditionOrigin, setExpeditionOrigin] = useState<string | null>(null);
+
   // Animation context - all animations are handled by the provider
   const { triggerCombatFeedback, triggerBuildComplete, triggerAchievement } = useGameAnimationContext();
 
@@ -118,7 +143,9 @@ export default function GamePage() {
     getPlayerTerritories,
     processTurn,
     resetGame,
-    attack,
+    sendExpedition,
+    cancelExpedition,
+    expeditions,
   } = useGameStore();
 
   const player = getPlayerClan();
@@ -155,23 +182,89 @@ export default function GamePage() {
     });
   });
 
+  // Open expedition modal
   const handleAttack = (toTerritoryId: string) => {
-    if (!selectedTerritoryId) return;
-    const fromTerritory = territories.find((t) => t.id === selectedTerritoryId);
+    // Find a player territory with units to use as origin
+    const originTerritory = playerTerritories.find((t) => t.units.length > 0);
+    if (!originTerritory) return;
+
+    setExpeditionTarget(toTerritoryId);
+    setExpeditionOrigin(originTerritory.id);
+  };
+
+  // Close expedition modal
+  const handleCloseExpedition = () => {
+    setExpeditionTarget(null);
+    setExpeditionOrigin(null);
+  };
+
+  // Send expedition
+  const handleSendExpedition = (
+    fromTerritoryId: string,
+    toTerritoryId: string,
+    units: { type: "SOLDIER" | "ARCHER" | "KNIGHT"; quantity: number }[]
+  ) => {
+    const fromTerritory = territories.find((t) => t.id === fromTerritoryId);
     const toTerritory = territories.find((t) => t.id === toTerritoryId);
 
-    const result = attack(selectedTerritoryId, toTerritoryId);
+    const result = sendExpedition(fromTerritoryId, toTerritoryId, units);
 
-    // Trigger combat animation
-    if (fromTerritory && toTerritory) {
-      triggerCombatFeedback(result.success, fromTerritory.position, toTerritory.position);
-
-      // Achievement on first conquest
-      if (result.success) {
-        triggerAchievement("Conquista!", `Territorio ${toTerritory.position + 1} conquistado!`);
-      }
+    if (result.success && fromTerritory && toTerritory) {
+      // Animation feedback
+      triggerCombatFeedback(true, fromTerritory.position, toTerritory.position);
     }
+
+    handleCloseExpedition();
+    return result;
   };
+
+  // Handle territory selection (mobile closes tab sheet)
+  const handleTerritorySelect = (territoryId: string) => {
+    setSelectedTerritoryId(territoryId);
+    setActiveTab(null); // Close tab sheet when selecting territory
+  };
+
+  // Mobile handlers
+  const handleMobileLogout = () => {
+    setIsDrawerOpen(false);
+    signOut({ callbackUrl: "/landing" });
+  };
+
+  const handleMobileHelp = () => {
+    setIsDrawerOpen(false);
+    // Navigate to help - for now just close
+  };
+
+  // Resources for mobile TabContent
+  const mobileResources = {
+    grain: Math.floor(player.grain),
+    wood: Math.floor(player.wood),
+    gold: Math.floor(player.gold),
+  };
+
+  const mobileClan = {
+    name: player.name || "Seu Cla",
+    population: 0, // TODO: Add population tracking
+    reputation: 0, // TODO: Add reputation tracking
+  };
+
+  const mobileActions = currentEra !== "PEACE" && playerTerritories.some((t) => t.units.length > 0)
+    ? [
+        { id: "attack", label: "Atacar Territorio" },
+        { id: "cards", label: "Ver Cartas" },
+        { id: "army", label: "Ver Exercito" },
+      ]
+    : [
+        { id: "cards", label: "Ver Cartas" },
+        { id: "army", label: "Ver Exercito" },
+      ];
+
+  const mobileEvents = events.slice(0, 10).map((e, i) => ({
+    id: `event-${i}`,
+    type: e.type,
+    message: e.message,
+    turn: e.turn,
+  }));
 
   // Game Over / Victory Screen
   if (gameOver) {
@@ -193,7 +286,7 @@ export default function GamePage() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={transitions.springSmooth}
-          className="relative z-10"
+          className="relative z-10 mx-4"
         >
           <MedievalCard
             variant="elevated"
@@ -205,30 +298,30 @@ export default function GamePage() {
               {winner ? (
                 <>
                   <div className="relative inline-block">
-                    <Trophy className="w-24 h-24 text-gold mx-auto" />
+                    <Trophy className="w-16 h-16 sm:w-24 sm:h-24 text-gold mx-auto" />
                     <Sparkles color="#ffd700" count={12} />
                   </div>
-                  <h1 className="text-5xl font-cinzel-decorative font-bold text-gold">
+                  <h1 className="text-3xl sm:text-5xl font-cinzel-decorative font-bold text-gold">
                     VITORIA!
                   </h1>
-                  <p className="text-medieval-text-secondary font-crimson text-lg">
+                  <p className="text-medieval-text-secondary font-crimson text-base sm:text-lg">
                     Voce sobreviveu ate o turno {currentTurn}!
                   </p>
-                  <p className="text-medieval-text-muted">
+                  <p className="text-medieval-text-muted text-sm sm:text-base">
                     Territorios: {playerTerritories.length} | Recursos finais:{" "}
                     {player.grain} graos, {player.wood} madeira, {player.gold} ouro
                   </p>
                 </>
               ) : (
                 <>
-                  <Skull className="w-24 h-24 text-medieval-accent mx-auto" />
-                  <h1 className="text-5xl font-cinzel-decorative font-bold text-medieval-accent">
+                  <Skull className="w-16 h-16 sm:w-24 sm:h-24 text-medieval-accent mx-auto" />
+                  <h1 className="text-3xl sm:text-5xl font-cinzel-decorative font-bold text-medieval-accent">
                     GAME OVER
                   </h1>
-                  <p className="text-medieval-text-secondary font-crimson text-lg">
+                  <p className="text-medieval-text-secondary font-crimson text-base sm:text-lg">
                     Voce foi derrotado no turno {currentTurn}.
                   </p>
-                  <p className="text-medieval-text-muted">
+                  <p className="text-medieval-text-muted text-sm">
                     Todos os seus territorios foram perdidos!
                   </p>
                 </>
@@ -278,8 +371,19 @@ export default function GamePage() {
 
       {/* FX Layers are now handled by GameAnimationProvider in layout */}
 
-      {/* Header */}
-      <header className="border-b border-medieval-primary/20 bg-medieval-bg-panel/90 backdrop-blur-md relative z-20">
+      {/* Mobile Header - only visible on mobile */}
+      <MobileGameHeader
+        era={currentEra as EraType}
+        currentTurn={currentTurn}
+        totalTurns={TOTAL_TURNS}
+        timeToNextTurn={timeToNextTurn}
+        turnIntervalMs={TURN_INTERVAL_MS}
+        onMenuClick={() => setIsDrawerOpen(true)}
+        className="lg:hidden"
+      />
+
+      {/* Desktop Header - hidden on mobile */}
+      <header className="hidden lg:block border-b border-medieval-primary/20 bg-medieval-bg-panel/90 backdrop-blur-md relative z-20">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -292,6 +396,7 @@ export default function GamePage() {
                   Como Jogar
                 </MedievalButton>
               </Link>
+              <PWAInstallPrompt />
             </div>
 
             {/* Turn Timer & Era */}
@@ -339,14 +444,15 @@ export default function GamePage() {
 
       {/* Main content */}
       <motion.div
-        className="flex-1 container mx-auto px-4 py-4 relative z-10"
+        className="flex-1 container mx-auto px-2 sm:px-4 py-2 sm:py-4 relative z-10 pb-20 lg:pb-4"
         variants={staggerContainer}
         initial="initial"
         animate="animate"
       >
-        <div className="grid grid-cols-12 gap-4">
-          {/* Left sidebar */}
-          <motion.div className="col-span-3 space-y-4" variants={staggerItem}>
+        {/* Desktop: 3-column grid / Mobile: single column with map */}
+        <div className="lg:grid lg:grid-cols-12 lg:gap-4">
+          {/* Left sidebar - Desktop only */}
+          <motion.div className="hidden lg:block lg:col-span-3 space-y-4" variants={staggerItem}>
             {/* Objetivo */}
             <ParchmentPanel animated>
               <PanelHeader
@@ -459,16 +565,16 @@ export default function GamePage() {
             </ParchmentPanel>
           </motion.div>
 
-          {/* Main map area */}
-          <motion.div className="col-span-6" variants={staggerItem}>
-            <div className="mb-4 text-center">
-              <p className="text-sm text-medieval-text-muted font-crimson">
-                Clique em um territorio para ver detalhes
+          {/* Main map area - Full width on mobile, center column on desktop */}
+          <motion.div className="lg:col-span-6" variants={staggerItem}>
+            <div className="mb-2 sm:mb-4 text-center">
+              <p className="text-xs sm:text-sm text-medieval-text-muted font-crimson">
+                Toque em um territorio para ver detalhes
               </p>
             </div>
 
-            {/* Mapa 4x3 */}
-            <div className="grid grid-cols-4 gap-3">
+            {/* Mapa 4x3 - Touch friendly on mobile */}
+            <div className="grid grid-cols-4 gap-1 sm:gap-3">
               {territories.map((territory) => {
                 const isPlayer = territory.ownerId === "player";
                 const isSelected = selectedTerritoryId === territory.id;
@@ -483,10 +589,11 @@ export default function GamePage() {
                 return (
                   <motion.div
                     key={territory.id}
-                    onClick={() => setSelectedTerritoryId(territory.id)}
+                    onClick={() => handleTerritorySelect(territory.id)}
                     className={`
                       aspect-square rounded-lg border-2 cursor-pointer
-                      transition-all duration-200 p-3 relative
+                      transition-all duration-200 p-1.5 sm:p-3 relative
+                      min-h-[72px] sm:min-h-0
                       territory-tile ${bgClass}
                       ${isSelected ? "ring-2 ring-medieval-primary-bright scale-105 shadow-golden-glow" : ""}
                     `}
@@ -504,27 +611,27 @@ export default function GamePage() {
                     })}
                   >
                     <div className="text-center h-full flex flex-col justify-between">
-                      <div className="font-cinzel font-bold text-medieval-text-primary">
+                      <div className="font-cinzel font-bold text-medieval-text-primary text-sm sm:text-base">
                         {territory.position + 1}
                       </div>
-                      <div className="text-[10px] text-medieval-text-secondary truncate">
+                      <div className="text-[8px] sm:text-[10px] text-medieval-text-secondary truncate">
                         {territory.ownerName}
                       </div>
                       <div className="flex justify-center">
                         {territory.bonusResource === "GRAIN" && (
-                          <Wheat className="w-4 h-4 text-grain" />
+                          <Wheat className="w-3 h-3 sm:w-4 sm:h-4 text-grain" />
                         )}
                         {territory.bonusResource === "WOOD" && (
-                          <TreePine className="w-4 h-4 text-wood-light" />
+                          <TreePine className="w-3 h-3 sm:w-4 sm:h-4 text-wood-light" />
                         )}
                         {territory.bonusResource === "GOLD" && (
-                          <Coins className="w-4 h-4 text-gold" />
+                          <Coins className="w-3 h-3 sm:w-4 sm:h-4 text-gold" />
                         )}
                       </div>
                       {territory.units.length > 0 && (
-                        <div className="flex items-center justify-center gap-1">
-                          <Swords className="w-3 h-3 text-medieval-accent" />
-                          <span className="text-[10px] text-medieval-text-primary">
+                        <div className="flex items-center justify-center gap-0.5 sm:gap-1">
+                          <Swords className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-medieval-accent" />
+                          <span className="text-[8px] sm:text-[10px] text-medieval-text-primary">
                             {territory.units.reduce((sum, u) => sum + u.quantity, 0)}
                           </span>
                         </div>
@@ -535,8 +642,8 @@ export default function GamePage() {
               })}
             </div>
 
-            {/* Legenda */}
-            <div className="mt-6 flex justify-center gap-8 text-sm">
+            {/* Legenda - Desktop only */}
+            <div className="hidden sm:flex mt-6 justify-center gap-8 text-sm">
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 rounded bg-medieval-primary/30 border-2 border-medieval-primary" />
                 <span className="text-medieval-text-secondary">Seu</span>
@@ -552,8 +659,8 @@ export default function GamePage() {
             </div>
           </motion.div>
 
-          {/* Right sidebar */}
-          <motion.div className="col-span-3 space-y-4" variants={staggerItem}>
+          {/* Right sidebar - Desktop only */}
+          <motion.div className="hidden lg:block lg:col-span-3 space-y-4" variants={staggerItem}>
             {selectedTerritory ? (
               <ParchmentPanel animated>
                 <PanelHeader
@@ -657,6 +764,13 @@ export default function GamePage() {
               </ParchmentPanel>
             )}
 
+            {/* Expedicoes */}
+            <ExpeditionsPanel
+              expeditions={expeditions}
+              playerId="player"
+              onCancel={(id) => cancelExpedition(id)}
+            />
+
             {/* Eventos */}
             <ParchmentPanel animated>
               <PanelHeader
@@ -690,6 +804,85 @@ export default function GamePage() {
           </motion.div>
         </div>
       </motion.div>
+
+      {/* Mobile: Territory Bottom Sheet */}
+      <TerritoryBottomSheet
+        territory={selectedTerritory ? {
+          id: selectedTerritory.id,
+          name: `Territorio ${selectedTerritory.position + 1}`,
+          position: selectedTerritory.position,
+          bonusResource: selectedTerritory.bonusResource?.toLowerCase() as "grain" | "wood" | "gold" | null,
+          ownerId: selectedTerritory.ownerId || undefined,
+        } : null}
+        structures={selectedTerritory?.structures.map((s, i) => ({
+          id: `struct-${i}`,
+          type: s.type,
+          level: s.level,
+        })) || []}
+        isOwned={selectedTerritory?.ownerId === "player"}
+        onClose={() => setSelectedTerritoryId(null)}
+        onBuild={() => {
+          if (selectedTerritory?.ownerId === "player") {
+            window.location.href = `/game/territory/${selectedTerritory.id}`;
+          }
+        }}
+        onTrain={() => {
+          if (selectedTerritory?.ownerId === "player") {
+            window.location.href = `/game/territory/${selectedTerritory.id}`;
+          }
+        }}
+        className="lg:hidden"
+      />
+
+      {/* Mobile: Tab Content Sheet */}
+      <TabContentSheet
+        activeTab={activeTab}
+        onClose={() => setActiveTab(null)}
+        className="lg:hidden"
+      >
+        <TabContent
+          activeTab={activeTab || "resources"}
+          resources={mobileResources}
+          clan={mobileClan}
+          actions={mobileActions}
+          events={mobileEvents}
+          onAction={(actionId) => {
+            if (actionId === "cards") window.location.href = "/game/cards";
+            else if (actionId === "army") window.location.href = "/game/army";
+          }}
+        />
+      </TabContentSheet>
+
+      {/* Mobile: Tab Bar */}
+      <MobileTabBar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        className="lg:hidden"
+      />
+
+      {/* Mobile: Drawer Menu */}
+      <MobileDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        userName={session?.user?.name || session?.user?.email || undefined}
+        onLogout={handleMobileLogout}
+        onHelp={handleMobileHelp}
+      />
+
+      {/* Mobile: PWA Install Banner */}
+      <PWAInstallBanner className="lg:hidden" />
+
+      {/* Expedition Modal */}
+      {expeditionTarget && expeditionOrigin && (
+        <ExpeditionModal
+          fromTerritory={territories.find((t) => t.id === expeditionOrigin)!}
+          toTerritory={territories.find((t) => t.id === expeditionTarget)!}
+          playerTerritories={playerTerritories}
+          currentEra={currentEra}
+          onSend={handleSendExpedition}
+          onClose={handleCloseExpedition}
+        />
+      )}
     </div>
   );
 }
