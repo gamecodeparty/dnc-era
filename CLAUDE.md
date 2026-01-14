@@ -152,4 +152,5 @@ Always save files in UTF-8 encoding.
 
 ## Notas
 
+- Usuário de teste: admin@mail.com senha: 12345678
 - Não crie arquivo .env, .env.local ou qualquer outra variação de .env neste projeto.
