@@ -422,6 +422,11 @@ interface GameState {
   cancelExpedition: (expeditionId: string) => { success: boolean; message: string };
   declareWar: (clanId: string) => { success: boolean; message: string };
   proposePeace: (clanId: string) => { success: boolean; message: string };
+  sendExploration: (
+    fromTerritoryId: string,
+    siteId: string,
+    units: { type: UnitType; quantity: number }[]
+  ) => { success: boolean; message: string; expeditionId?: string };
   processTurn: () => void;
   resetGame: () => void;
 }
@@ -436,6 +441,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   winner: null,
   diplomacy: createInitialDiplomacy(),
   expeditions: [],
+  explorationSites: createRandomExplorationSites(),
 
   getPlayerClan: () => {
     return get().clans.find((c) => c.isPlayer)!;
@@ -478,6 +484,14 @@ export const useGameStore = create<GameState>((set, get) => ({
     return get().expeditions.filter(
       (e) => e.toTerritoryId === territoryId && e.type === "ATTACK"
     );
+  },
+
+  getExplorationSites: () => {
+    return get().explorationSites;
+  },
+
+  getExplorationSite: (id: string) => {
+    return get().explorationSites.find((s) => s.id === id);
   },
 
   build: (territoryId, structureType) => {
@@ -782,6 +796,108 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
   },
 
+  sendExploration: (fromTerritoryId, siteId, units) => {
+    const state = get();
+
+    // Apenas na Era da Paz
+    if (state.currentEra !== "PEACE") {
+      return { success: false, message: "Exploracoes so podem ser enviadas na Era da Paz!" };
+    }
+
+    const from = state.territories.find((t) => t.id === fromTerritoryId);
+    const site = state.explorationSites.find((s) => s.id === siteId);
+
+    if (!from) return { success: false, message: "Territorio invalido" };
+    if (!site) return { success: false, message: "Local de exploracao invalido" };
+    if (from.ownerId !== "player") return { success: false, message: "Voce so pode enviar de seus territorios" };
+
+    // Verificar cooldown
+    if (site.lastExploredTurn !== null) {
+      const turnsSinceExplored = state.currentTurn - site.lastExploredTurn;
+      if (turnsSinceExplored < site.cooldownTurns) {
+        const turnsLeft = site.cooldownTurns - turnsSinceExplored;
+        return { success: false, message: `Local em cooldown! Aguarde ${turnsLeft} turno(s).` };
+      }
+    }
+
+    // Verificar se ja ha expedicao em andamento para este site
+    const existingExpedition = state.expeditions.find(
+      (e) => e.toTerritoryId === siteId && e.type === "EXPLORE"
+    );
+    if (existingExpedition) {
+      return { success: false, message: "Ja ha uma expedicao em andamento para este local!" };
+    }
+
+    // Validar unidades disponíveis
+    for (const unit of units) {
+      const available = from.units.find((u) => u.type === unit.type);
+      if (!available || available.quantity < unit.quantity) {
+        return { success: false, message: `Unidades insuficientes: ${unit.type}` };
+      }
+    }
+
+    // Validar quantidade minima de unidades
+    const totalUnits = units.reduce((sum, u) => sum + u.quantity, 0);
+    if (totalUnits < site.minUnits) {
+      return { success: false, message: `Minimo de ${site.minUnits} unidades necessarias para este local!` };
+    }
+
+    // Calcular distância e tempo
+    const distance = getDistance(from.position, site.position);
+    const expeditionUnits: Unit[] = units.map((u) => ({ type: u.type, quantity: u.quantity }));
+    const travelTime = getTravelTime(distance, expeditionUnits);
+
+    // Criar expedição de exploração
+    const expeditionId = `exp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const expedition: Expedition = {
+      id: expeditionId,
+      ownerId: "player",
+      ownerName: "Voce",
+      fromTerritoryId,
+      toTerritoryId: siteId, // Usamos siteId como "territorio" destino
+      fromPosition: from.position,
+      toPosition: site.position,
+      units: expeditionUnits,
+      carriedResources: { grain: 0, wood: 0, gold: 0 },
+      turnsRemaining: travelTime,
+      totalTurns: travelTime,
+      departedTurn: state.currentTurn,
+      type: "EXPLORE",
+    };
+
+    // Remover unidades do território de origem
+    set((state) => ({
+      territories: state.territories.map((t) => {
+        if (t.id === fromTerritoryId) {
+          const newUnits = t.units.map((u) => {
+            const sent = units.find((sent) => sent.type === u.type);
+            if (sent) {
+              return { ...u, quantity: u.quantity - sent.quantity };
+            }
+            return u;
+          }).filter((u) => u.quantity > 0);
+          return { ...t, units: newUnits };
+        }
+        return t;
+      }),
+      expeditions: [...state.expeditions, expedition],
+      events: [
+        {
+          turn: state.currentTurn,
+          message: `Expedicao de exploracao enviada! ${totalUnits} tropas partem para ${site.name}. Chegada em ${travelTime} turno(s).`,
+          type: "info" as const,
+        },
+        ...state.events.slice(0, 9),
+      ],
+    }));
+
+    return {
+      success: true,
+      message: `Expedicao enviada para ${site.name}! Chegada em ${travelTime} turno(s).`,
+      expeditionId,
+    };
+  },
+
   processTurn: () => {
     const state = get();
 
@@ -830,6 +946,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const conqueredTerritories: { id: string; newOwnerId: string; newOwnerName: string }[] = [];
     const returnedTroops: { territoryId: string; units: Unit[]; resources: { grain: number; wood: number; gold: number } }[] = [];
     const lootedClans: { clanId: string; grain: number; wood: number; gold: number }[] = [];
+    const exploredSites: { siteId: string; turn: number }[] = [];
 
     for (const exp of state.expeditions) {
       const newTurnsRemaining = exp.turnsRemaining - 1;
@@ -960,6 +1077,122 @@ export const useGameStore = create<GameState>((set, get) => ({
               type: "info",
             });
           }
+        } else if (exp.type === "EXPLORE") {
+          // Expedição de exploração chegou ao local!
+          const site = state.explorationSites.find((s) => s.id === exp.toTerritoryId);
+          if (site) {
+            // Calcular resultado da exploração
+            const power = getAttackPower(exp.units);
+            const threshold = site.difficulty * 30; // 30, 60, 90, 120, 150
+
+            const roll = Math.random() * 100 + power;
+
+            let result: "success" | "partial" | "failure";
+            let lossRate: number;
+            let rewardRate: number;
+
+            if (roll > threshold * 1.5) {
+              result = "success";
+              lossRate = 0;
+              rewardRate = 1.0;
+            } else if (roll > threshold) {
+              result = "partial";
+              lossRate = 0.25;
+              rewardRate = 0.6;
+            } else {
+              result = "failure";
+              lossRate = 0.65;
+              rewardRate = 0.1;
+            }
+
+            // Calcular sobreviventes
+            const survivors: Unit[] = exp.units.map((u) => ({
+              type: u.type,
+              quantity: Math.ceil(u.quantity * (1 - lossRate)),
+            })).filter((u) => u.quantity > 0);
+
+            // Calcular recompensas
+            const grainReward = Math.floor(
+              (site.rewards.grainMin + Math.random() * (site.rewards.grainMax - site.rewards.grainMin)) * rewardRate
+            );
+            const woodReward = Math.floor(
+              (site.rewards.woodMin + Math.random() * (site.rewards.woodMax - site.rewards.woodMin)) * rewardRate
+            );
+            const goldReward = Math.floor(
+              (site.rewards.goldMin + Math.random() * (site.rewards.goldMax - site.rewards.goldMin)) * rewardRate
+            );
+
+            // Marcar site como explorado (para cooldown)
+            exploredSites.push({ siteId: site.id, turn: newTurn });
+
+            // Criar expedição de retorno
+            const returnTime = exp.totalTurns;
+            updatedExpeditions.push({
+              id: `ret-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              ownerId: exp.ownerId,
+              ownerName: exp.ownerName,
+              fromTerritoryId: exp.toTerritoryId,
+              toTerritoryId: exp.fromTerritoryId,
+              fromPosition: exp.toPosition,
+              toPosition: exp.fromPosition,
+              units: survivors,
+              carriedResources: { grain: grainReward, wood: woodReward, gold: goldReward },
+              turnsRemaining: returnTime,
+              totalTurns: returnTime,
+              departedTurn: newTurn,
+              type: "RETURN_EXPLORE",
+            });
+
+            // Evento narrativo
+            const narrative = site.narratives[result];
+            const totalReward = grainReward + woodReward + goldReward;
+            const totalLost = exp.units.reduce((sum, u) => sum + u.quantity, 0) - survivors.reduce((sum, u) => sum + u.quantity, 0);
+
+            if (result === "success") {
+              expeditionEvents.push({
+                turn: newTurn,
+                message: `${site.name}: ${narrative}`,
+                type: "success",
+              });
+            } else if (result === "partial") {
+              expeditionEvents.push({
+                turn: newTurn,
+                message: `${site.name}: ${narrative} (${totalLost} baixas)`,
+                type: "warning",
+              });
+            } else {
+              expeditionEvents.push({
+                turn: newTurn,
+                message: `${site.name}: ${narrative} (${totalLost} baixas!)`,
+                type: "danger",
+              });
+            }
+          }
+        } else if (exp.type === "RETURN_EXPLORE") {
+          // Tropas de exploração retornando com recursos
+          const totalLoot = exp.carriedResources.grain + exp.carriedResources.wood + exp.carriedResources.gold;
+          const totalTroops = exp.units.reduce((sum, u) => sum + u.quantity, 0);
+
+          // Registrar retorno de tropas
+          returnedTroops.push({
+            territoryId: exp.toTerritoryId,
+            units: exp.units,
+            resources: exp.carriedResources,
+          });
+
+          if (totalLoot > 0) {
+            expeditionEvents.push({
+              turn: newTurn,
+              message: `Exploradores retornaram! +${exp.carriedResources.grain} graos, +${exp.carriedResources.wood} madeira, +${exp.carriedResources.gold} ouro`,
+              type: "success",
+            });
+          } else if (totalTroops > 0) {
+            expeditionEvents.push({
+              turn: newTurn,
+              message: `${totalTroops} exploradores retornaram de maos vazias.`,
+              type: "info",
+            });
+          }
         }
       } else {
         // Expedição ainda em trânsito
@@ -1082,6 +1315,14 @@ export const useGameStore = create<GameState>((set, get) => ({
     // Combinar todos os eventos
     const allEvents = [...expeditionEvents, ...newEvents];
 
+    // Atualizar cooldown dos sites explorados
+    let updatedExplorationSites = [...state.explorationSites];
+    for (const explored of exploredSites) {
+      updatedExplorationSites = updatedExplorationSites.map((s) =>
+        s.id === explored.siteId ? { ...s, lastExploredTurn: explored.turn } : s
+      );
+    }
+
     // Atualiza estado
     set((state) => ({
       currentTurn: newTurn,
@@ -1098,6 +1339,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           : c
       ),
       expeditions: updatedExpeditions,
+      explorationSites: updatedExplorationSites,
       events: [...allEvents, ...state.events.slice(0, 10 - allEvents.length)],
     }));
 
@@ -1122,6 +1364,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       winner: null,
       diplomacy: createInitialDiplomacy(),
       expeditions: [],
+      explorationSites: createRandomExplorationSites(),
     });
   },
 }));

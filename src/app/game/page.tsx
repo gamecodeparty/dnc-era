@@ -23,6 +23,7 @@ import {
   Trophy,
   Skull,
   ChevronRight,
+  Compass,
 } from "lucide-react";
 
 // Medieval components
@@ -60,7 +61,7 @@ import type { TabId } from "@/components/game/mobile";
 import { PWAInstallPrompt, PWAInstallBanner } from "@/components/pwa";
 
 // Expedition components
-import { ExpeditionModal, ExpeditionsPanel } from "@/components/game/expedition";
+import { ExpeditionModal, ExplorationModal, ExpeditionsPanel } from "@/components/game/expedition";
 
 // Animations
 import {
@@ -129,6 +130,9 @@ export default function GamePage() {
   const [expeditionTarget, setExpeditionTarget] = useState<string | null>(null);
   const [expeditionOrigin, setExpeditionOrigin] = useState<string | null>(null);
 
+  // Exploration modal state
+  const [selectedExplorationSiteId, setSelectedExplorationSiteId] = useState<string | null>(null);
+
   // Animation context - all animations are handled by the provider
   const { triggerCombatFeedback, triggerBuildComplete, triggerAchievement } = useGameAnimationContext();
 
@@ -146,6 +150,8 @@ export default function GamePage() {
     sendExpedition,
     cancelExpedition,
     expeditions,
+    explorationSites,
+    sendExploration,
   } = useGameStore();
 
   const player = getPlayerClan();
@@ -217,6 +223,35 @@ export default function GamePage() {
     handleCloseExpedition();
     return result;
   };
+
+  // Send exploration
+  const handleSendExploration = (
+    fromTerritoryId: string,
+    siteId: string,
+    units: { type: "SOLDIER" | "ARCHER" | "KNIGHT"; quantity: number }[]
+  ) => {
+    const result = sendExploration(fromTerritoryId, siteId, units);
+    if (result.success) {
+      setSelectedExplorationSiteId(null);
+    }
+    return result;
+  };
+
+  // Get exploration site at position
+  const getExplorationSiteAtPosition = (position: number) => {
+    return explorationSites.find((s) => s.position === position);
+  };
+
+  // Get exploration site names map for ExpeditionsPanel
+  const explorationSiteNames = explorationSites.reduce((acc, site) => {
+    acc[site.id] = site.name;
+    return acc;
+  }, {} as Record<string, string>);
+
+  // Selected exploration site
+  const selectedExplorationSite = selectedExplorationSiteId
+    ? explorationSites.find((s) => s.id === selectedExplorationSiteId)
+    : null;
 
   // Handle territory selection (mobile closes tab sheet)
   const handleTerritorySelect = (territoryId: string) => {
@@ -579,9 +614,13 @@ export default function GamePage() {
                 const isPlayer = territory.ownerId === "player";
                 const isSelected = selectedTerritoryId === territory.id;
                 const isNeutral = territory.ownerId === null;
+                const explorationSite = getExplorationSiteAtPosition(territory.position);
+                const hasExplorationSite = !!explorationSite && currentEra === "PEACE";
 
                 const bgClass = isPlayer
                   ? "bg-medieval-primary/20 border-medieval-primary"
+                  : hasExplorationSite
+                  ? "bg-era-peace/20 border-era-peace"
                   : isNeutral
                   ? "bg-medieval-bg-card/50 border-medieval-text-muted/30"
                   : "bg-medieval-accent/20 border-medieval-accent";
@@ -589,13 +628,20 @@ export default function GamePage() {
                 return (
                   <motion.div
                     key={territory.id}
-                    onClick={() => handleTerritorySelect(territory.id)}
+                    onClick={() => {
+                      if (hasExplorationSite) {
+                        setSelectedExplorationSiteId(explorationSite.id);
+                      } else {
+                        handleTerritorySelect(territory.id);
+                      }
+                    }}
                     className={`
                       aspect-square rounded-lg border-2 cursor-pointer
                       transition-all duration-200 p-1.5 sm:p-3 relative
                       min-h-[72px] sm:min-h-0
                       territory-tile ${bgClass}
                       ${isSelected ? "ring-2 ring-medieval-primary-bright scale-105 shadow-golden-glow" : ""}
+                      ${hasExplorationSite ? "ring-1 ring-era-peace/50" : ""}
                     `}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.98 }}
@@ -610,31 +656,56 @@ export default function GamePage() {
                       transition: { duration: 2, repeat: Infinity },
                     })}
                   >
-                    <div className="text-center h-full flex flex-col justify-between">
-                      <div className="font-cinzel font-bold text-medieval-text-primary text-sm sm:text-base">
-                        {territory.position + 1}
-                      </div>
-                      <div className="text-[8px] sm:text-[10px] text-medieval-text-secondary truncate">
-                        {territory.ownerName}
-                      </div>
-                      <div className="flex justify-center">
-                        {territory.bonusResource === "GRAIN" && (
-                          <Wheat className="w-3 h-3 sm:w-4 sm:h-4 text-grain" />
-                        )}
-                        {territory.bonusResource === "WOOD" && (
-                          <TreePine className="w-3 h-3 sm:w-4 sm:h-4 text-wood-light" />
-                        )}
-                        {territory.bonusResource === "GOLD" && (
-                          <Coins className="w-3 h-3 sm:w-4 sm:h-4 text-gold" />
-                        )}
-                      </div>
-                      {territory.units.length > 0 && (
-                        <div className="flex items-center justify-center gap-0.5 sm:gap-1">
-                          <Swords className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-medieval-accent" />
-                          <span className="text-[8px] sm:text-[10px] text-medieval-text-primary">
-                            {territory.units.reduce((sum, u) => sum + u.quantity, 0)}
-                          </span>
+                    {/* Exploration site badge */}
+                    {hasExplorationSite && (
+                      <div className="absolute -top-1 -right-1 z-10">
+                        <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-era-peace flex items-center justify-center animate-pulse">
+                          <Compass className="w-3 h-3 sm:w-4 sm:h-4 text-medieval-bg-deep" />
                         </div>
+                      </div>
+                    )}
+
+                    <div className="text-center h-full flex flex-col justify-between">
+                      {hasExplorationSite ? (
+                        <>
+                          <div className="font-cinzel font-bold text-era-peace text-[10px] sm:text-xs truncate">
+                            {explorationSite.name.split(" ").slice(0, 2).join(" ")}
+                          </div>
+                          <div className="text-[8px] sm:text-[10px] text-medieval-text-muted">
+                            Dif: {"⚔️".repeat(explorationSite.difficulty)}
+                          </div>
+                          <div className="text-[8px] text-era-peace">
+                            Explorar!
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="font-cinzel font-bold text-medieval-text-primary text-sm sm:text-base">
+                            {territory.position + 1}
+                          </div>
+                          <div className="text-[8px] sm:text-[10px] text-medieval-text-secondary truncate">
+                            {territory.ownerName}
+                          </div>
+                          <div className="flex justify-center">
+                            {territory.bonusResource === "GRAIN" && (
+                              <Wheat className="w-3 h-3 sm:w-4 sm:h-4 text-grain" />
+                            )}
+                            {territory.bonusResource === "WOOD" && (
+                              <TreePine className="w-3 h-3 sm:w-4 sm:h-4 text-wood-light" />
+                            )}
+                            {territory.bonusResource === "GOLD" && (
+                              <Coins className="w-3 h-3 sm:w-4 sm:h-4 text-gold" />
+                            )}
+                          </div>
+                          {territory.units.length > 0 && (
+                            <div className="flex items-center justify-center gap-0.5 sm:gap-1">
+                              <Swords className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-medieval-accent" />
+                              <span className="text-[8px] sm:text-[10px] text-medieval-text-primary">
+                                {territory.units.reduce((sum, u) => sum + u.quantity, 0)}
+                              </span>
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                   </motion.div>
@@ -656,6 +727,14 @@ export default function GamePage() {
                 <div className="w-5 h-5 rounded bg-medieval-bg-card/50 border-2 border-medieval-text-muted/30" />
                 <span className="text-medieval-text-secondary">Neutro</span>
               </div>
+              {currentEra === "PEACE" && (
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded bg-era-peace/30 border-2 border-era-peace flex items-center justify-center">
+                    <Compass className="w-3 h-3 text-era-peace" />
+                  </div>
+                  <span className="text-era-peace">Exploracao</span>
+                </div>
+              )}
             </div>
           </motion.div>
 
@@ -769,6 +848,7 @@ export default function GamePage() {
               expeditions={expeditions}
               playerId="player"
               onCancel={(id) => cancelExpedition(id)}
+              explorationSiteNames={explorationSiteNames}
             />
 
             {/* Eventos */}
@@ -881,6 +961,18 @@ export default function GamePage() {
           currentEra={currentEra}
           onSend={handleSendExpedition}
           onClose={handleCloseExpedition}
+        />
+      )}
+
+      {/* Exploration Modal */}
+      {selectedExplorationSite && (
+        <ExplorationModal
+          site={selectedExplorationSite}
+          playerTerritories={playerTerritories}
+          currentTurn={currentTurn}
+          currentEra={currentEra}
+          onSend={handleSendExploration}
+          onClose={() => setSelectedExplorationSiteId(null)}
         />
       )}
     </div>

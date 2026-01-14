@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Swords, Clock, MapPin, X, ChevronDown, ChevronUp, Package, ArrowRight, ArrowLeft, Trophy, Skull } from "lucide-react";
+import { Swords, Clock, MapPin, X, ChevronDown, ChevronUp, Package, ArrowRight, ArrowLeft, Trophy, Skull, Compass } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MedievalButton } from "@/components/ui/medieval";
 import { Expedition, ExpeditionType } from "@/stores/gameStore";
@@ -17,6 +17,8 @@ interface ExpeditionsPanelProps {
   playerOnly?: boolean;
   /** Additional class names */
   className?: string;
+  /** Exploration site names for display */
+  explorationSiteNames?: Record<string, string>;
 }
 
 const expeditionTypeLabels: Record<ExpeditionType, string> = {
@@ -24,6 +26,8 @@ const expeditionTypeLabels: Record<ExpeditionType, string> = {
   RETURN_VICTORY: "Retornando (Vitoria)",
   RETURN_DEFEAT: "Retornando (Derrota)",
   REINFORCE: "Reforco",
+  EXPLORE: "Explorando",
+  RETURN_EXPLORE: "Retornando (Exploracao)",
 };
 
 const expeditionTypeIcons: Record<ExpeditionType, React.ReactNode> = {
@@ -31,6 +35,8 @@ const expeditionTypeIcons: Record<ExpeditionType, React.ReactNode> = {
   RETURN_VICTORY: <Trophy className="w-4 h-4 text-era-peace" />,
   RETURN_DEFEAT: <Skull className="w-4 h-4 text-medieval-accent" />,
   REINFORCE: <ArrowRight className="w-4 h-4 text-medieval-primary" />,
+  EXPLORE: <Compass className="w-4 h-4 text-era-peace" />,
+  RETURN_EXPLORE: <Compass className="w-4 h-4 text-gold" />,
 };
 
 export function ExpeditionsPanel({
@@ -39,6 +45,7 @@ export function ExpeditionsPanel({
   onCancel,
   playerOnly = true,
   className = "",
+  explorationSiteNames = {},
 }: ExpeditionsPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -49,6 +56,7 @@ export function ExpeditionsPanel({
 
   // Separate by type
   const attacks = filteredExpeditions.filter((e) => e.type === "ATTACK");
+  const explorations = filteredExpeditions.filter((e) => e.type === "EXPLORE" || e.type === "RETURN_EXPLORE");
   const returns = filteredExpeditions.filter((e) => e.type === "RETURN_VICTORY" || e.type === "RETURN_DEFEAT");
   const incoming = expeditions.filter(
     (e) => e.ownerId !== playerId && e.type === "ATTACK"
@@ -102,6 +110,26 @@ export function ExpeditionsPanel({
             className="overflow-hidden"
           >
             <div className="p-3 pt-0 space-y-3">
+              {/* Exploration expeditions */}
+              {explorations.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-semibold text-era-peace uppercase tracking-wider flex items-center gap-1">
+                    <Compass className="w-3 h-3" />
+                    Exploracoes
+                  </h4>
+                  {explorations.map((exp) => (
+                    <ExpeditionCard
+                      key={exp.id}
+                      expedition={exp}
+                      onCancel={exp.type === "EXPLORE" ? onCancel : undefined}
+                      canCancel={exp.type === "EXPLORE"}
+                      siteName={explorationSiteNames[exp.toTerritoryId] || explorationSiteNames[exp.fromTerritoryId]}
+                      isExploration
+                    />
+                  ))}
+                </div>
+              )}
+
               {/* Outgoing attacks */}
               {attacks.length > 0 && (
                 <div className="space-y-2">
@@ -156,9 +184,11 @@ interface ExpeditionCardProps {
   onCancel?: (expeditionId: string) => void;
   canCancel?: boolean;
   isEnemy?: boolean;
+  isExploration?: boolean;
+  siteName?: string;
 }
 
-function ExpeditionCard({ expedition, onCancel, canCancel = false, isEnemy = false }: ExpeditionCardProps) {
+function ExpeditionCard({ expedition, onCancel, canCancel = false, isEnemy = false, isExploration = false, siteName }: ExpeditionCardProps) {
   const totalUnits = expedition.units.reduce((sum, u) => sum + u.quantity, 0);
   const hasLoot =
     expedition.carriedResources.grain +
@@ -166,13 +196,15 @@ function ExpeditionCard({ expedition, onCancel, canCancel = false, isEnemy = fal
       expedition.carriedResources.gold >
     0;
 
-  const isReturning = expedition.type === "RETURN_VICTORY" || expedition.type === "RETURN_DEFEAT";
+  const isReturning = expedition.type === "RETURN_VICTORY" || expedition.type === "RETURN_DEFEAT" || expedition.type === "RETURN_EXPLORE";
 
   return (
     <div
       className={`p-3 rounded-lg border ${
         isEnemy
           ? "bg-medieval-accent/5 border-medieval-accent/30"
+          : isExploration
+          ? "bg-era-peace/5 border-era-peace/30"
           : expedition.type === "RETURN_VICTORY"
           ? "bg-era-peace/5 border-era-peace/30"
           : expedition.type === "RETURN_DEFEAT"
@@ -186,6 +218,11 @@ function ExpeditionCard({ expedition, onCancel, canCancel = false, isEnemy = fal
         <span className="text-xs text-medieval-text-muted">
           {expeditionTypeLabels[expedition.type]}
         </span>
+        {isExploration && siteName && (
+          <span className="text-xs text-era-peace font-semibold ml-auto truncate max-w-[120px]">
+            {siteName}
+          </span>
+        )}
       </div>
 
       <div className="flex items-center gap-2 text-sm">
@@ -197,13 +234,22 @@ function ExpeditionCard({ expedition, onCancel, canCancel = false, isEnemy = fal
         </div>
         {isReturning ? (
           <ArrowLeft className="w-4 h-4 text-medieval-text-muted" />
+        ) : isExploration ? (
+          <ArrowRight className="w-4 h-4 text-era-peace" />
         ) : (
           <ArrowRight className="w-4 h-4 text-era-war" />
         )}
         <div className="flex items-center gap-1">
-          <MapPin className={`w-3 h-3 ${isEnemy ? "text-medieval-accent" : "text-era-war"}`} />
+          {isExploration ? (
+            <Compass className={`w-3 h-3 text-era-peace`} />
+          ) : (
+            <MapPin className={`w-3 h-3 ${isEnemy ? "text-medieval-accent" : "text-era-war"}`} />
+          )}
           <span className="text-medieval-text-secondary">
-            {isReturning ? expedition.fromPosition + 1 : expedition.toPosition + 1}
+            {isExploration
+              ? (isReturning ? "Casa" : siteName || `Pos ${expedition.toPosition + 1}`)
+              : (isReturning ? expedition.fromPosition + 1 : expedition.toPosition + 1)
+            }
           </span>
         </div>
       </div>
