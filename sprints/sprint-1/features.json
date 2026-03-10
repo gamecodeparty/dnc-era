@@ -40,7 +40,7 @@
     "id": "F-003",
     "name": "Fog-of-war no preview (valores aproximados)",
     "description": "Exibir defesa como '~X' (aproximado) com ícone de interrogação e texto '(sem reconhecimento)' quando território defensor pertence a AI e jogador não tem reconhecimento SPY. Implementar verificação em calculateCombatPreview: se território não está em revealedTerritories, usar margem de erro. Preparar integração com revealedTerritories do PRP-004.",
-    "status": "pending",
+    "status": "passing",
     "priority": 3,
     "agent": "coder",
     "task": "vibe-code",
@@ -52,13 +52,14 @@
       "Texto '(sem reconhecimento)' visível quando território não revelado",
       "Campo revealedTerritories verificado em calculateCombatPreview (preparado para PRP-004)"
     ],
-    "prp_path": "sprints/sprint-1/3-prps/PRP-001-combat-preview.md"
+    "prp_path": "sprints/sprint-1/3-prps/PRP-001-combat-preview.md",
+    "completed_at": "2026-03-10T00:00:00Z"
   },
   {
     "id": "F-004",
     "name": "Store do tutorial (tutorialStore)",
     "description": "Criar src/stores/tutorialStore.ts com Zustand. State: completed, currentStep, dismissedSteps. Actions: advanceStep(), dismissStep(stepId), skipAll(), reset(). Persistir em localStorage key 'dnc-tutorial-state'. Jogador que completou não vê novamente.",
-    "status": "pending",
+    "status": "passing",
     "priority": 4,
     "agent": "coder",
     "task": "vibe-code",
@@ -68,13 +69,14 @@
       "Jogador com completed=true não vê tutorial novamente ao recarregar",
       "Actions advanceStep, dismissStep, skipAll alteram estado corretamente"
     ],
-    "prp_path": "sprints/sprint-1/3-prps/PRP-002-tutorial-contextual.md"
+    "prp_path": "sprints/sprint-1/3-prps/PRP-002-tutorial-contextual.md",
+    "completed_at": "2026-03-10T23:41:23Z"
   },
   {
     "id": "F-005",
     "name": "Componente TutorialOverlay",
     "description": "Criar src/components/game/tutorial/TutorialOverlay.tsx. Banner persistente no topo da área de jogo com ícone de missão + texto + botão 'Entendi'. 5 missões sequenciais com triggers contextuais: T1 construir produção, após 1ª estrutura construir Barracks, após Barracks recrutar 3 soldados, após recrutar construir Wall, Era War atacar. Botão 'Pular tutorial'. Animação Framer Motion fade-in.",
-    "status": "blocked",
+    "status": "pending",
     "priority": 5,
     "agent": "coder",
     "task": "vibe-code",
