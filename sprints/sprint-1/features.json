@@ -2,191 +2,309 @@
   {
     "id": "F-001",
     "name": "Interface CombatPreview e função de cálculo",
-    "description": "Criar interface CombatPreview em game/types e função calculateCombatPreview() no gameStore com lógica de attackPower, defensePower, ratio e outcome.",
+    "description": "Criar interface CombatPreview em game/types/index.ts (attackPower, defensePower, ratio, outcome, modifiers) e função calculateCombatPreview(attackingUnits, defenderTerritory, attackerOrigin, defenderOrigin) como utilitário no gameStore. Lógica: attackPower = soma unit.atk × bônus facção, defensePower = soma unit.def + Wall + facção, outcome por ratio (>1.5 decisive, >1.0 victory, >0.7 uncertain, ≤0.7 defeat).",
     "status": "pending",
     "priority": 1,
     "agent": "coder",
+    "task": "vibe-code",
     "dependencies": [],
+    "tests": [
+      "Interface CombatPreview exportada de src/game/types/index.ts com campos attackPower, defensePower, ratio, outcome, attackerModifiers, defenderModifiers",
+      "calculateCombatPreview() retorna valores coerentes com CombatSystem (mesma fórmula)",
+      "Modificadores de facção (ex: Ferronatos ×1.2 atk) e Wall (20%/nível def) listados quando aplicáveis"
+    ],
     "prp_path": "sprints/sprint-1/3-prps/PRP-001-combat-preview.md"
   },
   {
     "id": "F-002",
     "name": "Painel de preview no ExpeditionModal",
-    "description": "Renderizar painel de preview de combate no ExpeditionModal quando tipo=ATTACK e >=1 unidade selecionada. Recalcula em tempo real, cores por outcome, barra de proporção.",
+    "description": "Renderizar painel de preview de combate no ExpeditionModal quando tipo=ATTACK e >=1 unidade selecionada. Recalcula em tempo real conforme jogador adiciona/remove unidades. Cores por outcome (verde=victory, amarelo=uncertain, vermelho=defeat). Barra de proporção visual attackPower vs defensePower. Lista de modificadores ativos.",
     "status": "pending",
     "priority": 2,
     "agent": "coder",
+    "task": "vibe-code",
     "dependencies": ["F-001"],
+    "tests": [
+      "Painel de preview aparece no ExpeditionModal quando tipo=ATTACK e >=1 unidade selecionada",
+      "Preview recalcula em tempo real ao adicionar/remover unidades da seleção",
+      "Cores corretas: verde para decisive_victory/victory, amarelo para uncertain, vermelho para defeat",
+      "Barra de proporção visual mostra attackPower vs defensePower"
+    ],
     "prp_path": "sprints/sprint-1/3-prps/PRP-001-combat-preview.md"
   },
   {
     "id": "F-003",
     "name": "Fog-of-war no preview (valores aproximados)",
-    "description": "Exibir defesa como ~X (aproximado) quando território não tem reconhecimento SPY. Preparar integração com revealedTerritories futuro.",
+    "description": "Exibir defesa como '~X' (aproximado) com ícone de interrogação e texto '(sem reconhecimento)' quando território defensor pertence a AI e jogador não tem reconhecimento SPY. Implementar verificação em calculateCombatPreview: se território não está em revealedTerritories, usar margem de erro. Preparar integração com revealedTerritories do PRP-004.",
     "status": "pending",
     "priority": 3,
     "agent": "coder",
+    "task": "vibe-code",
     "dependencies": ["F-002"],
+    "tests": [
+      "Defesa de territórios sem reconhecimento mostra '~X' com ícone de interrogação",
+      "Texto '(sem reconhecimento)' visível quando território não revelado",
+      "Campo revealedTerritories verificado em calculateCombatPreview (preparado para PRP-004)"
+    ],
     "prp_path": "sprints/sprint-1/3-prps/PRP-001-combat-preview.md"
   },
   {
     "id": "F-004",
     "name": "Store do tutorial (tutorialStore)",
-    "description": "Criar tutorialStore Zustand com estado completed/currentStep/dismissedSteps, actions advanceStep/dismissStep/skipAll, persistência em localStorage.",
+    "description": "Criar src/stores/tutorialStore.ts com Zustand. State: completed, currentStep, dismissedSteps. Actions: advanceStep(), dismissStep(stepId), skipAll(), reset(). Persistir em localStorage key 'dnc-tutorial-state'. Jogador que completou não vê novamente.",
     "status": "pending",
     "priority": 4,
     "agent": "coder",
+    "task": "vibe-code",
     "dependencies": [],
+    "tests": [
+      "tutorialStore persiste estado em localStorage key 'dnc-tutorial-state'",
+      "Jogador com completed=true não vê tutorial novamente ao recarregar",
+      "Actions advanceStep, dismissStep, skipAll alteram estado corretamente"
+    ],
     "prp_path": "sprints/sprint-1/3-prps/PRP-002-tutorial-contextual.md"
   },
   {
     "id": "F-005",
     "name": "Componente TutorialOverlay",
-    "description": "Criar TutorialOverlay com banner persistente, 5 missões sequenciais com triggers contextuais, botão Entendi e Pular tutorial, animação Framer Motion.",
+    "description": "Criar src/components/game/tutorial/TutorialOverlay.tsx. Banner persistente no topo da área de jogo com ícone de missão + texto + botão 'Entendi'. 5 missões sequenciais com triggers contextuais: T1 construir produção, após 1ª estrutura construir Barracks, após Barracks recrutar 3 soldados, após recrutar construir Wall, Era War atacar. Botão 'Pular tutorial'. Animação Framer Motion fade-in.",
     "status": "pending",
     "priority": 5,
     "agent": "coder",
+    "task": "vibe-code",
     "dependencies": ["F-004"],
+    "tests": [
+      "5 missões sequenciais com triggers contextuais (construir estrutura, barracks, recrutar 3, wall, era war)",
+      "Missões não bloqueiam gameplay (overlay informativo, não modal)",
+      "Botão 'Entendi' dispensa missão individual, 'Pular tutorial' dispensa todas",
+      "Animação Framer Motion fade-in na entrada do banner"
+    ],
     "prp_path": "sprints/sprint-1/3-prps/PRP-002-tutorial-contextual.md"
   },
   {
     "id": "F-006",
     "name": "Integração tutorial com página do jogo",
-    "description": "Importar TutorialOverlay em /game/page.tsx, renderizar condicionalmente, passar currentTurn/territories/clans para avaliação de triggers.",
+    "description": "Importar TutorialOverlay em /src/app/game/page.tsx, renderizar condicionalmente quando tutorial não completado. Passar currentTurn, territories, clans para avaliação de triggers. Garantir funcionamento em desktop e mobile.",
     "status": "pending",
     "priority": 6,
     "agent": "coder",
+    "task": "vibe-code",
     "dependencies": ["F-005"],
+    "tests": [
+      "TutorialOverlay renderiza em /game/page.tsx quando tutorial não completado",
+      "Missão 1 aparece automaticamente no turno 1 sem necessidade de navegação",
+      "Step 5 aparece na transição para Era da Guerra",
+      "Tutorial funciona em desktop e mobile"
+    ],
     "prp_path": "sprints/sprint-1/3-prps/PRP-002-tutorial-contextual.md"
   },
   {
     "id": "F-007",
     "name": "Timer state no gameStore",
-    "description": "Adicionar timerPaused e timeRemaining ao gameStore com actions pauseTimer/resumeTimer. Remover lógica de timer local de game/page.tsx.",
+    "description": "Adicionar timerPaused (boolean) e timeRemaining (number, ms) ao gameStore state. Actions: pauseTimer(), resumeTimer(). Remover lógica de timer local (useState + useEffect) de /src/app/game/page.tsx. processTurn() nunca é chamado enquanto timer pausado.",
     "status": "pending",
     "priority": 7,
     "agent": "coder",
+    "task": "vibe-code",
     "dependencies": [],
+    "tests": [
+      "timerPaused e timeRemaining existem no gameStore state",
+      "Actions pauseTimer() e resumeTimer() alteram timerPaused corretamente",
+      "processTurn() nunca é chamado enquanto timerPaused=true"
+    ],
     "prp_path": "sprints/sprint-1/3-prps/PRP-003-timer-pause-navigation.md"
   },
   {
     "id": "F-008",
     "name": "Hook useTurnTimer",
-    "description": "Criar hook useTurnTimer que gerencia intervalo do timer, decrementa quando não pausado, chama processTurn quando zerado. Integrar em game/page.tsx.",
+    "description": "Criar src/hooks/useTurnTimer.ts. Lê timerPaused e timeRemaining do gameStore. Quando não pausado, decrementa timeRemaining a cada 1s. Quando timeRemaining <= 0, chama processTurn() e reseta. Em game/page.tsx: chamar useTurnTimer(), resumeTimer() no mount, pauseTimer() no unmount. Sub-páginas não chamam useTurnTimer.",
     "status": "pending",
     "priority": 8,
     "agent": "coder",
+    "task": "vibe-code",
     "dependencies": ["F-007"],
+    "tests": [
+      "Timer avança normalmente (decrementa a cada 1s) em /game",
+      "Timer pausa automaticamente ao navegar para sub-páginas (/game/territory, /game/cards, etc)",
+      "Timer retoma ao voltar para /game",
+      "processTurn() é chamado quando timeRemaining <= 0"
+    ],
     "prp_path": "sprints/sprint-1/3-prps/PRP-003-timer-pause-navigation.md"
   },
   {
     "id": "F-009",
     "name": "Indicador visual de timer pausado",
-    "description": "Exibir 'Timer pausado — voltar ao mapa para continuar' no MobileGameHeader e equivalente desktop quando timerPaused=true.",
+    "description": "Em MobileGameHeader.tsx e equivalente desktop: ler timerPaused do gameStore. Se pausado, mostrar '⏸ Timer pausado — voltar ao mapa para continuar' em vez do countdown. Estilo visual diferenciado (cor distinta).",
     "status": "pending",
     "priority": 9,
     "agent": "coder",
+    "task": "vibe-code",
     "dependencies": ["F-007"],
+    "tests": [
+      "Texto '⏸ Timer pausado — voltar ao mapa para continuar' aparece no header em sub-páginas",
+      "Indicador funciona em MobileGameHeader e equivalente desktop",
+      "Countdown normal aparece quando timer não está pausado"
+    ],
     "prp_path": "sprints/sprint-1/3-prps/PRP-003-timer-pause-navigation.md"
   },
   {
     "id": "F-010",
     "name": "Recrutamento de SPY",
-    "description": "Garantir que trainUnit() aceita SPY quando SHADOW_GUILD presente. Adicionar SPY na UI de recrutamento em territory/[id]/page.tsx.",
+    "description": "Garantir que trainUnit() no gameStore aceita tipo SPY quando território tem SHADOW_GUILD. Custo: 5 grain, 10 gold. Adicionar SPY na UI de recrutamento em territory/[id]/page.tsx condicionalmente (só quando SHADOW_GUILD presente).",
     "status": "pending",
     "priority": 10,
     "agent": "coder",
+    "task": "vibe-code",
     "dependencies": [],
+    "tests": [
+      "SPY aparece na lista de recrutamento quando SHADOW_GUILD está construído no território",
+      "SPY não aparece na lista de recrutamento sem SHADOW_GUILD",
+      "Custo correto: 5 grain, 10 gold deduzidos ao treinar SPY"
+    ],
     "prp_path": "sprints/sprint-1/3-prps/PRP-004-spy-system.md"
   },
   {
     "id": "F-011",
     "name": "Expedição de espionagem (sendSpy)",
-    "description": "Adicionar tipos SPY/RETURN_SPY ao tipo Expedition. Criar action sendSpy(from, to) com validação e criação de expedição com travel time.",
+    "description": "Adicionar tipos SPY e RETURN_SPY ao enum/union de expedição em game/types/index.ts. Criar action sendSpy(fromTerritoryId, toTerritoryId) no gameStore com validação (>=1 SPY na origem), criação de expedição tipo SPY com travel time = distância Manhattan em turnos.",
     "status": "pending",
     "priority": 11,
     "agent": "coder",
+    "task": "vibe-code",
     "dependencies": ["F-010"],
+    "tests": [
+      "Tipos SPY e RETURN_SPY existem no enum/union de expedição em game/types",
+      "sendSpy(from, to) cria expedição SPY com travel time = distância Manhattan",
+      "Validação impede envio sem SPY disponível no território de origem"
+    ],
     "prp_path": "sprints/sprint-1/3-prps/PRP-004-spy-system.md"
   },
   {
     "id": "F-012",
     "name": "Resolução de espionagem em processTurn",
-    "description": "Resolver expedição SPY ao chegar: 70% base + 30% Umbral, sucesso revela tropas/estruturas em revealedTerritories (expira 5 turnos), falha captura SPY.",
+    "description": "Em processTurn(), resolver expedição SPY ao chegar: 70% base chance de sucesso, +30% bônus Umbral (=100%). Sucesso: adicionar território a revealedTerritories (Record<string, {units, structures, revealedAt, expiresAt}>), criar RETURN_SPY. Falha: SPY capturado, evento no log. Limpar informação expirada (>5 turnos) em cada processTurn.",
     "status": "pending",
     "priority": 12,
     "agent": "coder",
+    "task": "vibe-code",
     "dependencies": ["F-011"],
+    "tests": [
+      "Chance base de 70% de sucesso na resolução de espionagem",
+      "Umbral tem 100% de sucesso (70% base + 30% bônus facção)",
+      "Sucesso adiciona território a revealedTerritories com units, structures, revealedAt, expiresAt",
+      "Informação revelada expira e é removida após 5 turnos",
+      "Falha: SPY capturado (perdido) e evento de captura gerado no log"
+    ],
     "prp_path": "sprints/sprint-1/3-prps/PRP-004-spy-system.md"
   },
   {
     "id": "F-013",
     "name": "UI de território revelado e envio de SPY",
-    "description": "Ícone de olho no mapa para territórios revelados com tooltip. Opção 'Enviar Espião' ao selecionar território inimigo quando jogador tem SPY.",
+    "description": "No Territory.tsx: ícone de olho no mapa para territórios em revealedTerritories não expirados, tooltip com tropas e estruturas reveladas. Na seleção de território inimigo: opção 'Enviar Espião' quando jogador tem SPY, modal simplificado com chance de sucesso.",
     "status": "pending",
     "priority": 13,
     "agent": "coder",
+    "task": "vibe-code",
     "dependencies": ["F-012"],
+    "tests": [
+      "Ícone de olho visível no mapa para territórios em revealedTerritories não expirados",
+      "Tooltip mostra tropas e estruturas reveladas ao passar sobre ícone",
+      "Opção 'Enviar Espião' aparece ao selecionar território inimigo quando jogador tem SPY"
+    ],
     "prp_path": "sprints/sprint-1/3-prps/PRP-004-spy-system.md"
   },
   {
     "id": "F-014",
     "name": "Integração SPY com preview de combate",
-    "description": "No ExpeditionModal, usar informação exata (sem ~) quando território está em revealedTerritories. Requer PRP-001 implementado.",
+    "description": "No ExpeditionModal: usar informação exata de defesa (sem '~') quando território está em revealedTerritories. Requer PRP-001 (F-003 fog-of-war) implementado para que haja o painel de preview com valores aproximados a serem substituídos por exatos.",
     "status": "pending",
     "priority": 14,
     "agent": "coder",
+    "task": "vibe-code",
     "dependencies": ["F-003", "F-013"],
+    "tests": [
+      "Preview de combate mostra defesa exata (sem '~') quando território está em revealedTerritories",
+      "Mantém valor aproximado '~X' para territórios não revelados (comportamento de F-003)"
+    ],
     "prp_path": "sprints/sprint-1/3-prps/PRP-004-spy-system.md"
   },
   {
     "id": "F-015",
     "name": "Enriquecer evento COMBAT no gameStore",
-    "description": "No processTurn(), enriquecer evento de combate AI com resultado, baixas, conquista e flag isPlayerInvolved.",
+    "description": "Em processTurn(), na seção de combates AI, enriquecer evento COMBAT com: result (victory/defeat/draw), attackerLosses, defenderLosses, territoryConquered, isPlayerInvolved. Flag isPlayerInvolved=false para combates AI, true para combates do jogador.",
     "status": "pending",
     "priority": 15,
     "agent": "coder",
+    "task": "vibe-code",
     "dependencies": [],
+    "tests": [
+      "Eventos COMBAT de AI incluem result, attackerLosses, defenderLosses, territoryConquered",
+      "Flag isPlayerInvolved=false distingue combates AI de combates do jogador",
+      "Combates do jogador também incluem isPlayerInvolved=true"
+    ],
     "prp_path": "sprints/sprint-1/3-prps/PRP-005-information-transparency.md"
   },
   {
     "id": "F-016",
     "name": "Formatação de batalhas AI no log UI",
-    "description": "Formatar eventos COMBAT com isPlayerInvolved=false no TabContent: resultado, baixas ~X, conquista. Cor neutra para AI, existente para jogador.",
+    "description": "Em TabContent.tsx (seção de log), formatar eventos COMBAT com isPlayerInvolved=false: mostrar atacante, defensor, território, resultado, baixas (~X), conquista. Cor neutra (cinza/azul) para AI, cores existentes (verde/vermelho) para jogador.",
     "status": "pending",
     "priority": 16,
     "agent": "coder",
+    "task": "vibe-code",
     "dependencies": ["F-015"],
+    "tests": [
+      "Combates AI aparecem no log com resultado completo (vencedor, baixas ~X, conquista)",
+      "Combates AI usam cor neutra (cinza/azul), visualmente distintos dos combates do jogador",
+      "Conquista de território mencionada quando ocorre"
+    ],
     "prp_path": "sprints/sprint-1/3-prps/PRP-005-information-transparency.md"
   },
   {
     "id": "F-017",
     "name": "Indicador X/4 no tile do mapa",
-    "description": "Alterar Territory.tsx para mostrar structuresCount/MAX_STRUCTURE_SLOTS com cores: verde (0-2), amarelo (3), vermelho (4/4).",
+    "description": "Alterar Territory.tsx para mostrar structuresCount/MAX_STRUCTURE_SLOTS (ex: '3/4') em vez de apenas número. Cores: verde (0-2 usados), amarelo (3), vermelho (4/4 cheio). Tooltip '4/4 cheio — demolir para construir'. MAX_STRUCTURE_SLOTS da constante em balance.ts.",
     "status": "pending",
     "priority": 17,
     "agent": "coder",
+    "task": "vibe-code",
     "dependencies": [],
+    "tests": [
+      "Tile do mapa mostra 'X/4' com contagem correta de estruturas",
+      "Cores indicam urgência: verde (0-2), amarelo (3), vermelho (4/4)",
+      "MAX_STRUCTURE_SLOTS vem de constante em balance.ts, não hardcoded"
+    ],
     "prp_path": "sprints/sprint-1/3-prps/PRP-005-information-transparency.md"
   },
   {
     "id": "F-018",
     "name": "Barra de slots na página de território",
-    "description": "Exibir barra visual de slots em territory/[id]/page.tsx. Desabilitar construção quando 4/4 com mensagem 'Sem slots disponíveis'.",
+    "description": "Em territory/[id]/page.tsx, exibir barra visual de slots de construção (4 quadrados: preenchidos=existentes, vazios=disponíveis). Quando 4/4: desabilitar botão de construir com mensagem 'Sem slots disponíveis'. Tooltip em cada slot preenchido mostra nome da estrutura.",
     "status": "pending",
     "priority": 18,
     "agent": "coder",
+    "task": "vibe-code",
     "dependencies": [],
+    "tests": [
+      "Barra visual de slots visível na página de território /game/territory/[id]",
+      "Botão de construir desabilitado quando 4/4 com mensagem 'Sem slots disponíveis'",
+      "Tooltip em cada slot preenchido mostra nome da estrutura"
+    ],
     "prp_path": "sprints/sprint-1/3-prps/PRP-005-information-transparency.md"
   },
   {
     "id": "F-019",
     "name": "Header de slots no TerritoryBottomSheet",
-    "description": "Adicionar header 'Estruturas (X/4 slots)' na grid de estruturas do TerritoryBottomSheet com cores consistentes.",
+    "description": "Em TerritoryBottomSheet.tsx, adicionar header 'Estruturas (X/4 slots)' na grid de estruturas. Mesmo esquema de cores do tile do mapa (verde/amarelo/vermelho).",
     "status": "pending",
     "priority": 19,
     "agent": "coder",
+    "task": "vibe-code",
     "dependencies": [],
+    "tests": [
+      "Header 'Estruturas (X/4 slots)' visível na grid do TerritoryBottomSheet",
+      "Cores consistentes com tile do mapa (verde 0-2, amarelo 3, vermelho 4/4)"
+    ],
     "prp_path": "sprints/sprint-1/3-prps/PRP-005-information-transparency.md"
   }
 ]
