@@ -63,6 +63,9 @@ import { PWAInstallPrompt, PWAInstallBanner } from "@/components/pwa";
 // Expedition components
 import { ExpeditionModal, ExplorationModal, ExpeditionsPanel } from "@/components/game/expedition";
 
+// Tutorial components
+import { TutorialOverlay } from "@/components/game/tutorial";
+
 // Animations
 import {
   staggerContainer,
@@ -477,6 +480,15 @@ export default function GamePage() {
           </div>
         </div>
       </header>
+
+      {/* Tutorial Overlay - visible on desktop and mobile */}
+      <div className="relative z-20">
+        <TutorialOverlay
+          currentTurn={currentTurn}
+          territories={territories}
+          currentEra={currentEra}
+        />
+      </div>
 
       {/* Main content */}
       <motion.div
@@ -962,6 +974,7 @@ export default function GamePage() {
           currentEra={currentEra}
           attackerOrigin={player?.origin}
           defenderOrigin={clans.find((c) => c.id === territories.find((t) => t.id === expeditionTarget)?.ownerId)?.origin}
+          revealedTerritories={new Set<string>()}
           onSend={handleSendExpedition}
           onClose={handleCloseExpedition}
         />
