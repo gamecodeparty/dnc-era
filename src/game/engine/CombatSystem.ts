@@ -80,23 +80,25 @@ export class CombatSystem {
     }
 
     // Estimate outcome
-    let estimatedOutcome: CombatPreview["estimatedOutcome"];
-    if (attackPower > defensePower * COMBAT.DECISIVE_VICTORY_RATIO) {
-      estimatedOutcome = "DECISIVE_VICTORY";
-    } else if (attackPower > defensePower) {
-      estimatedOutcome = "VICTORY";
-    } else if (Math.abs(attackPower - defensePower) < defensePower * 0.1) {
-      estimatedOutcome = "DRAW";
+    const ratio = defensePower > 0 ? attackPower / defensePower : 10;
+    let outcome: CombatPreview["outcome"];
+    if (ratio > COMBAT.DECISIVE_VICTORY_RATIO) {
+      outcome = "decisive_victory";
+    } else if (ratio > 1.0) {
+      outcome = "victory";
+    } else if (ratio > 0.7) {
+      outcome = "uncertain";
     } else {
-      estimatedOutcome = "DEFEAT";
+      outcome = "defeat";
     }
 
     return {
-      attackerPower: Math.floor(attackPower),
-      defenderPower: Math.floor(defensePower),
+      attackPower: Math.floor(attackPower),
+      defensePower: Math.floor(defensePower),
+      ratio: Math.round(ratio * 100) / 100,
+      outcome,
       attackerModifiers,
       defenderModifiers,
-      estimatedOutcome,
     };
   }
 
@@ -119,8 +121,8 @@ export class CombatSystem {
     );
 
     // Apply card bonuses
-    let attackPower = preview.attackerPower * (1 + attackerCardBonus);
-    let defensePower = preview.defenderPower * (1 + defenderCardBonus);
+    let attackPower = preview.attackPower * (1 + attackerCardBonus);
+    let defensePower = preview.defensePower * (1 + defenderCardBonus);
 
     // Archer first strike
     const archerUnits = attackingUnits.find((u) => u.type === "ARCHER");

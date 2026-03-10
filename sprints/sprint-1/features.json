@@ -3,7 +3,7 @@
     "id": "F-001",
     "name": "Interface CombatPreview e função de cálculo",
     "description": "Criar interface CombatPreview em game/types/index.ts (attackPower, defensePower, ratio, outcome, modifiers) e função calculateCombatPreview(attackingUnits, defenderTerritory, attackerOrigin, defenderOrigin) como utilitário no gameStore. Lógica: attackPower = soma unit.atk × bônus facção, defensePower = soma unit.def + Wall + facção, outcome por ratio (>1.5 decisive, >1.0 victory, >0.7 uncertain, ≤0.7 defeat).",
-    "status": "pending",
+    "status": "passing",
     "priority": 1,
     "agent": "coder",
     "task": "vibe-code",
@@ -13,7 +13,8 @@
       "calculateCombatPreview() retorna valores coerentes com CombatSystem (mesma fórmula)",
       "Modificadores de facção (ex: Ferronatos ×1.2 atk) e Wall (20%/nível def) listados quando aplicáveis"
     ],
-    "prp_path": "sprints/sprint-1/3-prps/PRP-001-combat-preview.md"
+    "prp_path": "sprints/sprint-1/3-prps/PRP-001-combat-preview.md",
+    "completed_at": "2026-03-10T23:25:16Z"
   },
   {
     "id": "F-002",
@@ -23,7 +24,9 @@
     "priority": 2,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-001"],
+    "dependencies": [
+      "F-001"
+    ],
     "tests": [
       "Painel de preview aparece no ExpeditionModal quando tipo=ATTACK e >=1 unidade selecionada",
       "Preview recalcula em tempo real ao adicionar/remover unidades da seleção",
@@ -36,11 +39,13 @@
     "id": "F-003",
     "name": "Fog-of-war no preview (valores aproximados)",
     "description": "Exibir defesa como '~X' (aproximado) com ícone de interrogação e texto '(sem reconhecimento)' quando território defensor pertence a AI e jogador não tem reconhecimento SPY. Implementar verificação em calculateCombatPreview: se território não está em revealedTerritories, usar margem de erro. Preparar integração com revealedTerritories do PRP-004.",
-    "status": "pending",
+    "status": "blocked",
     "priority": 3,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-002"],
+    "dependencies": [
+      "F-002"
+    ],
     "tests": [
       "Defesa de territórios sem reconhecimento mostra '~X' com ícone de interrogação",
       "Texto '(sem reconhecimento)' visível quando território não revelado",
@@ -68,11 +73,13 @@
     "id": "F-005",
     "name": "Componente TutorialOverlay",
     "description": "Criar src/components/game/tutorial/TutorialOverlay.tsx. Banner persistente no topo da área de jogo com ícone de missão + texto + botão 'Entendi'. 5 missões sequenciais com triggers contextuais: T1 construir produção, após 1ª estrutura construir Barracks, após Barracks recrutar 3 soldados, após recrutar construir Wall, Era War atacar. Botão 'Pular tutorial'. Animação Framer Motion fade-in.",
-    "status": "pending",
+    "status": "blocked",
     "priority": 5,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-004"],
+    "dependencies": [
+      "F-004"
+    ],
     "tests": [
       "5 missões sequenciais com triggers contextuais (construir estrutura, barracks, recrutar 3, wall, era war)",
       "Missões não bloqueiam gameplay (overlay informativo, não modal)",
@@ -85,11 +92,13 @@
     "id": "F-006",
     "name": "Integração tutorial com página do jogo",
     "description": "Importar TutorialOverlay em /src/app/game/page.tsx, renderizar condicionalmente quando tutorial não completado. Passar currentTurn, territories, clans para avaliação de triggers. Garantir funcionamento em desktop e mobile.",
-    "status": "pending",
+    "status": "blocked",
     "priority": 6,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-005"],
+    "dependencies": [
+      "F-005"
+    ],
     "tests": [
       "TutorialOverlay renderiza em /game/page.tsx quando tutorial não completado",
       "Missão 1 aparece automaticamente no turno 1 sem necessidade de navegação",
@@ -118,11 +127,13 @@
     "id": "F-008",
     "name": "Hook useTurnTimer",
     "description": "Criar src/hooks/useTurnTimer.ts. Lê timerPaused e timeRemaining do gameStore. Quando não pausado, decrementa timeRemaining a cada 1s. Quando timeRemaining <= 0, chama processTurn() e reseta. Em game/page.tsx: chamar useTurnTimer(), resumeTimer() no mount, pauseTimer() no unmount. Sub-páginas não chamam useTurnTimer.",
-    "status": "pending",
+    "status": "blocked",
     "priority": 8,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-007"],
+    "dependencies": [
+      "F-007"
+    ],
     "tests": [
       "Timer avança normalmente (decrementa a cada 1s) em /game",
       "Timer pausa automaticamente ao navegar para sub-páginas (/game/territory, /game/cards, etc)",
@@ -135,11 +146,13 @@
     "id": "F-009",
     "name": "Indicador visual de timer pausado",
     "description": "Em MobileGameHeader.tsx e equivalente desktop: ler timerPaused do gameStore. Se pausado, mostrar '⏸ Timer pausado — voltar ao mapa para continuar' em vez do countdown. Estilo visual diferenciado (cor distinta).",
-    "status": "pending",
+    "status": "blocked",
     "priority": 9,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-007"],
+    "dependencies": [
+      "F-007"
+    ],
     "tests": [
       "Texto '⏸ Timer pausado — voltar ao mapa para continuar' aparece no header em sub-páginas",
       "Indicador funciona em MobileGameHeader e equivalente desktop",
@@ -167,11 +180,13 @@
     "id": "F-011",
     "name": "Expedição de espionagem (sendSpy)",
     "description": "Adicionar tipos SPY e RETURN_SPY ao enum/union de expedição em game/types/index.ts. Criar action sendSpy(fromTerritoryId, toTerritoryId) no gameStore com validação (>=1 SPY na origem), criação de expedição tipo SPY com travel time = distância Manhattan em turnos.",
-    "status": "pending",
+    "status": "blocked",
     "priority": 11,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-010"],
+    "dependencies": [
+      "F-010"
+    ],
     "tests": [
       "Tipos SPY e RETURN_SPY existem no enum/union de expedição em game/types",
       "sendSpy(from, to) cria expedição SPY com travel time = distância Manhattan",
@@ -183,11 +198,13 @@
     "id": "F-012",
     "name": "Resolução de espionagem em processTurn",
     "description": "Em processTurn(), resolver expedição SPY ao chegar: 70% base chance de sucesso, +30% bônus Umbral (=100%). Sucesso: adicionar território a revealedTerritories (Record<string, {units, structures, revealedAt, expiresAt}>), criar RETURN_SPY. Falha: SPY capturado, evento no log. Limpar informação expirada (>5 turnos) em cada processTurn.",
-    "status": "pending",
+    "status": "blocked",
     "priority": 12,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-011"],
+    "dependencies": [
+      "F-011"
+    ],
     "tests": [
       "Chance base de 70% de sucesso na resolução de espionagem",
       "Umbral tem 100% de sucesso (70% base + 30% bônus facção)",
@@ -201,11 +218,13 @@
     "id": "F-013",
     "name": "UI de território revelado e envio de SPY",
     "description": "No Territory.tsx: ícone de olho no mapa para territórios em revealedTerritories não expirados, tooltip com tropas e estruturas reveladas. Na seleção de território inimigo: opção 'Enviar Espião' quando jogador tem SPY, modal simplificado com chance de sucesso.",
-    "status": "pending",
+    "status": "blocked",
     "priority": 13,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-012"],
+    "dependencies": [
+      "F-012"
+    ],
     "tests": [
       "Ícone de olho visível no mapa para territórios em revealedTerritories não expirados",
       "Tooltip mostra tropas e estruturas reveladas ao passar sobre ícone",
@@ -217,11 +236,14 @@
     "id": "F-014",
     "name": "Integração SPY com preview de combate",
     "description": "No ExpeditionModal: usar informação exata de defesa (sem '~') quando território está em revealedTerritories. Requer PRP-001 (F-003 fog-of-war) implementado para que haja o painel de preview com valores aproximados a serem substituídos por exatos.",
-    "status": "pending",
+    "status": "blocked",
     "priority": 14,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-003", "F-013"],
+    "dependencies": [
+      "F-003",
+      "F-013"
+    ],
     "tests": [
       "Preview de combate mostra defesa exata (sem '~') quando território está em revealedTerritories",
       "Mantém valor aproximado '~X' para territórios não revelados (comportamento de F-003)"
@@ -248,11 +270,13 @@
     "id": "F-016",
     "name": "Formatação de batalhas AI no log UI",
     "description": "Em TabContent.tsx (seção de log), formatar eventos COMBAT com isPlayerInvolved=false: mostrar atacante, defensor, território, resultado, baixas (~X), conquista. Cor neutra (cinza/azul) para AI, cores existentes (verde/vermelho) para jogador.",
-    "status": "pending",
+    "status": "blocked",
     "priority": 16,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-015"],
+    "dependencies": [
+      "F-015"
+    ],
     "tests": [
       "Combates AI aparecem no log com resultado completo (vencedor, baixas ~X, conquista)",
       "Combates AI usam cor neutra (cinza/azul), visualmente distintos dos combates do jogador",

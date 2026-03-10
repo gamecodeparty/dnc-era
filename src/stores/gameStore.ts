@@ -350,6 +350,81 @@ export function getDefensePower(units: Unit[], wallLevel: number = 0): number {
   return Math.floor(power * (1 + wallLevel * 0.2));
 }
 
+export type CombatPreviewOutcome = "decisive_victory" | "victory" | "uncertain" | "defeat";
+
+export interface CombatPreview {
+  attackPower: number;
+  defensePower: number;
+  ratio: number;
+  outcome: CombatPreviewOutcome;
+  attackerModifiers: string[];
+  defenderModifiers: string[];
+}
+
+const FACTION_MILITARY_BONUS = 0.20; // FERRONATOS: +20% attack and defense
+const WALL_DEFENSE_BONUS_PER_LEVEL = 0.20; // +20% defense per wall level
+const DECISIVE_VICTORY_RATIO = 1.5;
+
+export function calculateCombatPreview(
+  attackingUnits: Unit[],
+  defenderTerritory: Territory,
+  attackerOrigin: ClanOrigin | undefined,
+  defenderOrigin: ClanOrigin | undefined
+): CombatPreview {
+  const attackerModifiers: string[] = [];
+  const defenderModifiers: string[] = [];
+
+  // Calculate raw attack power
+  let attackPower = 0;
+  for (const unit of attackingUnits) {
+    attackPower += unit.quantity * UNIT_STATS[unit.type].atk;
+  }
+
+  // Faction attack bonus (Ferronatos: +20% military)
+  if (attackerOrigin === "FERRONATOS") {
+    attackPower *= 1 + FACTION_MILITARY_BONUS;
+    attackerModifiers.push(`Ferronatos: +${FACTION_MILITARY_BONUS * 100}% atk`);
+  }
+
+  // Calculate raw defense power from defending units
+  let defensePower = 0;
+  for (const unit of defenderTerritory.units) {
+    defensePower += unit.quantity * UNIT_STATS[unit.type as UnitType].def;
+  }
+
+  // Wall defense bonus
+  const wall = defenderTerritory.structures.find((s) => s.type === "WALL");
+  if (wall) {
+    const wallBonus = wall.level * WALL_DEFENSE_BONUS_PER_LEVEL;
+    defensePower *= 1 + wallBonus;
+    defenderModifiers.push(`Muralha Nv${wall.level}: +${wallBonus * 100}% def`);
+  }
+
+  // Faction defense bonus (Ferronatos: +20% military)
+  if (defenderOrigin === "FERRONATOS") {
+    defensePower *= 1 + FACTION_MILITARY_BONUS;
+    defenderModifiers.push(`Ferronatos: +${FACTION_MILITARY_BONUS * 100}% def`);
+  }
+
+  attackPower = Math.floor(attackPower);
+  defensePower = Math.floor(defensePower);
+
+  const ratio = defensePower > 0 ? Math.round((attackPower / defensePower) * 100) / 100 : 10;
+
+  let outcome: CombatPreviewOutcome;
+  if (ratio > DECISIVE_VICTORY_RATIO) {
+    outcome = "decisive_victory";
+  } else if (ratio > 1.0) {
+    outcome = "victory";
+  } else if (ratio > 0.7) {
+    outcome = "uncertain";
+  } else {
+    outcome = "defeat";
+  }
+
+  return { attackPower, defensePower, ratio, outcome, attackerModifiers, defenderModifiers };
+}
+
 // Estado inicial
 function createInitialTerritories(): Territory[] {
   const bonuses: ResourceType[] = ["GRAIN", "WOOD", "GOLD", "GRAIN", "WOOD", "GOLD", "GRAIN", "WOOD", "GOLD", "GRAIN", "WOOD", "GOLD"];
