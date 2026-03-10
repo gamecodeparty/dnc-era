@@ -123,7 +123,6 @@ function getEraInfo(era: EraType) {
 export default function GamePage() {
   const { data: session } = useSession();
   const [selectedTerritoryId, setSelectedTerritoryId] = useState<string | null>(null);
-  const [timeToNextTurn, setTimeToNextTurn] = useState(TURN_INTERVAL_MS);
 
   // Mobile state
   const [activeTab, setActiveTab] = useState<TabId | null>(null);
@@ -147,40 +146,31 @@ export default function GamePage() {
     events,
     gameOver,
     winner,
+    timeRemaining,
     getPlayerClan,
     getPlayerTerritories,
-    processTurn,
     resetGame,
     sendExpedition,
     cancelExpedition,
     expeditions,
     explorationSites,
     sendExploration,
+    tickTimer,
   } = useGameStore();
 
   const player = getPlayerClan();
   const playerTerritories = getPlayerTerritories();
   const eraInfo = getEraInfo(currentEra as EraType);
 
-  // Timer para proximo turno
+  // Timer para proximo turno — driven by store
   useEffect(() => {
     if (gameOver) return;
-
-    const interval = setInterval(() => {
-      setTimeToNextTurn((prev) => {
-        if (prev <= 1000) {
-          processTurn();
-          return TURN_INTERVAL_MS;
-        }
-        return prev - 1000;
-      });
-    }, 1000);
-
+    const interval = setInterval(() => tickTimer(), 1000);
     return () => clearInterval(interval);
-  }, [gameOver, processTurn]);
+  }, [gameOver, tickTimer]);
 
   const selectedTerritory = territories.find((t) => t.id === selectedTerritoryId);
-  const timerProgress = ((TURN_INTERVAL_MS - timeToNextTurn) / TURN_INTERVAL_MS) * 100;
+  const timerProgress = ((TURN_INTERVAL_MS - timeRemaining) / TURN_INTERVAL_MS) * 100;
 
   // Calcula producao
   let grainProd = 0, woodProd = 0, goldProd = 0;
@@ -415,7 +405,7 @@ export default function GamePage() {
         era={currentEra as EraType}
         currentTurn={currentTurn}
         totalTurns={TOTAL_TURNS}
-        timeToNextTurn={timeToNextTurn}
+        timeRemaining={timeRemaining}
         turnIntervalMs={TURN_INTERVAL_MS}
         onMenuClick={() => setIsDrawerOpen(true)}
         className="lg:hidden"
@@ -455,7 +445,7 @@ export default function GamePage() {
                 <div className="w-20">
                   <div className="text-xs text-medieval-text-muted">Proximo</div>
                   <div className="text-lg font-mono text-medieval-primary">
-                    {formatTime(timeToNextTurn)}
+                    {formatTime(timeRemaining)}
                   </div>
                 </div>
                 <Progress value={timerProgress} className="w-16 h-2" />

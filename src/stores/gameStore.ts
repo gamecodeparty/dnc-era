@@ -359,6 +359,8 @@ export interface CombatPreview {
   outcome: CombatPreviewOutcome;
   attackerModifiers: string[];
   defenderModifiers: string[];
+  /** True when defender territory is AI-owned and not in revealedTerritories — defense value is approximate */
+  isApproximate: boolean;
 }
 
 const FACTION_MILITARY_BONUS = 0.20; // FERRONATOS: +20% attack and defense
@@ -369,7 +371,8 @@ export function calculateCombatPreview(
   attackingUnits: Unit[],
   defenderTerritory: Territory,
   attackerOrigin: ClanOrigin | undefined,
-  defenderOrigin: ClanOrigin | undefined
+  defenderOrigin: ClanOrigin | undefined,
+  revealedTerritories?: Set<string>
 ): CombatPreview {
   const attackerModifiers: string[] = [];
   const defenderModifiers: string[] = [];
@@ -409,6 +412,17 @@ export function calculateCombatPreview(
   attackPower = Math.floor(attackPower);
   defensePower = Math.floor(defensePower);
 
+  // Fog-of-war: AI territory not revealed by SPY gets approximate defense value
+  const isAiOwned = defenderTerritory.ownerId !== null && defenderTerritory.ownerId !== "player";
+  const isRevealed = revealedTerritories ? revealedTerritories.has(defenderTerritory.id) : false;
+  const isApproximate = isAiOwned && !isRevealed;
+
+  if (isApproximate) {
+    // Apply ±20% margin of error: show a rounded approximation
+    const FOG_MARGIN = 0.2;
+    defensePower = Math.floor(defensePower * (1 + FOG_MARGIN));
+  }
+
   const ratio = defensePower > 0 ? Math.round((attackPower / defensePower) * 100) / 100 : 10;
 
   let outcome: CombatPreviewOutcome;
@@ -422,7 +436,7 @@ export function calculateCombatPreview(
     outcome = "defeat";
   }
 
-  return { attackPower, defensePower, ratio, outcome, attackerModifiers, defenderModifiers };
+  return { attackPower, defensePower, ratio, outcome, attackerModifiers, defenderModifiers, isApproximate };
 }
 
 // Estado inicial
@@ -472,6 +486,8 @@ interface GameState {
   diplomacy: DiplomacyState;
   expeditions: Expedition[];
   explorationSites: ExplorationSite[];
+  timerPaused: boolean;
+  timeRemaining: number;
 
   // Getters
   getPlayerClan: () => Clan;
@@ -504,6 +520,9 @@ interface GameState {
   ) => { success: boolean; message: string; expeditionId?: string };
   processTurn: () => void;
   resetGame: () => void;
+  pauseTimer: () => void;
+  resumeTimer: () => void;
+  tickTimer: () => void;
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -517,6 +536,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   diplomacy: createInitialDiplomacy(),
   expeditions: [],
   explorationSites: createRandomExplorationSites(),
+  timerPaused: false,
+  timeRemaining: TURN_INTERVAL_MS,
 
   getPlayerClan: () => {
     return get().clans.find((c) => c.isPlayer)!;
@@ -976,6 +997,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   processTurn: () => {
     const state = get();
 
+    if (state.timerPaused) return;
     if (state.gameOver) return;
     if (state.currentTurn >= TOTAL_TURNS) {
       set({ gameOver: true, winner: "player" });
@@ -1440,7 +1462,28 @@ export const useGameStore = create<GameState>((set, get) => ({
       diplomacy: createInitialDiplomacy(),
       expeditions: [],
       explorationSites: createRandomExplorationSites(),
+      timerPaused: false,
+      timeRemaining: TURN_INTERVAL_MS,
     });
+  },
+
+  pauseTimer: () => {
+    set({ timerPaused: true });
+  },
+
+  resumeTimer: () => {
+    set({ timerPaused: false });
+  },
+
+  tickTimer: () => {
+    const state = get();
+    if (state.timerPaused || state.gameOver) return;
+    if (state.timeRemaining <= 1000) {
+      set({ timeRemaining: TURN_INTERVAL_MS });
+      get().processTurn();
+    } else {
+      set({ timeRemaining: state.timeRemaining - 1000 });
+    }
   },
 }));
 
