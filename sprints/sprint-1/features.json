@@ -76,7 +76,7 @@
     "id": "F-005",
     "name": "Componente TutorialOverlay",
     "description": "Criar src/components/game/tutorial/TutorialOverlay.tsx. Banner persistente no topo da área de jogo com ícone de missão + texto + botão 'Entendi'. 5 missões sequenciais com triggers contextuais: T1 construir produção, após 1ª estrutura construir Barracks, após Barracks recrutar 3 soldados, após recrutar construir Wall, Era War atacar. Botão 'Pular tutorial'. Animação Framer Motion fade-in.",
-    "status": "pending",
+    "status": "passing",
     "priority": 5,
     "agent": "coder",
     "task": "vibe-code",
@@ -89,13 +89,14 @@
       "Botão 'Entendi' dispensa missão individual, 'Pular tutorial' dispensa todas",
       "Animação Framer Motion fade-in na entrada do banner"
     ],
-    "prp_path": "sprints/sprint-1/3-prps/PRP-002-tutorial-contextual.md"
+    "prp_path": "sprints/sprint-1/3-prps/PRP-002-tutorial-contextual.md",
+    "completed_at": "2026-03-10T23:45:00Z"
   },
   {
     "id": "F-006",
     "name": "Integração tutorial com página do jogo",
     "description": "Importar TutorialOverlay em /src/app/game/page.tsx, renderizar condicionalmente quando tutorial não completado. Passar currentTurn, territories, clans para avaliação de triggers. Garantir funcionamento em desktop e mobile.",
-    "status": "blocked",
+    "status": "pending",
     "priority": 6,
     "agent": "coder",
     "task": "vibe-code",
