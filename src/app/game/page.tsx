@@ -140,6 +140,7 @@ export default function GamePage() {
     currentTurn,
     currentEra,
     territories,
+    clans,
     events,
     gameOver,
     winner,
@@ -959,6 +960,8 @@ export default function GamePage() {
           toTerritory={territories.find((t) => t.id === expeditionTarget)!}
           playerTerritories={playerTerritories}
           currentEra={currentEra}
+          attackerOrigin={player?.origin}
+          defenderOrigin={clans.find((c) => c.id === territories.find((t) => t.id === expeditionTarget)?.ownerId)?.origin}
           onSend={handleSendExpedition}
           onClose={handleCloseExpedition}
         />
