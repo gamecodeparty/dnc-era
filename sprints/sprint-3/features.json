@@ -229,7 +229,7 @@
     "id": "F-045",
     "name": "Integração do GameResultsScreen no fluxo de game over",
     "description": "Em /src/app/game/page.tsx, substituir o card atual de vitória/derrota pelo novo GameResultsScreen. Quando gameOver=true, renderizar <GameResultsScreen clans={clans} playerClanId={playerClanId} events={events} isVictory={isVictory} turn={currentTurn} />. Botão 'Jogar Novamente' reinicia o jogo corretamente.",
-    "status": "blocked",
+    "status": "passing",
     "priority": 13,
     "agent": "coder",
     "task": "vibe-code",
@@ -242,7 +242,8 @@
       "Botão 'Jogar Novamente' reinicia o jogo corretamente",
       "Tela de resultados aparece tanto em vitória quanto derrota"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-014-endgame-results-screen.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-014-endgame-results-screen.md",
+    "completed_at": "2026-03-11T14:00:00Z"
   },
   {
     "id": "F-046",

@@ -21,9 +21,6 @@ import {
   TreePine,
   Coins,
   AlertTriangle,
-  RefreshCw,
-  Trophy,
-  Skull,
   ChevronRight,
   Compass,
   Eye,
@@ -71,6 +68,9 @@ import { TutorialOverlay } from "@/components/game/tutorial";
 
 // Map components
 import { ExpeditionHint } from "@/components/game/map/GameMap";
+
+// Results screen
+import { GameResultsScreen } from "@/components/game/results/GameResultsScreen";
 
 // Timer hook
 import { useTurnTimer } from "@/hooks/useTurnTimer";
@@ -358,9 +358,9 @@ export default function GamePage() {
   // Game Over / Victory Screen
   if (gameOver) {
     return (
-      <div className="min-h-screen flex items-center justify-center relative">
+      <div className="min-h-screen relative">
         {/* Background */}
-        <div className="absolute inset-0 z-0">
+        <div className="fixed inset-0 z-0">
           <Image
             src={eraBackgrounds[currentEra as EraType]}
             alt="Game background"
@@ -371,61 +371,16 @@ export default function GamePage() {
           <div className="absolute inset-0 bg-medieval-bg-deep/90" />
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={transitions.springSmooth}
-          className="relative z-10 mx-4"
-        >
-          <MedievalCard
-            variant="elevated"
-            className={`max-w-lg w-full ${
-              winner ? "border-era-peace/50" : "border-medieval-accent/50"
-            }`}
-          >
-            <MedievalCardContent className="pt-8 text-center space-y-6">
-              {winner ? (
-                <>
-                  <div className="relative inline-block">
-                    <Trophy className="w-16 h-16 sm:w-24 sm:h-24 text-gold mx-auto" />
-                    <Sparkles color="#ffd700" count={12} />
-                  </div>
-                  <h1 className="text-3xl sm:text-5xl font-cinzel-decorative font-bold text-gold">
-                    VITORIA!
-                  </h1>
-                  <p className="text-medieval-text-secondary font-crimson text-base sm:text-lg">
-                    Voce sobreviveu ate o turno {currentTurn}!
-                  </p>
-                  <p className="text-medieval-text-muted text-sm sm:text-base">
-                    Territorios: {playerTerritories.length} | Recursos finais:{" "}
-                    {player.grain} graos, {player.wood} madeira, {player.gold} ouro
-                  </p>
-                </>
-              ) : (
-                <>
-                  <Skull className="w-16 h-16 sm:w-24 sm:h-24 text-medieval-accent mx-auto" />
-                  <h1 className="text-3xl sm:text-5xl font-cinzel-decorative font-bold text-medieval-accent">
-                    GAME OVER
-                  </h1>
-                  <p className="text-medieval-text-secondary font-crimson text-base sm:text-lg">
-                    Voce foi derrotado no turno {currentTurn}.
-                  </p>
-                  <p className="text-medieval-text-muted text-sm">
-                    Todos os seus territorios foram perdidos!
-                  </p>
-                </>
-              )}
-              <MedievalButton
-                variant="primary"
-                size="lg"
-                onClick={resetGame}
-                icon={<RefreshCw className="w-5 h-5" />}
-              >
-                Jogar Novamente
-              </MedievalButton>
-            </MedievalCardContent>
-          </MedievalCard>
-        </motion.div>
+        <div className="relative z-10">
+          <GameResultsScreen
+            clans={clans}
+            territories={territories}
+            events={events}
+            isVictory={!!winner}
+            turn={currentTurn}
+            onRestart={resetGame}
+          />
+        </div>
       </div>
     );
   }
