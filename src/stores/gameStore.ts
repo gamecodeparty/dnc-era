@@ -1915,3 +1915,132 @@ function processAI(territories: Territory[], clans: Clan[], era: Era) {
 
   return actions;
 }
+
+// ─── F-044: Agregação de estatísticas da partida ─────────────────────────────
+
+export interface EpicMoment {
+  turn: number;
+  territoryName: string;
+  attackerName: string;
+  defenderName: string;
+  result: "victory" | "defeat" | "draw";
+  attackerLosses: number;
+  defenderLosses: number;
+  message: string;
+  powerScore: number; // defenderLosses + attackerLosses — proxy de impacto
+}
+
+export interface GameStats {
+  turnsPlayed: number;
+  territoriesCaptured: number;
+  battlesWon: number;
+  battlesTotal: number;
+  structuresBuilt: number;
+  unitsTrained: number;
+  cardsUsed: number;
+  hordeRepelled: number;
+  epicMoment: EpicMoment | null;
+}
+
+export function getGameStats(events: GameEvent[]): GameStats {
+  let turnsPlayed = 0;
+  let territoriesCaptured = 0;
+  let battlesWon = 0;
+  let battlesTotal = 0;
+  let structuresBuilt = 0;
+  let unitsTrained = 0;
+  let cardsUsed = 0;
+  let hordeRepelled = 0;
+
+  const playerVictories: EpicMoment[] = [];
+  const playerDefeats: EpicMoment[] = [];
+
+  for (const ev of events) {
+    // turnsPlayed: max turn seen
+    if (ev.turn > turnsPlayed) turnsPlayed = ev.turn;
+
+    // Estruturas construídas: evento gerado por build action
+    if (ev.message.includes("Construiu ")) {
+      structuresBuilt += 1;
+    }
+
+    // Unidades treinadas: "Treinou Nx TIPO"
+    const trainMatch = ev.message.match(/^Treinou (\d+)x /);
+    if (trainMatch) {
+      unitsTrained += parseInt(trainMatch[1], 10);
+    }
+
+    // Horda: cada evento "A HORDA ATACA" = 1 ataque repelido (pelo jogador se sobreviveu)
+    if (ev.message.includes("A HORDA ATACA")) {
+      hordeRepelled += 1;
+    }
+
+    // Cartas usadas: SABOTAGE deixa marca na mensagem
+    if (ev.message.includes("Sabotagem:")) {
+      cardsUsed += 1;
+    }
+
+    // Eventos de combate do jogador
+    if (ev.eventKind === "COMBAT" && ev.isPlayerInvolved) {
+      battlesTotal += 1;
+
+      const atkLosses = ev.attackerLosses ?? 0;
+      const defLosses = ev.defenderLosses ?? 0;
+      const powerScore = atkLosses + defLosses;
+
+      if (ev.result === "victory" && ev.attackerClanId === "player") {
+        battlesWon += 1;
+        if (ev.territoryConquered) territoriesCaptured += 1;
+
+        playerVictories.push({
+          turn: ev.turn,
+          territoryName: ev.territoryName ?? "Território desconhecido",
+          attackerName: ev.attackerClanName ?? "Você",
+          defenderName: ev.defenderClanName ?? "Inimigo",
+          result: "victory",
+          attackerLosses: atkLosses,
+          defenderLosses: defLosses,
+          message: ev.message,
+          powerScore,
+        });
+      } else if (ev.result === "defeat" && ev.attackerClanId === "player") {
+        playerDefeats.push({
+          turn: ev.turn,
+          territoryName: ev.territoryName ?? "Território desconhecido",
+          attackerName: ev.attackerClanName ?? "Você",
+          defenderName: ev.defenderClanName ?? "Inimigo",
+          result: "defeat",
+          attackerLosses: atkLosses,
+          defenderLosses: defLosses,
+          message: ev.message,
+          powerScore,
+        });
+      }
+    }
+  }
+
+  // Momento épico: preferir vitória com maior powerScore; fallback para derrota mais dramática
+  let epicMoment: EpicMoment | null = null;
+  if (playerVictories.length > 0) {
+    epicMoment = playerVictories.reduce((best, cur) =>
+      cur.powerScore > best.powerScore ? cur : best
+    );
+  } else if (playerDefeats.length > 0) {
+    // Derrota mais dramática = menor margem (menor defenderLosses, i.e., quase venceu)
+    epicMoment = playerDefeats.reduce((best, cur) =>
+      cur.defenderLosses < best.defenderLosses ? cur : best
+    );
+  }
+
+  return {
+    turnsPlayed,
+    territoriesCaptured,
+    battlesWon,
+    battlesTotal,
+    structuresBuilt,
+    unitsTrained,
+    cardsUsed,
+    hordeRepelled,
+    epicMoment,
+  };
+}

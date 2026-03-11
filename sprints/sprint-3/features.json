@@ -210,7 +210,7 @@
     "id": "F-044",
     "name": "Função de agregação de estatísticas do jogo",
     "description": "Em gameStore.ts, adicionar função getGameStats(events) que agrega estatísticas da partida: turnsPlayed, territoriesCaptured, battlesWon, battlesTotal, structuresBuilt, unitsTrained, cardsUsed, hordeRepelled, epicMoment. Momento épico: filtrar eventos de combate onde jogador venceu, selecionar com maior saque total ou maior ratio de poder. Se nenhuma vitória, selecionar defesa mais dramática (menor margem). Retorna zeros/null para campos sem dados.",
-    "status": "pending",
+    "status": "passing",
     "priority": 12,
     "agent": "coder",
     "task": "vibe-code",
@@ -221,7 +221,8 @@
       "Retorna zeros/null para campos sem dados (partida sem combate)",
       "Contagem de battlesWon e battlesTotal são consistentes (won <= total)"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-014-endgame-results-screen.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-014-endgame-results-screen.md",
+    "completed_at": "2026-03-11T12:52:00Z"
   },
   {
     "id": "F-045",
