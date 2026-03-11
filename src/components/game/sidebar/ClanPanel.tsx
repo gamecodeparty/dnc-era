@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Star, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ORIGINS } from "@/game/constants/origins";
 
 interface ClanPanelProps {
   name: string;
@@ -11,18 +12,6 @@ interface ClanPanelProps {
   reputation: string;
   territoriesCount: number;
 }
-
-const ORIGIN_COLORS = {
-  FERRONATOS: "text-red-400",
-  VERDANEOS: "text-green-400",
-  UMBRAL: "text-purple-400",
-};
-
-const ORIGIN_NAMES = {
-  FERRONATOS: "Ferronatos",
-  VERDANEOS: "Verdaneos",
-  UMBRAL: "Umbral",
-};
 
 const REPUTATION_COLORS = {
   TRUSTED: "text-green-400",
@@ -36,6 +25,14 @@ const REPUTATION_NAMES = {
   HOSTILE: "Hostil",
 };
 
+// Derive color class from hex color stored in constants
+function hexToColorClass(hex: string): string {
+  if (hex === "#ef4444") return "text-red-400";
+  if (hex === "#22c55e") return "text-green-400";
+  if (hex === "#8b5cf6") return "text-purple-400";
+  return "text-slate-400";
+}
+
 export function ClanPanel({
   name,
   origin,
@@ -43,8 +40,12 @@ export function ClanPanel({
   reputation,
   territoriesCount,
 }: ClanPanelProps) {
-  const originColor = ORIGIN_COLORS[origin as keyof typeof ORIGIN_COLORS] || "text-slate-400";
-  const originName = ORIGIN_NAMES[origin as keyof typeof ORIGIN_NAMES] || origin;
+  const originDef = ORIGINS[origin as keyof typeof ORIGINS];
+  const originColor = originDef ? hexToColorClass(originDef.color) : "text-slate-400";
+  const originName = originDef?.name ?? origin;
+  const bonusIcon = originDef?.bonusIcon ?? "";
+  const bonusLabel = originDef?.bonusLabel ?? "";
+  const bonusTooltip = originDef?.bonusTooltip ?? "";
   const repColor = REPUTATION_COLORS[reputation as keyof typeof REPUTATION_COLORS] || "text-slate-400";
   const repName = REPUTATION_NAMES[reputation as keyof typeof REPUTATION_NAMES] || reputation;
 
@@ -82,6 +83,16 @@ export function ClanPanel({
           </div>
           <span className={cn("font-medium", repColor)}>{repName}</span>
         </div>
+
+        {bonusLabel && (
+          <div
+            className={cn("flex items-center gap-1.5 text-xs rounded px-2 py-1 bg-slate-700/50", originColor)}
+            title={bonusTooltip}
+          >
+            <span>{bonusIcon}</span>
+            <span>{bonusLabel}</span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

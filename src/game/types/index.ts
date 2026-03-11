@@ -166,6 +166,9 @@ export interface OriginDefinition {
     value: number;
   };
   color: string;
+  bonusLabel: string;
+  bonusIcon: string;
+  bonusTooltip: string;
 }
 
 // ==============================================================================
