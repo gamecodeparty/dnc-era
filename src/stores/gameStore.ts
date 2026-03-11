@@ -150,6 +150,8 @@ export interface IncomingAttack {
 export interface HordaPreview {
   targetClanId: string;
   targetTerritoryId: string;
+  targetTerritoryPosition: number; // F-098: posição do território-alvo (0-based)
+  targetDefensePower: number;      // F-098: poder defensivo atual do território-alvo
   arrivesTurn: number;
   strength: number;
 }
@@ -2245,6 +2247,8 @@ export const useGameStore = create<GameState>((set, get) => ({
           hordaPreview = {
             targetClanId,
             targetTerritoryId: weakestTerritory.id,
+            targetTerritoryPosition: weakestTerritory.position, // F-098
+            targetDefensePower: weakestDefense === Infinity ? 0 : weakestDefense, // F-098
             arrivesTurn: nextHordaTurn,
             strength,
           };

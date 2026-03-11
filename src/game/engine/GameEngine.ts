@@ -274,9 +274,22 @@ export class GameEngine {
     const weakestTerritory = await this.findWeakestTerritory(targetClan.id);
     if (!weakestTerritory) return null;
 
+    // F-098: compute defense power of weakest territory (same logic as findWeakestTerritory)
+    const unitDefenseStats: Record<string, number> = {
+      SOLDIER: 2, ARCHER: 1, KNIGHT: 3, SPY: 0,
+    };
+    const WALL_DEFENSE_BONUS_PER_LEVEL = 0.2;
+    let targetDefense = weakestTerritory.units.reduce(
+      (sum, u) => sum + u.quantity * (unitDefenseStats[u.type] ?? 0), 0
+    );
+    const wall = weakestTerritory.structures.find((s) => s.type === "WALL");
+    if (wall) targetDefense *= 1 + wall.level * WALL_DEFENSE_BONUS_PER_LEVEL;
+
     return {
       targetClanId: targetClan.id,
       targetTerritoryId: weakestTerritory.id,
+      targetTerritoryPosition: weakestTerritory.position, // F-098
+      targetDefensePower: Math.floor(targetDefense),      // F-098
       arrivesTurn: nextTurn,
       strength,
     };

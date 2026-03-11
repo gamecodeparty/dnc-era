@@ -230,6 +230,8 @@ export interface TerritoryIntel {
 export interface HordaPreview {
   targetClanId: string;
   targetTerritoryId: string;
+  targetTerritoryPosition: number; // F-098: posição do território-alvo (0-based)
+  targetDefensePower: number;      // F-098: poder defensivo atual do território-alvo
   arrivesTurn: number;
   strength: number;
 }

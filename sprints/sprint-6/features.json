@@ -3,7 +3,7 @@
     "id": "F-098",
     "name": "Calcular território-alvo da Horda",
     "description": "Estender HordaPreview com targetTerritoryPosition e targetDefensePower em /src/game/types/index.ts. Em GameEngine.ts, na lógica de processHordaAttack(), quando turnsUntilAttack === 1, calcular território-alvo via findWeakestTerritory() e popular os novos campos. Se jogador reforçar entre preview e ataque, Horda recalcula no turno do ataque.",
-    "status": "pending",
+    "status": "passing",
     "priority": 1,
     "agent": "coder",
     "task": "vibe-code",
@@ -14,7 +14,8 @@
       "Cálculo usa mesma lógica de findWeakestTerritory() (território com menor poder defensivo)",
       "Se jogador reforçar o território entre preview e ataque, Horda recalcula no turno do ataque"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-031-horda-territory-target-display.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-031-horda-territory-target-display.md",
+    "completed_at": "2026-03-11T22:00:00.000Z"
   },
   {
     "id": "F-104",
@@ -114,7 +115,9 @@
     "priority": 7,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-098"],
+    "dependencies": [
+      "F-098"
+    ],
     "tests": [
       "Modal mostra qual território será atacado (posição + nome)",
       "Modal mostra poder defensivo atual do território-alvo",
@@ -131,7 +134,9 @@
     "priority": 8,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-098"],
+    "dependencies": [
+      "F-098"
+    ],
     "tests": [
       "Badge pulsante '💀 Alvo da Horda' aparece no território específico (não em todos do clã)",
       "Borda vermelha (border-red-500) com animação animate-pulse",
@@ -145,11 +150,13 @@
     "id": "F-102",
     "name": "Dialog confirmação construção sem economia",
     "description": "Em /src/app/game/territory/[id]/page.tsx, adicionar dialog de confirmação quando build() retorna needsConfirmation: true. Dialog explica que a estrutura não produz recursos, que jogador não tem produção em nenhum território, e sugere construir Fazenda ou Mina primeiro. Botão 'Construir Mesmo Assim' executa construção. Botão 'Cancelar' fecha dialog.",
-    "status": "pending",
+    "status": "blocked",
     "priority": 9,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-101"],
+    "dependencies": [
+      "F-101"
+    ],
     "tests": [
       "Dialog aparece ao construir Shadow Guild ou Taverna sem produção em nenhum território",
       "Dialog explica que a estrutura não produz recursos e sugere construir produção primeiro",
@@ -181,11 +188,13 @@
     "id": "F-106",
     "name": "Botão Auto-Distribuir na página exército",
     "description": "Em /src/app/game/army/page.tsx, adicionar botão MedievalButton variant='secondary' no topo da página (abaixo do título, acima da lista de territórios). onClick chama gameStore.autoDistributeTroops(). Desabilitado quando jogador tem <= 1 território. Tooltip explica comportamento. Toast de confirmação após distribuição: 'Tropas distribuídas igualmente entre {n} territórios'.",
-    "status": "pending",
+    "status": "blocked",
     "priority": 11,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-105"],
+    "dependencies": [
+      "F-105"
+    ],
     "tests": [
       "Botão 'Auto-Distribuir Igualmente' visível na página de exército",
       "Botão desabilitado quando jogador tem <= 1 território",
@@ -199,11 +208,14 @@
     "id": "F-109",
     "name": "Atualizar textos facção e ClanPanel",
     "description": "Em /src/game/constants/origins.ts, atualizar labels: Verdâneos bonusLabel '+15% produção de todos os recursos', Umbral bonusLabel '+30% eficiência de espiões | Estimativas 50% mais precisas'. Atualizar tooltips explicativos. Em /src/components/game/sidebar/ClanPanel.tsx, verificar que renderiza corretamente os novos labels (Umbral com dois bônus separados por ' | ' ou em linhas separadas). Ferronatos não é alterado.",
-    "status": "pending",
+    "status": "blocked",
     "priority": 12,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-107", "F-108"],
+    "dependencies": [
+      "F-107",
+      "F-108"
+    ],
     "tests": [
       "Labels de facção atualizados em ClanPanel e tela de seleção",
       "Verdâneos: '+15% produção de todos os recursos'",
