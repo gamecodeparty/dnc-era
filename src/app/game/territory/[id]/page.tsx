@@ -56,7 +56,7 @@ const STRUCTURE_INFO: Record<
 > = {
   FARM: { name: "Fazenda", description: "Produz +10 graos/turno", icon: Wheat },
   SAWMILL: { name: "Serraria", description: "Produz +8 madeira/turno", icon: TreePine },
-  MINE: { name: "Mina", description: "Produz +5 ouro/turno", icon: Coins },
+  MINE: { name: "Mina", description: "Produz +7 ouro/turno", icon: Coins },
   BARRACKS: { name: "Quartel", description: "Treina Soldados e Arqueiros", icon: Sword },
   STABLE: { name: "Estabulo", description: "Treina Cavaleiros", icon: Shield },
   WALL: { name: "Muralha", description: "+20% defesa por nivel", icon: Castle },

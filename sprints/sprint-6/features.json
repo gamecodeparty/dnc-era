@@ -21,7 +21,7 @@
     "id": "F-104",
     "name": "Ajustar produção da Mina",
     "description": "Em /src/game/constants/balance.ts, alterar PRODUCTION_PER_LEVEL.MINE de [5, 8, 11] para [7, 11, 15]. Nv1: 7/t (+2), Nv2: 11/t (+3), Nv3: 15/t (+4). Verificar que nenhum outro arquivo referencia valores hardcoded de produção da Mina. ResourcePanel deve exibir produção atualizada. AI usa mesma constante.",
-    "status": "pending",
+    "status": "passing",
     "priority": 2,
     "agent": "coder",
     "task": "vibe-code",
@@ -35,7 +35,8 @@
       "AI funciona sem erros com novos valores (usa mesma constante)",
       "Nenhum outro arquivo referencia valores hardcoded de produção da Mina"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-033-gold-economy-rebalance.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-033-gold-economy-rebalance.md",
+    "completed_at": "2026-03-11T21:30:00.000Z"
   },
   {
     "id": "F-101",

@@ -37,7 +37,7 @@ export const NEUTRAL_TERRITORIES = 2;
 export const PRODUCTION_PER_LEVEL = {
   FARM: [10, 15, 20],      // Grain production
   SAWMILL: [8, 12, 16],    // Wood production
-  MINE: [5, 8, 11],        // Gold production
+  MINE: [7, 11, 15],        // Gold production
 } as const;
 
 // Territory bonus multiplier
