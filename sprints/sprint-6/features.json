@@ -1,0 +1,216 @@
+[
+  {
+    "id": "F-098",
+    "name": "Calcular território-alvo da Horda",
+    "description": "Estender HordaPreview com targetTerritoryPosition e targetDefensePower em /src/game/types/index.ts. Em GameEngine.ts, na lógica de processHordaAttack(), quando turnsUntilAttack === 1, calcular território-alvo via findWeakestTerritory() e popular os novos campos. Se jogador reforçar entre preview e ataque, Horda recalcula no turno do ataque.",
+    "status": "pending",
+    "priority": 1,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "HordaPreview inclui campos targetTerritoryPosition e targetDefensePower",
+      "Campos populados quando turnsUntilAttack === 1",
+      "Cálculo usa mesma lógica de findWeakestTerritory() (território com menor poder defensivo)",
+      "Se jogador reforçar o território entre preview e ataque, Horda recalcula no turno do ataque"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-031-horda-territory-target-display.md"
+  },
+  {
+    "id": "F-104",
+    "name": "Ajustar produção da Mina",
+    "description": "Em /src/game/constants/balance.ts, alterar PRODUCTION_PER_LEVEL.MINE de [5, 8, 11] para [7, 11, 15]. Nv1: 7/t (+2), Nv2: 11/t (+3), Nv3: 15/t (+4). Verificar que nenhum outro arquivo referencia valores hardcoded de produção da Mina. ResourcePanel deve exibir produção atualizada. AI usa mesma constante.",
+    "status": "pending",
+    "priority": 2,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Mina Nv1 produz 7 ouro/turno (antes: 5)",
+      "Mina Nv2 produz 11 ouro/turno (antes: 8)",
+      "Mina Nv3 produz 15 ouro/turno (antes: 11)",
+      "Bônus de território ouro aplica normalmente (x1.25)",
+      "ResourcePanel exibe produção atualizada corretamente (+7/t para Mina Nv1)",
+      "AI funciona sem erros com novos valores (usa mesma constante)",
+      "Nenhum outro arquivo referencia valores hardcoded de produção da Mina"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-033-gold-economy-rebalance.md"
+  },
+  {
+    "id": "F-101",
+    "name": "Detectar risco construção sem economia",
+    "description": "Em /src/stores/gameStore.ts, na função build(), após validações existentes e ANTES de executar a construção, verificar se jogador tem alguma estrutura produtiva (FARM, SAWMILL, MINE) em QUALQUER território. Se não tiver e tentar construir SHADOW_GUILD ou TAVERN, retornar { needsConfirmation: true, reason: 'no_production' }. Verificação global (todos territórios do clã).",
+    "status": "pending",
+    "priority": 3,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Função build() retorna flag de confirmação quando estrutura especial é construída sem produção",
+      "Verificação cobre TODOS os territórios do clã (não apenas o território atual)",
+      "Se jogador já tem Fazenda/Serraria/Mina em QUALQUER território, flag não é ativada",
+      "Aviso aparece para TODAS as facções (não apenas Umbral)"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-032-shadow-guild-contextual-warning.md"
+  },
+  {
+    "id": "F-105",
+    "name": "Lógica auto-distribuir tropas",
+    "description": "Em /src/stores/gameStore.ts, adicionar função autoDistributeTroops(). Agregar todas as tropas estacionadas do jogador (excluir tropas em expedições ativas). Para cada tipo de unidade (SOLDIER, ARCHER, KNIGHT, SPY), dividir igualmente entre territórios via Math.floor. Remainder vai para territórios com mais estruturas (prioridade defensiva). Distribuição instantânea (sem custo de turno). Noop se jogador tem <= 1 território.",
+    "status": "pending",
+    "priority": 4,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Todas as tropas estacionadas são redistribuídas igualmente entre territórios",
+      "Remainder vai para territórios com mais estruturas",
+      "Tropas em expedições ativas NÃO são incluídas",
+      "Distribuição é instantânea (sem custo de turno)",
+      "Espiões (SPY) são distribuídos junto com outras unidades",
+      "Função não faz nada se jogador tem <= 1 território"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-034-auto-distribute-troops.md"
+  },
+  {
+    "id": "F-107",
+    "name": "Buff Verdâneos produção generalizada",
+    "description": "Em /src/game/constants/balance.ts, alterar bônus Verdâneos de { type: 'grain_production', value: 0.20 } para { type: 'all_production', value: 0.15 }. Em /src/game/engine/ResourceSystem.ts, alterar aplicação do bônus para multiplicar grainProduction, woodProduction e goldProduction pelo fator (1 + 0.15). Bônus aplica apenas em estruturas de produção (Fazenda, Serraria, Mina).",
+    "status": "pending",
+    "priority": 5,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Verdâneos produz +15% em TODOS os recursos (grão, madeira, ouro)",
+      "ResourcePanel exibe produção correta com bônus aplicado a todos os recursos",
+      "Bônus aplica apenas em estruturas de produção (Fazenda, Serraria, Mina) — não em bônus de território",
+      "AI Verdâneos funciona corretamente com novos valores"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-035-faction-balance-diversity.md"
+  },
+  {
+    "id": "F-108",
+    "name": "Buff Umbral fog of war reduzido",
+    "description": "Em /src/game/constants/balance.ts, adicionar campo secondary ao bônus Umbral: { type: 'spy_efficiency', value: 0.30, secondary: { type: 'fog_of_war_reduction', value: 0.50 } }. Em /src/game/engine/GameEngine.ts, onde estimativa de força inimiga é calculada, aplicar margem ±10% para Umbral (vs ±20% padrão). Estender tipo OriginBonus em /src/game/types/index.ts para suportar campo secondary.",
+    "status": "pending",
+    "priority": 6,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Umbral mantém +30% eficiência de espiões",
+      "Umbral tem estimativas de ameaça com margem ±10% (vs ±20% para outras facções)",
+      "Estimativas mais precisas aplicam desde T1 (bônus passivo, sem custo)",
+      "AI Umbral funciona corretamente com estimativas mais precisas"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-035-faction-balance-diversity.md"
+  },
+  {
+    "id": "F-099",
+    "name": "Exibir território-alvo no InvasionInfoModal",
+    "description": "Em /src/components/game/fx/InvasionInfoModal.tsx, adicionar seção mostrando território-alvo quando turnsUntilAttack === 1. Exibir: posição do território (position + 1), poder defensivo atual (targetDefensePower), e aviso de que reforçar pode mudar o alvo da Horda. Seção só aparece quando turnsUntilAttack === 1.",
+    "status": "pending",
+    "priority": 7,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": ["F-098"],
+    "tests": [
+      "Modal mostra qual território será atacado (posição + nome)",
+      "Modal mostra poder defensivo atual do território-alvo",
+      "Modal inclui aviso de que reforçar o alvo pode mudar a escolha da Horda",
+      "Seção só aparece quando turnsUntilAttack === 1 (não antes)"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-031-horda-territory-target-display.md"
+  },
+  {
+    "id": "F-100",
+    "name": "Badge pulsante território-alvo Horda no mapa",
+    "description": "Em /src/components/game/map/Territory.tsx, quando hordaPreview.targetTerritoryPosition === territory.position e turnsUntilAttack === 1, exibir badge pulsante '💀 Alvo da Horda' com animate-pulse e borda border-red-500. Tooltip ao hover explicando a situação. Estender lógica existente de ícone caveira (linhas 158-197) para usar posição específica do hordaPreview. Badge desaparece após ataque processado.",
+    "status": "pending",
+    "priority": 8,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": ["F-098"],
+    "tests": [
+      "Badge pulsante '💀 Alvo da Horda' aparece no território específico (não em todos do clã)",
+      "Borda vermelha (border-red-500) com animação animate-pulse",
+      "Tooltip explica a situação e sugere ação",
+      "Badge aparece apenas quando turnsUntilAttack === 1",
+      "Badge desaparece após o ataque da Horda ser processado"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-031-horda-territory-target-display.md"
+  },
+  {
+    "id": "F-102",
+    "name": "Dialog confirmação construção sem economia",
+    "description": "Em /src/app/game/territory/[id]/page.tsx, adicionar dialog de confirmação quando build() retorna needsConfirmation: true. Dialog explica que a estrutura não produz recursos, que jogador não tem produção em nenhum território, e sugere construir Fazenda ou Mina primeiro. Botão 'Construir Mesmo Assim' executa construção. Botão 'Cancelar' fecha dialog.",
+    "status": "pending",
+    "priority": 9,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": ["F-101"],
+    "tests": [
+      "Dialog aparece ao construir Shadow Guild ou Taverna sem produção em nenhum território",
+      "Dialog explica que a estrutura não produz recursos e sugere construir produção primeiro",
+      "Botão 'Construir Mesmo Assim' executa a construção normalmente",
+      "Botão 'Cancelar' aborta a construção",
+      "Dialog não é bloqueante — jogador pode ignorar e construir"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-032-shadow-guild-contextual-warning.md"
+  },
+  {
+    "id": "F-103",
+    "name": "TipBanner Umbral turno 1",
+    "description": "Em /src/components/game/hud/TipBanner.tsx, adicionar tip contextual para jogadores com clan.origin === 'UMBRAL' no turno 1. Texto: 'Dica Umbral: Sua facção brilha com espiões, mas espiões custam ouro. Construa uma Fazenda e Mina antes da Guilda das Sombras para garantir renda.' Seguir padrão visual existente do TipBanner (implementado em S4). Tip não aparece para outras facções e não reaparece após turno 1.",
+    "status": "pending",
+    "priority": 10,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "TipBanner aparece para jogadores Umbral no turno 1",
+      "Texto sugere build order econômica antes de Shadow Guild",
+      "Tip segue padrão visual existente do TipBanner",
+      "Tip não aparece para outras facções",
+      "Tip não reaparece após turno 1"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-032-shadow-guild-contextual-warning.md"
+  },
+  {
+    "id": "F-106",
+    "name": "Botão Auto-Distribuir na página exército",
+    "description": "Em /src/app/game/army/page.tsx, adicionar botão MedievalButton variant='secondary' no topo da página (abaixo do título, acima da lista de territórios). onClick chama gameStore.autoDistributeTroops(). Desabilitado quando jogador tem <= 1 território. Tooltip explica comportamento. Toast de confirmação após distribuição: 'Tropas distribuídas igualmente entre {n} territórios'.",
+    "status": "pending",
+    "priority": 11,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": ["F-105"],
+    "tests": [
+      "Botão 'Auto-Distribuir Igualmente' visível na página de exército",
+      "Botão desabilitado quando jogador tem <= 1 território",
+      "Toast de confirmação aparece após distribuição",
+      "Tooltip explica o comportamento do botão",
+      "Botão usa componente MedievalButton existente com variant secondary"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-034-auto-distribute-troops.md"
+  },
+  {
+    "id": "F-109",
+    "name": "Atualizar textos facção e ClanPanel",
+    "description": "Em /src/game/constants/origins.ts, atualizar labels: Verdâneos bonusLabel '+15% produção de todos os recursos', Umbral bonusLabel '+30% eficiência de espiões | Estimativas 50% mais precisas'. Atualizar tooltips explicativos. Em /src/components/game/sidebar/ClanPanel.tsx, verificar que renderiza corretamente os novos labels (Umbral com dois bônus separados por ' | ' ou em linhas separadas). Ferronatos não é alterado.",
+    "status": "pending",
+    "priority": 12,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": ["F-107", "F-108"],
+    "tests": [
+      "Labels de facção atualizados em ClanPanel e tela de seleção",
+      "Verdâneos: '+15% produção de todos os recursos'",
+      "Umbral: ambos bônus visíveis (espiões + estimativas)",
+      "Tooltips explicam a mecânica de cada bônus",
+      "Ferronatos não é alterado"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-035-faction-balance-diversity.md"
+  }
+]
