@@ -18,6 +18,7 @@ interface TerritoryProps {
   isRevealed?: boolean;
   revealedUnitsCount?: number;
   revealedStructuresCount?: number;
+  isAttackable?: boolean;
   onClick?: () => void;
 }
 
@@ -59,6 +60,7 @@ export function Territory({
   isRevealed = false,
   revealedUnitsCount,
   revealedStructuresCount,
+  isAttackable = false,
   onClick,
 }: TerritoryProps) {
   const ResourceIcon = RESOURCE_ICONS[bonusResource as keyof typeof RESOURCE_ICONS] || Wheat;
@@ -82,6 +84,7 @@ export function Territory({
         borderColor,
         bgColor,
         isSelected && "ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900",
+        isAttackable && !isSelected && "ring-2 ring-red-500/30 animate-pulse",
         isPlayerOwned && "shadow-md"
       )}
     >

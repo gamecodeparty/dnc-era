@@ -671,6 +671,11 @@ export default function GamePage() {
 
                 const revealedData = revealedTerritories[territory.id];
                 const isRevealed = !!revealedData;
+                const isAttackable =
+                  !isPlayer &&
+                  !isNeutral &&
+                  (currentEra === "WAR" || currentEra === "INVASION") &&
+                  playerHasTroops;
 
                 return (
                   <motion.div
@@ -689,6 +694,7 @@ export default function GamePage() {
                       territory-tile ${bgClass}
                       ${isSelected ? "ring-2 ring-medieval-primary-bright scale-105 shadow-golden-glow" : ""}
                       ${hasExplorationSite ? "ring-1 ring-era-peace/50" : ""}
+                      ${isAttackable && !isSelected ? "ring-2 ring-red-500/30 animate-pulse" : ""}
                     `}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.98 }}

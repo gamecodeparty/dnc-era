@@ -7,6 +7,8 @@ interface GameMapProps {
   territories: TerritoryWithDetails[];
   playerClanId: string;
   selectedTerritoryId?: string;
+  currentEra?: string;
+  playerHasTroops?: boolean;
   onTerritoryClick?: (territoryId: string) => void;
 }
 
@@ -14,6 +16,8 @@ export function GameMap({
   territories,
   playerClanId,
   selectedTerritoryId,
+  currentEra,
+  playerHasTroops = false,
   onTerritoryClick,
 }: GameMapProps) {
   // Sort territories by position
@@ -29,6 +33,11 @@ export function GameMap({
             (sum, u) => sum + u.quantity,
             0
           );
+          const isEnemy = territory.ownerId !== null && territory.ownerId !== playerClanId;
+          const isAttackable =
+            isEnemy &&
+            playerHasTroops &&
+            (currentEra === "WAR" || currentEra === "INVASION");
 
           return (
             <Territory
@@ -43,6 +52,7 @@ export function GameMap({
               unitsCount={unitsCount}
               isPlayerOwned={territory.ownerId === playerClanId}
               isSelected={territory.id === selectedTerritoryId}
+              isAttackable={isAttackable}
               onClick={() => onTerritoryClick?.(territory.id)}
             />
           );
