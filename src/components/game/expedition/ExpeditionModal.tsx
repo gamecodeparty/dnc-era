@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { X, Swords, MapPin, Clock, Package, ChevronDown, ChevronUp, AlertTriangle, Shield, HelpCircle } from "lucide-react";
+import { X, Swords, MapPin, Clock, Package, ChevronDown, ChevronUp, AlertTriangle, Shield, HelpCircle, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MedievalButton } from "@/components/ui/medieval";
 import {
@@ -17,6 +17,11 @@ import {
   calculateCombatPreview,
 } from "@/stores/gameStore";
 import type { CombatPreviewOutcome } from "@/game/types";
+import { CARDS } from "@/game/constants/cards";
+
+/** Minimal card shape needed by the modal */
+export type CombatCardEntry = { id: string; type: string; used: boolean };
+type CardType = string;
 
 interface ExpeditionModalProps {
   /** Origin territory */
@@ -33,15 +38,21 @@ interface ExpeditionModalProps {
   defenderOrigin?: ClanOrigin;
   /** Territory IDs revealed by SPY — undefined means no territories revealed (PRP-004 integration) */
   revealedTerritories?: Set<string>;
+  /** Player's cards (for combat card selection) */
+  playerCards?: CombatCardEntry[];
   /** Called when expedition is sent */
   onSend: (
     fromTerritoryId: string,
     toTerritoryId: string,
-    units: { type: UnitType; quantity: number }[]
+    units: { type: UnitType; quantity: number }[],
+    cardType?: string | null
   ) => { success: boolean; message: string };
   /** Called when modal is closed */
   onClose: () => void;
 }
+
+/** Card contexts relevant to attack */
+const COMBAT_CARD_CONTEXTS = new Set(["combat", "espionage", "aggression"]);
 
 const outcomeConfig: Record<CombatPreviewOutcome, { label: string; colorClass: string; borderClass: string; bgClass: string }> = {
   decisive_victory: { label: "Vitória Decisiva", colorClass: "text-clan-verdaneos", borderClass: "border-clan-verdaneos/30", bgClass: "bg-clan-verdaneos/10" },
@@ -72,6 +83,7 @@ export function ExpeditionModal({
   attackerOrigin,
   defenderOrigin,
   revealedTerritories,
+  playerCards = [],
   onSend,
   onClose,
 }: ExpeditionModalProps) {
@@ -87,9 +99,33 @@ export function ExpeditionModal({
     SPY: 0,
   });
 
+  // Selected combat card
+  const [selectedCard, setSelectedCard] = useState<CardType | null>(null);
+
   // UI state
   const [showOriginSelect, setShowOriginSelect] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Available combat cards (unused, relevant context only, deduplicated by type)
+  const availableCombatCards = useMemo(() => {
+    const seen = new Set<CardType>();
+    const result: Array<{ type: CardType; count: number; name: string; description: string }> = [];
+    for (const card of playerCards) {
+      if (!card.used) {
+        const def = CARDS[card.type];
+        if (def && COMBAT_CARD_CONTEXTS.has(def.context)) {
+          if (seen.has(card.type)) {
+            const existing = result.find((r) => r.type === card.type);
+            if (existing) existing.count++;
+          } else {
+            seen.add(card.type);
+            result.push({ type: card.type, count: 1, name: def.name, description: def.description });
+          }
+        }
+      }
+    }
+    return result;
+  }, [playerCards]);
 
   // Available units from selected territory
   const availableUnits = useMemo(() => {
@@ -132,11 +168,34 @@ export function ExpeditionModal({
     };
   }, [selectedUnits, fromTerritory.position, toTerritory.position]);
 
-  // Combat preview (recalculates in real time as units are added/removed)
+  // Combat preview (recalculates in real time as units are added/removed, applying card bonuses)
   const combatPreview = useMemo(() => {
     if (expeditionStats.totalUnits === 0) return null;
-    return calculateCombatPreview(expeditionStats.units, toTerritory, attackerOrigin, defenderOrigin, revealedTerritories);
-  }, [expeditionStats.units, expeditionStats.totalUnits, toTerritory, attackerOrigin, defenderOrigin, revealedTerritories]);
+    // For INFORMANT: treat territory as revealed so isApproximate = false
+    const effectiveRevealed = selectedCard === "INFORMANT"
+      ? new Set([...(revealedTerritories ?? []), toTerritory.id])
+      : revealedTerritories;
+    const preview = calculateCombatPreview(expeditionStats.units, toTerritory, attackerOrigin, defenderOrigin, effectiveRevealed);
+    // For REINFORCEMENTS: apply +50% attack power to preview
+    if (selectedCard === "REINFORCEMENTS") {
+      const boostedAttack = Math.floor(preview.attackPower * 1.5);
+      const total = boostedAttack + preview.defensePower;
+      const ratio = preview.defensePower > 0 ? Math.round((boostedAttack / preview.defensePower) * 100) / 100 : 10;
+      let outcome: CombatPreviewOutcome;
+      if (ratio > 1.5) outcome = "decisive_victory";
+      else if (ratio > 1.0) outcome = "victory";
+      else if (ratio > 0.7) outcome = "uncertain";
+      else outcome = "defeat";
+      return {
+        ...preview,
+        attackPower: boostedAttack,
+        ratio,
+        outcome,
+        attackerModifiers: [...preview.attackerModifiers, "Reforcos: +50% atk"],
+      };
+    }
+    return preview;
+  }, [expeditionStats.units, expeditionStats.totalUnits, toTerritory, attackerOrigin, defenderOrigin, revealedTerritories, selectedCard]);
 
   // Handle unit quantity change
   const handleUnitChange = (type: UnitType, delta: number) => {
@@ -195,7 +254,8 @@ export function ExpeditionModal({
     const result = onSend(
       fromTerritory.id,
       toTerritory.id,
-      expeditionStats.units.map((u) => ({ type: u.type, quantity: u.quantity }))
+      expeditionStats.units.map((u) => ({ type: u.type, quantity: u.quantity })),
+      selectedCard
     );
 
     if (!result.success) {
@@ -393,6 +453,57 @@ export function ExpeditionModal({
               {Object.values(availableUnits).every((v) => v === 0) && (
                 <div className="text-center py-4 text-medieval-text-muted">
                   Nenhuma tropa disponivel neste territorio
+                </div>
+              )}
+            </div>
+
+            {/* Combat cards section */}
+            <div className="space-y-2">
+              <h3 className="font-cinzel text-sm text-medieval-text-secondary flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-grain" />
+                Cartas Disponíveis
+              </h3>
+              {availableCombatCards.length === 0 ? (
+                <div className="text-center py-3 text-xs text-medieval-text-muted bg-medieval-bg-card/30 rounded-lg border border-medieval-primary/10">
+                  Sem cartas de combate disponíveis
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  {availableCombatCards.map((card) => {
+                    const isActive = selectedCard === card.type;
+                    return (
+                      <div
+                        key={card.type}
+                        className={`flex items-center gap-3 p-2.5 rounded-lg border transition-colors ${
+                          isActive
+                            ? "bg-grain/10 border-grain/40"
+                            : "bg-medieval-bg-card/40 border-medieval-primary/15"
+                        }`}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className={`font-cinzel text-sm font-medium ${isActive ? "text-grain" : "text-medieval-text-primary"}`}>
+                              {card.name}
+                            </span>
+                            {card.count > 1 && (
+                              <span className="text-xs text-medieval-text-muted">×{card.count}</span>
+                            )}
+                          </div>
+                          <div className="text-xs text-medieval-text-muted truncate">{card.description}</div>
+                        </div>
+                        <button
+                          onClick={() => setSelectedCard(isActive ? null : card.type)}
+                          className={`shrink-0 px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                            isActive
+                              ? "bg-grain/20 text-grain hover:bg-grain/30"
+                              : "bg-medieval-primary/20 text-medieval-primary hover:bg-medieval-primary/30"
+                          }`}
+                        >
+                          {isActive ? "Ativo" : "Ativar"}
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

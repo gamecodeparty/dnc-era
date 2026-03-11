@@ -32,6 +32,16 @@ interface MobileGameHeaderProps {
   className?: string;
 }
 
+function formatAdaptiveTime(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) {
+    return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  }
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
 const eraColors = {
   PEACE: { bg: "bg-era-peace/20", text: "text-era-peace", border: "border-era-peace", fill: "bg-era-peace" },
   WAR: { bg: "bg-era-war/20", text: "text-era-war", border: "border-era-war", fill: "bg-era-war" },
@@ -68,6 +78,15 @@ export function MobileGameHeader({
   const actualTotalTime = totalTime ?? (turnIntervalMs ? Math.floor(turnIntervalMs / 1000) : 30);
   const progress = actualTotalTime > 0 ? (actualTimeRemaining / actualTotalTime) * 100 : 100;
 
+  // Urgency: last 20% yellow, last 10% red + pulse
+  const urgencyPct = actualTotalTime > 0 ? actualTimeRemaining / actualTotalTime : 1;
+  const timerTextClass =
+    urgencyPct <= 0.1
+      ? "text-red-400 animate-pulse"
+      : urgencyPct <= 0.2
+      ? "text-yellow-400"
+      : "text-medieval-text-muted";
+
   const handleMenuClick = () => {
     vibrate("light");
     if (onMenuClick) {
@@ -102,8 +121,8 @@ export function MobileGameHeader({
 
             {/* Timer Progress */}
             <div className="w-16">
-              <div className="text-xs text-medieval-text-muted text-center mb-1">
-                {actualTimeRemaining}s
+              <div className={`text-xs text-center mb-1 ${timerTextClass}`}>
+                {formatAdaptiveTime(actualTimeRemaining)}
               </div>
               <div className="h-1.5 bg-medieval-bg-card rounded-full overflow-hidden">
                 <motion.div

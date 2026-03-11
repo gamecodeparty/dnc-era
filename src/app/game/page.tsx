@@ -5,7 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useGameStore, TURN_INTERVAL_MS, TOTAL_TURNS, SPY_SUCCESS_CHANCE_BASE, SPY_UMBRAL_BONUS, type UnitType } from "@/stores/gameStore";
+import { useGameStore, TOTAL_TURNS, SPY_SUCCESS_CHANCE_BASE, SPY_UMBRAL_BONUS, getDistance, type UnitType } from "@/stores/gameStore";
+import { TURN_DURATION_MS } from "@/game/constants/balance";
 import {
   LogOut,
   Scroll,
@@ -67,6 +68,9 @@ import { ExpeditionModal, ExplorationModal, ExpeditionsPanel } from "@/component
 // Tutorial components
 import { TutorialOverlay } from "@/components/game/tutorial";
 
+// Map components
+import { ExpeditionHint } from "@/components/game/map/GameMap";
+
 // Timer hook
 import { useTurnTimer } from "@/hooks/useTurnTimer";
 
@@ -87,8 +91,12 @@ const eraBackgrounds: Record<EraType, string> = {
 
 function formatTime(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+  }
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
@@ -164,11 +172,18 @@ export default function GamePage() {
     sendExploration,
     sendSpy,
     revealedTerritories,
+    playerCards,
   } = useGameStore();
 
   const player = getPlayerClan();
   const playerTerritories = getPlayerTerritories();
   const eraInfo = getEraInfo(currentEra as EraType);
+
+  // Military troop helpers
+  const MILITARY_UNITS = ["SOLDIER", "ARCHER", "KNIGHT"] as const;
+  const playerHasTroops = playerTerritories.some((t) =>
+    t.units.some((u) => MILITARY_UNITS.includes(u.type as typeof MILITARY_UNITS[number]) && u.quantity > 0)
+  );
 
   // SPY helpers
   const playerHasSpy = playerTerritories.some((t) =>
@@ -188,7 +203,14 @@ export default function GamePage() {
   useTurnTimer();
 
   const selectedTerritory = territories.find((t) => t.id === selectedTerritoryId);
-  const timerProgress = ((TURN_INTERVAL_MS - timeRemaining) / TURN_INTERVAL_MS) * 100;
+  const timerProgress = ((TURN_DURATION_MS - timeRemaining) / TURN_DURATION_MS) * 100;
+  const timerPct = TURN_DURATION_MS > 0 ? timeRemaining / TURN_DURATION_MS : 1;
+  const timerUrgencyClass =
+    timerPct <= 0.1
+      ? "text-red-500 animate-pulse"
+      : timerPct <= 0.2
+      ? "text-yellow-400"
+      : "text-medieval-primary";
 
   // Calcula producao
   let grainProd = 0, woodProd = 0, goldProd = 0;
@@ -202,9 +224,21 @@ export default function GamePage() {
 
   // Open expedition modal
   const handleAttack = (toTerritoryId: string) => {
-    // Find a player territory with units to use as origin
-    const originTerritory = playerTerritories.find((t) => t.units.length > 0);
-    if (!originTerritory) return;
+    const toTerritory = territories.find((t) => t.id === toTerritoryId);
+    if (!toTerritory) return;
+
+    // Find player territories with military units
+    const territoriesWithMilitary = playerTerritories.filter((t) =>
+      t.units.some((u) => MILITARY_UNITS.includes(u.type as typeof MILITARY_UNITS[number]) && u.quantity > 0)
+    );
+    if (territoriesWithMilitary.length === 0) return;
+
+    // Select closest territory with military units
+    const originTerritory = territoriesWithMilitary.reduce((closest, t) => {
+      const distCurrent = getDistance(t.position, toTerritory.position);
+      const distClosest = getDistance(closest.position, toTerritory.position);
+      return distCurrent < distClosest ? t : closest;
+    });
 
     setExpeditionTarget(toTerritoryId);
     setExpeditionOrigin(originTerritory.id);
@@ -227,12 +261,13 @@ export default function GamePage() {
   const handleSendExpedition = (
     fromTerritoryId: string,
     toTerritoryId: string,
-    units: { type: UnitType; quantity: number }[]
+    units: { type: UnitType; quantity: number }[],
+    cardType?: string | null
   ) => {
     const fromTerritory = territories.find((t) => t.id === fromTerritoryId);
     const toTerritory = territories.find((t) => t.id === toTerritoryId);
 
-    const result = sendExpedition(fromTerritoryId, toTerritoryId, units);
+    const result = sendExpedition(fromTerritoryId, toTerritoryId, units, cardType);
 
     if (result.success && fromTerritory && toTerritory) {
       // Animation feedback
@@ -428,8 +463,8 @@ export default function GamePage() {
         era={currentEra as EraType}
         currentTurn={currentTurn}
         totalTurns={TOTAL_TURNS}
-        timeRemaining={timeRemaining}
-        turnIntervalMs={TURN_INTERVAL_MS}
+        timeRemaining={Math.floor(timeRemaining / 1000)}
+        turnIntervalMs={TURN_DURATION_MS}
         onMenuClick={() => setIsDrawerOpen(true)}
         className="lg:hidden"
       />
@@ -467,7 +502,7 @@ export default function GamePage() {
                 <Clock className="w-4 h-4 text-medieval-primary" />
                 <div className="w-20">
                   <div className="text-xs text-medieval-text-muted">Proximo</div>
-                  <div className="text-lg font-mono text-medieval-primary">
+                  <div className={`text-lg font-mono ${timerUrgencyClass}`}>
                     {formatTime(timeRemaining)}
                   </div>
                 </div>
@@ -653,6 +688,11 @@ export default function GamePage() {
 
                 const revealedData = revealedTerritories[territory.id];
                 const isRevealed = !!revealedData;
+                const isAttackable =
+                  !isPlayer &&
+                  !isNeutral &&
+                  (currentEra === "WAR" || currentEra === "INVASION") &&
+                  playerHasTroops;
 
                 return (
                   <motion.div
@@ -671,6 +711,7 @@ export default function GamePage() {
                       territory-tile ${bgClass}
                       ${isSelected ? "ring-2 ring-medieval-primary-bright scale-105 shadow-golden-glow" : ""}
                       ${hasExplorationSite ? "ring-1 ring-era-peace/50" : ""}
+                      ${isAttackable && !isSelected ? "ring-2 ring-red-500/30 animate-pulse" : ""}
                     `}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.98 }}
@@ -690,6 +731,20 @@ export default function GamePage() {
                       <div className="absolute -top-1 -right-1 z-10">
                         <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-era-peace flex items-center justify-center animate-pulse">
                           <Compass className="w-3 h-3 sm:w-4 sm:h-4 text-medieval-bg-deep" />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Expedition available indicator */}
+                    {isNeutral && playerHasTroops && !hasExplorationSite && (
+                      <div className="absolute bottom-0.5 right-0.5 z-10 group/exp">
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-amber-500/80 flex items-center justify-center">
+                          <Compass className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
+                        </div>
+                        <div className="absolute right-0 bottom-5 invisible group-hover/exp:visible z-30
+                          bg-slate-900 border border-amber-500/60 rounded p-2 text-[10px] sm:text-xs
+                          text-slate-200 whitespace-nowrap shadow-lg pointer-events-none">
+                          Envie tropas para explorar este local
                         </div>
                       </div>
                     )}
@@ -758,6 +813,13 @@ export default function GamePage() {
                 );
               })}
             </div>
+
+            {/* Expedition onboarding hint */}
+            <ExpeditionHint
+              currentTurn={currentTurn}
+              expeditionCount={expeditions.filter((e) => e.ownerId === "player").length}
+              hasNeutralTerritories={territories.some((t) => t.ownerId === null)}
+            />
 
             {/* Legenda - Desktop only */}
             <div className="hidden sm:flex mt-6 justify-center gap-8 text-sm">
@@ -926,6 +988,8 @@ export default function GamePage() {
                           className={`py-1.5 border-b border-medieval-primary/10 last:border-0 ${
                             isAICombat
                               ? "text-sky-400"
+                              : event.type === "hint"
+                              ? "text-amber-400"
                               : event.type === "success"
                               ? "text-era-peace"
                               : event.type === "danger"
@@ -975,6 +1039,11 @@ export default function GamePage() {
           level: s.level,
         })) || []}
         isOwned={selectedTerritory?.ownerId === "player"}
+        currentEra={currentEra as "PEACE" | "WAR" | "INVASION"}
+        playerHasTroops={playerHasTroops}
+        playerResources={{ grain: Math.floor(player.grain), wood: Math.floor(player.wood), gold: Math.floor(player.gold) }}
+        buildCost={{ grain: 30, wood: 40 }}
+        trainCost={{ grain: 10, gold: 5 }}
         onClose={() => setSelectedTerritoryId(null)}
         onBuild={() => {
           if (selectedTerritory?.ownerId === "player") {
@@ -985,6 +1054,10 @@ export default function GamePage() {
           if (selectedTerritory?.ownerId === "player") {
             window.location.href = `/game/territory/${selectedTerritory.id}`;
           }
+        }}
+        onAttack={(territory) => {
+          setSelectedTerritoryId(null);
+          handleAttack(territory.id);
         }}
         className="lg:hidden"
       />
@@ -1037,6 +1110,7 @@ export default function GamePage() {
           attackerOrigin={player?.origin}
           defenderOrigin={clans.find((c) => c.id === territories.find((t) => t.id === expeditionTarget)?.ownerId)?.origin}
           revealedTerritories={new Set(Object.keys(revealedTerritories))}
+          playerCards={playerCards.filter((c) => !c.used)}
           onSend={handleSendExpedition}
           onClose={handleCloseExpedition}
         />

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { TURN_DURATION_MS } from "@/game/constants/balance";
 
 // Tipos
 export type Era = "PEACE" | "WAR" | "INVASION";
@@ -86,9 +87,9 @@ export interface DiplomacyState {
 export interface GameEvent {
   turn: number;
   message: string;
-  type: "info" | "success" | "warning" | "danger";
+  type: "info" | "success" | "warning" | "danger" | "hint";
   // Optional COMBAT fields (F-015)
-  eventKind?: "COMBAT";
+  eventKind?: "COMBAT" | "HINT";
   result?: "victory" | "defeat" | "draw";
   attackerClanId?: string;
   attackerClanName?: string;
@@ -120,6 +121,7 @@ export interface Expedition {
   totalTurns: number;
   departedTurn: number;
   type: ExpeditionType;
+  cardType?: string | null;
 }
 
 export interface RevealedTerritory {
@@ -133,8 +135,39 @@ export interface RevealedTerritory {
 export const SPY_SUCCESS_CHANCE_BASE = 0.7;   // 70% base
 export const SPY_UMBRAL_BONUS = 0.3;           // +30% para Umbral = 100%
 export const SPY_REVEAL_DURATION = 5;          // expira após 5 turnos
-export const TURN_INTERVAL_MS = 10 * 1000; // 10 segundos para teste
+export { TURN_DURATION_MS };
+/** @deprecated Use TURN_DURATION_MS from balance.ts */
+export const TURN_INTERVAL_MS = TURN_DURATION_MS;
 export const TOTAL_TURNS = 50;
+
+export interface CostWarning {
+  resource: "grain" | "wood" | "gold";
+  resourceLabel: string;
+  percent: number;
+}
+
+/** Returns warnings for resources where cost exceeds 80% of current stock. */
+export function getProportionalCostWarnings(
+  cost: { grain?: number; wood?: number; gold?: number },
+  resources: { grain: number; wood: number; gold: number }
+): CostWarning[] {
+  const warnings: CostWarning[] = [];
+  const check = (
+    resource: "grain" | "wood" | "gold",
+    resourceLabel: string,
+    costAmount: number | undefined,
+    stock: number
+  ) => {
+    if (costAmount && costAmount > 0 && stock > 0) {
+      const percent = (costAmount / stock) * 100;
+      if (percent > 80) warnings.push({ resource, resourceLabel, percent });
+    }
+  };
+  check("grain", "Grão", cost.grain, resources.grain);
+  check("wood", "Madeira", cost.wood, resources.wood);
+  check("gold", "Ouro", cost.gold, resources.gold);
+  return warnings;
+}
 
 export const STRUCTURE_COSTS: Record<StructureType, { grain?: number; wood?: number; gold?: number }> = {
   FARM: { wood: 20, gold: 10 },
@@ -500,6 +533,13 @@ function createInitialDiplomacy(): DiplomacyState {
   };
 }
 
+// Player card in the store (simpler than Prisma's ClanCard)
+export interface PlayerCard {
+  id: string;
+  type: string;
+  used: boolean;
+}
+
 // Store
 interface GameState {
   // Estado
@@ -516,6 +556,7 @@ interface GameState {
   timerPaused: boolean;
   timeRemaining: number;
   revealedTerritories: Record<string, RevealedTerritory>;
+  playerCards: PlayerCard[];
 
   // Getters
   getPlayerClan: () => Clan;
@@ -536,7 +577,8 @@ interface GameState {
   sendExpedition: (
     fromTerritoryId: string,
     toTerritoryId: string,
-    units: { type: UnitType; quantity: number }[]
+    units: { type: UnitType; quantity: number }[],
+    cardType?: string | null
   ) => { success: boolean; message: string; expeditionId?: string };
   cancelExpedition: (expeditionId: string) => { success: boolean; message: string };
   declareWar: (clanId: string) => { success: boolean; message: string };
@@ -569,8 +611,13 @@ export const useGameStore = create<GameState>((set, get) => ({
   expeditions: [],
   explorationSites: createRandomExplorationSites(),
   timerPaused: false,
-  timeRemaining: TURN_INTERVAL_MS,
+  timeRemaining: TURN_DURATION_MS,
   revealedTerritories: {},
+  playerCards: [
+    { id: "pc1", type: "REINFORCEMENTS", used: false },
+    { id: "pc2", type: "INFORMANT", used: false },
+    { id: "pc3", type: "SABOTAGE", used: false },
+  ],
 
   getPlayerClan: () => {
     return get().clans.find((c) => c.isPlayer)!;
@@ -727,7 +774,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     return true;
   },
 
-  sendExpedition: (fromTerritoryId, toTerritoryId, units) => {
+  sendExpedition: (fromTerritoryId, toTerritoryId, units, cardType) => {
     const state = get();
 
     // Validações
@@ -777,9 +824,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       totalTurns: travelTime,
       departedTurn: state.currentTurn,
       type: "ATTACK",
+      cardType: cardType ?? null,
     };
 
-    // Remover unidades do território de origem
+    // Remover unidades do território de origem; marcar carta como usada
     set((state) => ({
       territories: state.territories.map((t) => {
         if (t.id === fromTerritoryId) {
@@ -794,6 +842,19 @@ export const useGameStore = create<GameState>((set, get) => ({
         }
         return t;
       }),
+      // Se uma carta foi selecionada, marcar a primeira carta não usada desse tipo como usada
+      ...(cardType ? {
+        playerCards: (() => {
+          let marked = false;
+          return state.playerCards.map((c) => {
+            if (!marked && c.type === cardType && !c.used) {
+              marked = true;
+              return { ...c, used: true };
+            }
+            return c;
+          });
+        })(),
+      } : {}),
       expeditions: [...state.expeditions, expedition],
       events: [
         {
@@ -1145,6 +1206,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const conqueredTerritories: { id: string; newOwnerId: string; newOwnerName: string }[] = [];
     const returnedTroops: { territoryId: string; units: Unit[]; resources: { grain: number; wood: number; gold: number } }[] = [];
     const lootedClans: { clanId: string; grain: number; wood: number; gold: number }[] = [];
+    const sabotageTargets: string[] = []; // IDs de territórios onde estrutura deve ser destruída
     const exploredSites: { siteId: string; turn: number }[] = [];
     const spyReveals: { territoryId: string; units: Unit[]; structures: Structure[]; revealedAt: number; expiresAt: number }[] = [];
 
@@ -1157,7 +1219,24 @@ export const useGameStore = create<GameState>((set, get) => ({
           // Executar combate
           const targetTerritory = state.territories.find((t) => t.id === exp.toTerritoryId);
           if (targetTerritory) {
-            const attackPower = getAttackPower(exp.units);
+            // Efeito de carta INFORMANT: revelar território imediatamente
+            if (exp.cardType === "INFORMANT") {
+              spyReveals.push({
+                territoryId: targetTerritory.id,
+                units: [...targetTerritory.units],
+                structures: [...targetTerritory.structures],
+                revealedAt: newTurn,
+                expiresAt: newTurn + 3,
+              });
+            }
+
+            let attackPower = getAttackPower(exp.units);
+
+            // Efeito de carta REINFORCEMENTS: +50% poder de ataque
+            if (exp.cardType === "REINFORCEMENTS") {
+              attackPower = Math.floor(attackPower * 1.5);
+            }
+
             const wallLevel = targetTerritory.structures.find((s) => s.type === "WALL")?.level || 0;
             const defensePower = getDefensePower(targetTerritory.units, wallLevel);
 
@@ -1194,6 +1273,11 @@ export const useGameStore = create<GameState>((set, get) => ({
                 newOwnerName: exp.ownerName,
               });
 
+              // Efeito de carta SABOTAGE: destruir estrutura do território após vitória
+              if (exp.cardType === "SABOTAGE" && targetTerritory.structures.length > 0) {
+                sabotageTargets.push(exp.toTerritoryId);
+              }
+
               // Criar expedição de retorno com saque
               const returnTime = exp.totalTurns;
               updatedExpeditions.push({
@@ -1216,9 +1300,16 @@ export const useGameStore = create<GameState>((set, get) => ({
               const survivorCount = survivors.reduce((s: number, u: Unit) => s + u.quantity, 0);
               const atkLosses = origCount - survivorCount;
               const defLosses = targetTerritory.units.reduce((s: number, u: Unit) => s + u.quantity, 0);
+              const lootParts: string[] = [];
+              if (lootGrain > 0) lootParts.push(`+${lootGrain} grão`);
+              if (lootWood > 0) lootParts.push(`+${lootWood} madeira`);
+              if (lootGold > 0) lootParts.push(`+${lootGold} ouro`);
+              const lootStr = lootParts.length > 0 ? lootParts.join(", ") : "nenhum";
+              const sabotageNote = exp.cardType === "SABOTAGE" && targetTerritory.structures.length > 0 ? " Sabotagem: estrutura destruída." : "";
+              const victoryMsg = `Você atacou Território ${targetTerritory.position + 1} de ${targetTerritory.ownerName}. VITÓRIA! Conquistou o território. Saqueou: ${lootStr}. Perdas: ${atkLosses} unidades.${sabotageNote}`;
               expeditionEvents.push({
                 turn: newTurn,
-                message: `VITORIA! Territorio ${targetTerritory.position + 1} conquistado! Tropas retornando com saque.`,
+                message: victoryMsg,
                 type: "success",
                 eventKind: "COMBAT",
                 result: "victory",
@@ -1265,9 +1356,19 @@ export const useGameStore = create<GameState>((set, get) => ({
               const defSurvivorCount = survivors.reduce((s: number, u: Unit) => s + u.quantity, 0);
               const defAtkLosses = defOrigCount - defSurvivorCount;
               const defDefLosses = Math.floor(attackPower / 10);
+              const UNIT_NAMES: Record<UnitType, string> = { SOLDIER: "soldados", ARCHER: "arqueiros", KNIGHT: "cavaleiros", SPY: "espiões" };
+              const unitLossParts: string[] = exp.units
+                .map((u) => {
+                  const survivorUnit = survivors.find((s) => s.type === u.type);
+                  const lost = u.quantity - (survivorUnit?.quantity || 0);
+                  return lost > 0 ? `${lost} ${UNIT_NAMES[u.type]}` : null;
+                })
+                .filter((s): s is string => s !== null);
+              const unitLossStr = unitLossParts.length > 0 ? unitLossParts.join(", ") : `${defAtkLosses} unidades`;
+              const defeatMsg = `Você atacou Território ${targetTerritory.position + 1} de ${targetTerritory.ownerName}. DERROTA. Perdeu ${unitLossStr}.`;
               expeditionEvents.push({
                 turn: newTurn,
-                message: `DERROTA! Ataque ao territorio ${targetTerritory.position + 1} falhou! Sobreviventes em fuga.`,
+                message: defeatMsg,
                 type: "danger",
                 eventKind: "COMBAT",
                 result: "defeat",
@@ -1513,6 +1614,14 @@ export const useGameStore = create<GameState>((set, get) => ({
       );
     }
 
+    // Aplicar sabotagem: destruir primeira estrutura do território conquistado
+    for (const targetId of sabotageTargets) {
+      updatedTerritories = updatedTerritories.map((t) => {
+        if (t.id !== targetId || t.structures.length === 0) return t;
+        return { ...t, structures: t.structures.slice(1) };
+      });
+    }
+
     // Aplicar tropas retornando
     for (const returned of returnedTroops) {
       updatedTerritories = updatedTerritories.map((t) => {
@@ -1612,6 +1721,19 @@ export const useGameStore = create<GameState>((set, get) => ({
       return;
     }
 
+    // Evento HINT no turno 3 se jogador não enviou expedições
+    if (newTurn === 3) {
+      const playerExpeditions = state.expeditions.filter((e) => e.ownerId === "player");
+      if (playerExpeditions.length === 0) {
+        newEvents.push({
+          turn: newTurn,
+          message: "Seus batedores reportam locais inexplorados no mapa. Envie tropas a um território neutro para iniciar uma Expedição.",
+          type: "hint",
+          eventKind: "HINT",
+        });
+      }
+    }
+
     // Combinar todos os eventos
     const allEvents = [...expeditionEvents, ...newEvents];
 
@@ -1685,7 +1807,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       expeditions: [],
       explorationSites: createRandomExplorationSites(),
       timerPaused: false,
-      timeRemaining: TURN_INTERVAL_MS,
+      timeRemaining: TURN_DURATION_MS,
       revealedTerritories: {},
     });
   },
@@ -1702,7 +1824,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const state = get();
     if (state.timerPaused || state.gameOver) return;
     if (state.timeRemaining <= 1000) {
-      set({ timeRemaining: TURN_INTERVAL_MS });
+      set({ timeRemaining: TURN_DURATION_MS });
       get().processTurn();
     } else {
       set({ timeRemaining: state.timeRemaining - 1000 });
