@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { Wheat, Trees, Coins, Swords, Home, Eye } from "lucide-react";
+import { UI } from "@/game/constants/balance";
 
 interface TerritoryProps {
   id: string;
@@ -115,12 +116,22 @@ export function Territory({
 
       {/* Stats row */}
       <div className="flex items-center gap-2 text-xs">
-        {structuresCount > 0 && (
-          <div className="flex items-center gap-0.5 text-slate-400">
-            <Home className="w-3 h-3" />
-            <span>{structuresCount}</span>
-          </div>
-        )}
+        <div className={cn(
+          "flex items-center gap-0.5 relative group/slots",
+          structuresCount <= 2 ? "text-green-400" :
+          structuresCount === 3 ? "text-yellow-400" :
+          "text-red-400"
+        )}>
+          <Home className="w-3 h-3" />
+          <span>{structuresCount}/{UI.MAX_STRUCTURE_SLOTS}</span>
+          {structuresCount >= UI.MAX_STRUCTURE_SLOTS && (
+            <div className="absolute bottom-5 left-1/2 -translate-x-1/2 invisible group-hover/slots:visible z-20
+              bg-slate-900 border border-red-500/50 rounded p-1.5 text-xs text-red-300
+              whitespace-nowrap shadow-lg">
+              {UI.MAX_STRUCTURE_SLOTS}/{UI.MAX_STRUCTURE_SLOTS} cheio — demolir para construir
+            </div>
+          )}
+        </div>
         {unitsCount > 0 && (
           <div className="flex items-center gap-0.5 text-red-400">
             <Swords className="w-3 h-3" />
