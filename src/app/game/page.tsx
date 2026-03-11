@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useGameStore, TURN_INTERVAL_MS, TOTAL_TURNS, SPY_SUCCESS_CHANCE_BASE, SPY_UMBRAL_BONUS, type UnitType } from "@/stores/gameStore";
+import { useGameStore, TURN_INTERVAL_MS, TOTAL_TURNS, SPY_SUCCESS_CHANCE_BASE, SPY_UMBRAL_BONUS, getDistance, type UnitType } from "@/stores/gameStore";
 import {
   LogOut,
   Scroll,
@@ -208,9 +208,21 @@ export default function GamePage() {
 
   // Open expedition modal
   const handleAttack = (toTerritoryId: string) => {
-    // Find a player territory with units to use as origin
-    const originTerritory = playerTerritories.find((t) => t.units.length > 0);
-    if (!originTerritory) return;
+    const toTerritory = territories.find((t) => t.id === toTerritoryId);
+    if (!toTerritory) return;
+
+    // Find player territories with military units
+    const territoriesWithMilitary = playerTerritories.filter((t) =>
+      t.units.some((u) => MILITARY_UNITS.includes(u.type as typeof MILITARY_UNITS[number]) && u.quantity > 0)
+    );
+    if (territoriesWithMilitary.length === 0) return;
+
+    // Select closest territory with military units
+    const originTerritory = territoriesWithMilitary.reduce((closest, t) => {
+      const distCurrent = getDistance(t.position, toTerritory.position);
+      const distClosest = getDistance(closest.position, toTerritory.position);
+      return distCurrent < distClosest ? t : closest;
+    });
 
     setExpeditionTarget(toTerritoryId);
     setExpeditionOrigin(originTerritory.id);
