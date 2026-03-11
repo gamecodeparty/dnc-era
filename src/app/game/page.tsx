@@ -5,11 +5,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useGameStore, TOTAL_TURNS, SPY_SUCCESS_CHANCE_BASE, SPY_UMBRAL_BONUS, getDistance, type UnitType } from "@/stores/gameStore";
+import { useGameStore, TOTAL_TURNS, SPY_SUCCESS_CHANCE_BASE, SPY_UMBRAL_BONUS, getDistance, getDefensePower, type UnitType } from "@/stores/gameStore";
 import { ResourcePanel } from "@/components/game/sidebar/ResourcePanel";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { TURN_DURATION_MS, TERRITORY_ADJACENCY } from "@/game/constants/balance";
-import { calculateTravelTime } from "@/game/engine";
+import { calculateTravelTime, classifyThreat } from "@/game/engine";
 import {
   LogOut,
   Scroll,
@@ -817,21 +817,34 @@ export default function GamePage() {
                       </div>
                     )}
 
-                    {/* Incoming attack alert (F-058) — shown during WAR/INVASION for player territories */}
-                    {isPlayer && (currentEra === "WAR" || currentEra === "INVASION") && incomingAttacks.some((a) => a.targetTerritoryId === territory.id) && (
-                      <div className="absolute top-0.5 right-0.5 z-10 group/attack">
-                        <div className="rounded px-0.5 sm:px-1 py-0.5 bg-red-900/60 flex items-center gap-0.5 animate-pulse">
-                          <span className="text-red-400 text-[8px] sm:text-[9px] leading-none">⚠</span>
-                          <span className="text-red-400 text-[7px] sm:text-[8px] leading-none font-semibold hidden sm:inline">Ataque!</span>
+                    {/* Incoming attack alert (F-058/F-096) — shown during WAR/INVASION for player territories */}
+                    {isPlayer && (currentEra === "WAR" || currentEra === "INVASION") && (() => {
+                      const attack = incomingAttacks.find((a) => a.targetTerritoryId === territory.id);
+                      if (!attack) return null;
+                      const wallLevel = territory.structures.find((s) => s.type === "WALL")?.level ?? 0;
+                      const defPower = getDefensePower(territory.units, wallLevel);
+                      const scale = classifyThreat(attack.attackPower, defPower);
+                      const THREAT_CONFIG = {
+                        LOW:      { icon: "⚔️",    color: "text-yellow-400", bg: "bg-yellow-900/60", border: "border-yellow-500/60", label: "Expedição pequena detectada",   pulse: false },
+                        MEDIUM:   { icon: "⚔️⚔️",  color: "text-orange-400", bg: "bg-orange-900/60", border: "border-orange-500/60", label: "Expedição média detectada",      pulse: false },
+                        HIGH:     { icon: "⚔️⚔️⚔️", color: "text-red-400",    bg: "bg-red-900/60",    border: "border-red-500/60",    label: "Expedição grande detectada",     pulse: false },
+                        CRITICAL: { icon: "💀",      color: "text-red-500",    bg: "bg-red-950/80",    border: "border-red-600/80",    label: "Força esmagadora detectada!", pulse: true  },
+                      } as const;
+                      const cfg = THREAT_CONFIG[scale];
+                      return (
+                        <div className="absolute top-0.5 right-0.5 z-10 group/attack">
+                          <div className={`rounded px-0.5 sm:px-1 py-0.5 ${cfg.bg} flex items-center gap-0.5 ${cfg.pulse ? "animate-pulse" : ""}`}>
+                            <span className={`${cfg.color} text-[8px] sm:text-[9px] leading-none`}>{cfg.icon}</span>
+                          </div>
+                          <div className={`absolute right-0 top-6 invisible group-hover/attack:visible z-30
+                            bg-slate-900 border ${cfg.border} rounded p-2 text-[10px] sm:text-xs
+                            text-slate-200 whitespace-nowrap shadow-lg pointer-events-none min-w-[220px]`}>
+                            <p className={`font-bold ${cfg.color} mb-0.5`}>{cfg.label}</p>
+                            <p>Expedição inimiga detectada — chegará no próximo turno. Reforce a defesa!</p>
+                          </div>
                         </div>
-                        <div className="absolute right-0 top-6 invisible group-hover/attack:visible z-30
-                          bg-slate-900 border border-red-500/60 rounded p-2 text-[10px] sm:text-xs
-                          text-slate-200 whitespace-nowrap shadow-lg pointer-events-none min-w-[200px]">
-                          <p className="font-bold text-red-300 mb-0.5">Ataque iminente!</p>
-                          <p>Expedição inimiga detectada — chegará no próximo turno. Reforce a defesa!</p>
-                        </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {/* F-069: Horda preview target badge — shown during INVASION era for weakest player territory */}
                     {isPlayer && currentEra === "INVASION" && hordaPreview?.targetTerritoryId === territory.id && (

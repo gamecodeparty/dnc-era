@@ -287,7 +287,7 @@
     "id": "F-096",
     "name": "Indicação visual de escala de ameaça no mapa",
     "description": "Em Territory.tsx, no alerta de ataque existente, aplicar ícone e cor por escala: LOW (amarelo), MEDIUM (laranja), HIGH (vermelho), CRITICAL (vermelho pulsante). Cada escala tem texto descritivo distinto (ex: 'Expedição pequena detectada' até 'Força esmagadora detectada!').",
-    "status": "pending",
+    "status": "passing",
     "priority": 16,
     "agent": "coder",
     "task": "vibe-code",
@@ -299,7 +299,8 @@
       "CRITICAL usa animação pulsante para urgência visual",
       "Escala LOW/MEDIUM/HIGH/CRITICAL visualmente distinguível"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-030-attack-threat-scale.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-030-attack-threat-scale.md",
+    "completed_at": "2026-03-11T20:10:37.719Z"
   },
   {
     "id": "F-097",
