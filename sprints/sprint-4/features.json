@@ -103,7 +103,7 @@
     "id": "F-074",
     "name": "Badge de bônus de facção no ClanPanel",
     "description": "Em ClanPanel.tsx, adicionar seção de bônus abaixo do nome da facção. Badge mostra ícone + label do bônus + texto 'ATIVO ✓'. Cor do badge corresponde à facção (Ferronatos: text-red-400 bg-red-950/40, Verdâneos: text-green-400 bg-green-950/40, Umbral: text-purple-400 bg-purple-950/40). Tooltip ao tocar detalha o efeito mecânico. Badge sempre visível (não depende de turno ou era). Dados lidos das constantes de origins (F-075).",
-    "status": "pending",
+    "status": "passing",
     "priority": 6,
     "agent": "coder",
     "task": "vibe-code",
@@ -118,7 +118,8 @@
       "Todas as 3 facções têm badge com informação correta",
       "Cores do badge correspondem à facção (vermelho, verde, roxo)"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-023-faction-bonus-badge.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-023-faction-bonus-badge.md",
+    "completed_at": "2026-03-11T16:10:16Z"
   },
   {
     "id": "F-067",

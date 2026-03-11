@@ -33,6 +33,14 @@ function hexToColorClass(hex: string): string {
   return "text-slate-400";
 }
 
+// Derive badge background class from hex color stored in constants
+function hexToBadgeBgClass(hex: string): string {
+  if (hex === "#ef4444") return "bg-red-950/40";
+  if (hex === "#22c55e") return "bg-green-950/40";
+  if (hex === "#8b5cf6") return "bg-purple-950/40";
+  return "bg-slate-700/50";
+}
+
 export function ClanPanel({
   name,
   origin,
@@ -42,6 +50,7 @@ export function ClanPanel({
 }: ClanPanelProps) {
   const originDef = ORIGINS[origin as keyof typeof ORIGINS];
   const originColor = originDef ? hexToColorClass(originDef.color) : "text-slate-400";
+  const originBgClass = originDef ? hexToBadgeBgClass(originDef.color) : "bg-slate-700/50";
   const originName = originDef?.name ?? origin;
   const bonusIcon = originDef?.bonusIcon ?? "";
   const bonusLabel = originDef?.bonusLabel ?? "";
@@ -58,6 +67,20 @@ export function ClanPanel({
             {originName}
           </span>
         </CardTitle>
+        {bonusLabel && (
+          <div
+            className={cn(
+              "flex items-center gap-1.5 text-xs rounded px-2 py-1 mt-1",
+              originColor,
+              originBgClass
+            )}
+            title={bonusTooltip}
+          >
+            <span>{bonusIcon}</span>
+            <span className="flex-1">{bonusLabel}</span>
+            <span className="font-semibold">ATIVO ✓</span>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex items-center justify-between">
@@ -83,16 +106,6 @@ export function ClanPanel({
           </div>
           <span className={cn("font-medium", repColor)}>{repName}</span>
         </div>
-
-        {bonusLabel && (
-          <div
-            className={cn("flex items-center gap-1.5 text-xs rounded px-2 py-1 bg-slate-700/50", originColor)}
-            title={bonusTooltip}
-          >
-            <span>{bonusIcon}</span>
-            <span>{bonusLabel}</span>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
