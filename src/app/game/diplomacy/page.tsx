@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Handshake, Sword, Shield, Skull, Crown, Users, AlertCircle, Check } from "lucide-react";
+import { ArrowLeft, Handshake, Sword, Shield, Skull, Crown, Users, AlertCircle, Check, Heart } from "lucide-react";
 import { MedievalButton } from "@/components/ui/medieval";
 import {
   MedievalCard,
@@ -107,6 +107,7 @@ export default function DiplomacyPage() {
     territories,
     currentEra,
     allianceTurnFormed,
+    allianceHealth,
     currentTurn,
   } = useGameStore();
 
@@ -307,6 +308,43 @@ export default function DiplomacyPage() {
                         </p>
                       </div>
                     </div>
+
+                    {/* F-063: Indicador de saúde da aliança */}
+                    {relation === "TRUSTED" && (() => {
+                      const health = allianceHealth[clan.id] ?? 100;
+                      const healthColor = health >= 60
+                        ? "bg-era-peace"
+                        : health >= 30
+                        ? "bg-gold"
+                        : "bg-medieval-accent";
+                      const healthTextColor = health >= 60
+                        ? "text-era-peace"
+                        : health >= 30
+                        ? "text-gold"
+                        : "text-medieval-accent";
+                      return (
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="flex items-center gap-1 text-medieval-text-secondary">
+                              <Heart className="w-3 h-3" />
+                              Saúde da Aliança
+                            </span>
+                            <span className={`font-bold ${healthTextColor}`}>{health}%</span>
+                          </div>
+                          <div className="h-2 bg-medieval-bg-deep/60 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all duration-300 ${healthColor}`}
+                              style={{ width: `${health}%` }}
+                            />
+                          </div>
+                          {health < 30 && (
+                            <p className="text-xs text-medieval-accent">
+                              ⚠ Aliança frágil — AI pode romper a qualquer momento
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {/* F-060: Indicador de pacto ativo */}
                     {relation === "TRUSTED" && pactActive && (

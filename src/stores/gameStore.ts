@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { TURN_DURATION_MS, MARKET } from "@/game/constants/balance";
+import { TURN_DURATION_MS, MARKET, TERRITORY_ADJACENCY } from "@/game/constants/balance";
 
 // Tipos
 export type Era = "PEACE" | "WAR" | "INVASION";
@@ -578,6 +578,7 @@ interface GameState {
   invasionModalShown: boolean;
   marketTradesUsed: string[]; // territoryIds that have used their trade this turn
   allianceTurnFormed: Record<string, number>; // clanId -> turn when TRUSTED was formed
+  allianceHealth: Record<string, number>; // clanId -> alliance health (0-100)
 
   // Getters
   getPlayerClan: () => Clan;
@@ -642,6 +643,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   invasionModalShown: false,
   marketTradesUsed: [],
   allianceTurnFormed: {},
+  allianceHealth: {},
   playerCards: [
     { id: "pc1", type: "REINFORCEMENTS", used: false },
     { id: "pc2", type: "INFORMANT", used: false },
@@ -1075,6 +1077,9 @@ export const useGameStore = create<GameState>((set, get) => ({
         allianceTurnFormed: newRelation === "TRUSTED"
           ? { ...state.allianceTurnFormed, [clanId]: state.currentTurn }
           : state.allianceTurnFormed,
+        allianceHealth: newRelation === "TRUSTED"
+          ? { ...state.allianceHealth, [clanId]: 100 }
+          : state.allianceHealth,
         events: [
           { turn: state.currentTurn, message: `PAZ! ${clan.name} aceitou sua proposta de paz!`, type: "success" as const },
           ...state.events.slice(0, 9),
@@ -1104,6 +1109,8 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     const newAllianceTurnFormed = { ...state.allianceTurnFormed };
     delete newAllianceTurnFormed[clanId];
+    const newAllianceHealth = { ...state.allianceHealth };
+    delete newAllianceHealth[clanId];
 
     set((s) => ({
       diplomacy: {
@@ -1111,6 +1118,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         [clanId]: "NEUTRAL" as DiplomacyRelation,
       },
       allianceTurnFormed: newAllianceTurnFormed,
+      allianceHealth: newAllianceHealth,
       events: [
         { turn: s.currentTurn, message: `Você cancelou a aliança com ${clan.name}. Relação agora Neutra.`, type: "warning" as const },
         ...s.events.slice(0, 9),
@@ -1860,10 +1868,40 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
     }
 
+    // F-063: Compute alliance health decay for TRUSTED alliances
+    const updatedAllianceHealth = { ...state.allianceHealth };
+    const playerAttackExpeditions = state.expeditions.filter((e) => e.ownerId === "player" && e.type === "ATTACK");
+    ["ai1", "ai2", "ai3", "ai4"].forEach((aiId) => {
+      if (state.diplomacy[aiId] !== "TRUSTED") return;
+      const currentHealth = updatedAllianceHealth[aiId] ?? 100;
+      const aiClan = updatedClans.find((c) => c.id === aiId);
+      let decay = 5; // -5% natural decay
+      // -10% extra if AI personality is HOSTILE (CONQUEROR or OPPORTUNIST)
+      if (aiClan?.personality === "CONQUEROR" || aiClan?.personality === "OPPORTUNIST") {
+        decay += 10;
+      }
+      // -20% if player has active attack expedition targeting territory adjacent to or owned by ally
+      const allyTerritoryPositions = updatedTerritories
+        .filter((t) => t.ownerId === aiId)
+        .map((t) => t.position);
+      const playerAttacksNearAlly = playerAttackExpeditions.some((e) => {
+        const targetTerritory = updatedTerritories.find((t) => t.id === e.toTerritoryId);
+        if (!targetTerritory) return false;
+        return allyTerritoryPositions.some((pos) => {
+          const adjacentToAlly = TERRITORY_ADJACENCY[pos] ?? [];
+          return adjacentToAlly.includes(targetTerritory.position) || allyTerritoryPositions.includes(targetTerritory.position);
+        });
+      });
+      if (playerAttacksNearAlly) {
+        decay += 20;
+      }
+      updatedAllianceHealth[aiId] = Math.max(0, currentHealth - decay);
+    });
+
     // IA faz acoes simples
     const { actions: aiActions, newIncomingAttacks, diplomacyBreaks } = processAI(
       updatedTerritories, updatedClans, newEra, newTurn,
-      state.diplomacy, state.allianceTurnFormed
+      state.diplomacy, state.allianceTurnFormed, updatedAllianceHealth
     );
 
     aiActions.forEach((action) => {
@@ -2100,6 +2138,12 @@ export const useGameStore = create<GameState>((set, get) => ({
             return updated;
           })()
         : state.allianceTurnFormed,
+      // F-063: Update alliance health, clear on breaks
+      allianceHealth: (() => {
+        const h = { ...updatedAllianceHealth };
+        diplomacyBreaks.forEach(({ clanId }) => { delete h[clanId]; });
+        return h;
+      })(),
       events: [...allEvents, ...state.events.slice(0, 10 - allEvents.length)],
     }));
 
@@ -2133,6 +2177,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       invasionModalShown: false,
       marketTradesUsed: [],
       allianceTurnFormed: {},
+      allianceHealth: {},
     });
   },
 
@@ -2174,7 +2219,8 @@ function processAI(
   era: Era,
   currentTurn: number,
   diplomacy: DiplomacyState = {},
-  allianceTurnFormed: Record<string, number> = {}
+  allianceTurnFormed: Record<string, number> = {},
+  allianceHealth: Record<string, number> = {}
 ): { actions: AIAction[], newIncomingAttacks: IncomingAttack[], diplomacyBreaks: { clanId: string; newRelation: DiplomacyRelation }[] } {
   const actions: AIAction[] = [];
   const newIncomingAttacks: IncomingAttack[] = [];
@@ -2257,11 +2303,14 @@ function processAI(
       if (turnsSinceAlliance <= 5) {
         // Pacto ativo — pula ataque ao jogador
       } else {
-        // Após 5 turnos: chance de quebrar aliança baseada em personalidade
-        const breakChance = clan.personality === "CONQUEROR" ? 0.20
+        // Após 5 turnos: chance de quebrar aliança baseada em personalidade e saúde
+        const baseBreakChance = clan.personality === "CONQUEROR" ? 0.20
           : clan.personality === "OPPORTUNIST" ? 0.15
           : clan.personality === "DEFENDER" ? 0.05
           : 0.03; // MERCHANT
+        // F-063: When health < 30%, AI can break the alliance more easily
+        const health = allianceHealth[aiId] ?? 100;
+        const breakChance = health < 30 ? Math.min(0.90, baseBreakChance * 4) : baseBreakChance;
 
         if (Math.random() < breakChance) {
           diplomacyBreaks.push({ clanId: aiId, newRelation: "NEUTRAL" });

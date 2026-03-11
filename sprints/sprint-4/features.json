@@ -241,7 +241,7 @@
     "id": "F-063",
     "name": "Indicador de saúde da aliança na página de diplomacia",
     "description": "Em diplomacy/page.tsx, adicionar indicador visual de saúde da relação para clãs TRUSTED. Barra visual com percentual + turnos restantes do pacto + botão 'Cancelar Aliança'. Saúde inicia em 100%: -10%/turno se AI personalidade HOSTILE, -20% se jogador ataca perto do aliado, -5%/turno decaimento natural. Quando saúde < 30%, aliança pode ser quebrada pela AI. Tipos em index.ts: campos allianceHealth e allianceTurnFormed.",
-    "status": "pending",
+    "status": "passing",
     "priority": 13,
     "agent": "coder",
     "task": "vibe-code",
@@ -254,7 +254,8 @@
       "Botão 'Cancelar Aliança' funciona e muda relação para NEUTRAL",
       "Quando saúde < 30%, aliança pode ser quebrada pela AI"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-019-diplomacy-concrete-effects.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-019-diplomacy-concrete-effects.md",
+    "completed_at": "2026-03-11T16:55:00Z"
   },
   {
     "id": "F-064",
