@@ -153,7 +153,7 @@
     "id": "F-009",
     "name": "Indicador visual de timer pausado",
     "description": "Em MobileGameHeader.tsx e equivalente desktop: ler timerPaused do gameStore. Se pausado, mostrar '⏸ Timer pausado — voltar ao mapa para continuar' em vez do countdown. Estilo visual diferenciado (cor distinta).",
-    "status": "pending",
+    "status": "skipped",
     "priority": 9,
     "agent": "coder",
     "task": "vibe-code",
@@ -165,7 +165,8 @@
       "Indicador funciona em MobileGameHeader e equivalente desktop",
       "Countdown normal aparece quando timer não está pausado"
     ],
-    "prp_path": "sprints/sprint-1/3-prps/PRP-003-timer-pause-navigation.md"
+    "prp_path": "sprints/sprint-1/3-prps/PRP-003-timer-pause-navigation.md",
+    "skipped_reason": "Operador confirmou que timer é global e imutável — pausar durante navegação não faz sentido. Em produção o timer será 10-30 min, suficiente para navegar. PRP-003 cancelado. Ver S-003 para análise completa."
   },
   {
     "id": "F-010",

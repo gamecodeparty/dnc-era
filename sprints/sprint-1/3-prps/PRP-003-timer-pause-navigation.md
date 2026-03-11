@@ -3,88 +3,40 @@
 **Specs:** S-003
 **Prioridade:** Score 8/10 (D-002 — timer não para durante navegação, 5/6 agentes afetados)
 **Dependências:** Nenhuma
+**Status:** ~~CANCELADO~~ — ver nota abaixo
 
 ---
 
-## Objetivo
+## Nota do Operador (2026-03-11)
 
-Pausar o timer de turno (10s) quando o jogador navega para páginas secundárias (`/game/territory/[id]`, `/game/cards`, `/game/army`, `/game/diplomacy`). O timer só avança na página principal `/game`.
+Este PRP foi **cancelado** após feedback do operador. O timer é global e imutável — é uma regra que vale para todos os jogadores igualmente. Em produção o timer será de 10 a 30 minutos, tornando desnecessário pausar durante navegação.
 
----
-
-## Escopo
-
-- **Store:** Adicionar estado de timer ao `gameStore`
-- **Hook:** Novo `useTurnTimer` para gerenciar intervalo
-- **Tela principal:** Refatorar `/src/app/game/page.tsx` para usar hook
-- **Header:** Indicador visual de timer pausado
+Ver S-003 para análise completa.
 
 ---
 
-## Features
+## Objetivo (original — cancelado)
 
-### F-007 — Timer state no gameStore
-
-Em `/src/stores/gameStore.ts`, adicionar ao state:
-
-```typescript
-timerPaused: boolean;
-timeRemaining: number;  // ms restantes no turno atual
-```
-
-Actions:
-- `pauseTimer()` — marca timer como pausado
-- `resumeTimer()` — retoma timer
-
-Remover a lógica de timer local (`useState` + `useEffect`) de `/src/app/game/page.tsx` (linhas 162-176).
-
-**Critérios de aceite:**
-- Timer state centralizado no gameStore
-- `processTurn()` nunca é chamado enquanto timer está pausado
-
-### F-008 — Hook useTurnTimer
-
-Criar `/src/hooks/useTurnTimer.ts`:
-
-- Lê `timerPaused` e `timeRemaining` do gameStore
-- Quando NÃO pausado, decrementa `timeRemaining` a cada 1s
-- Quando `timeRemaining <= 0`, chama `processTurn()` e reseta
-- Retorna `{ timeRemaining, isPaused }`
-
-Em `/src/app/game/page.tsx`:
-- Chamar `useTurnTimer()` — timer ativo
-- No `useEffect` de mount, chamar `resumeTimer()`
-- No cleanup (unmount), chamar `pauseTimer()`
-
-Páginas secundárias NÃO chamam `useTurnTimer()` — timer fica pausado naturalmente.
-
-**Critérios de aceite:**
-- Timer avança normalmente em `/game`
-- Timer pausa ao navegar para sub-páginas
-- Timer retoma ao voltar para `/game`
-
-### F-009 — Indicador visual de timer pausado
-
-Em `/src/components/game/mobile/MobileGameHeader.tsx` (e equivalente desktop):
-
-- Ler `timerPaused` do gameStore
-- Se pausado, mostrar "⏸ Timer pausado — voltar ao mapa para continuar" em vez do countdown
-- Estilo visual claro (cor diferenciada)
-
-**Critérios de aceite:**
-- Indicador "Timer pausado" aparece no header das páginas secundárias
-- Funciona em desktop e mobile
+~~Pausar o timer de turno (10s) quando o jogador navega para páginas secundárias. O timer só avança na página principal `/game`.~~
 
 ---
 
-## Limites
+## Features — Status Final
 
-- NÃO altera a duração do timer (continua 10s)
-- NÃO implementa configuração de duração de timer
-- NÃO consolida ações em modais na página principal — apenas pausa o timer
+### F-007 — Timer state no gameStore — `passing` (implementado)
+
+Refatoração válida. O timer state foi movido para o gameStore. O estado `timerPaused`/`pauseTimer()`/`resumeTimer()` é código morto por enquanto (nada chama pauseTimer em produção), mas pode ser removido em oportunidade futura.
+
+### F-008 — Hook useTurnTimer — `passing` (implementado)
+
+O hook foi implementado com pause-on-unmount. Este comportamento contradiz o design do jogo (timer global e imutável). Em produção, o hook deve ser simplificado para apenas fazer tick sem pausar ao navegar. Não bloqueia funcionalidade atual.
+
+### F-009 — Indicador visual de timer pausado — `skipped`
+
+**Cancelada.** Não faz sentido mostrar "Timer pausado" se o timer não deve pausar.
 
 ---
 
-## Dependências
+## Decisão
 
-Nenhuma. Este PRP pode ser implementado independentemente.
+Nenhuma nova feature de pause-timer será implementada neste sprint. O timer de produção (10-30 min) resolve a dor D-002 sem necessidade de pausa por navegação.

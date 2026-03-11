@@ -2,97 +2,39 @@
 
 **Discovery:** D-002 (score 8/10, frequencia 5/6)
 **Tipo:** Pain — Timer nao para durante navegacao
+**Status:** ~~CANCELADA~~ — ver nota do operador abaixo
 
 ---
 
-## Objetivo
+## Nota do Operador (2026-03-11)
 
-Pausar o timer de turno (10s) quando o jogador navega para paginas secundarias (`/game/territory/[id]`, `/game/cards`, `/game/army`, `/game/diplomacy`). O timer so avanca quando o jogador esta na pagina principal `/game`.
+> "vc aceitou a issue 'S-003 — Pausar Timer Durante Navegacao', mas veja, isso nao faz sentido num jogo de turnos como esse. o timer e global. vale para todos os players. como pd parar para e nao parar par outro? nao faz sentido. se parar para um vai parar para todos. o problema nao eh parar ou nao mas sim o tempo. o jogo real, released, tera um timer de minutos. sera ajusta, mas talvez seja 10 a 30minutos. mas entenda, eh imutavel. eh uma regra para todos os players"
 
----
+## Analise da Correcao
 
-## Implementacao
+A dor D-002 foi identificada corretamente durante o playtesting — jogadores sentiram o timer correndo durante navegacao. Porem, a **causa raiz** foi mal diagnosticada:
 
-### 1. Mover timer para o gameStore
+- **Causa real:** Timer de 10 segundos no ambiente de teste eh inadequado para gameplay real
+- **Causa falsa diagnosticada:** "O timer deveria pausar durante navegacao"
 
-Atualmente o timer vive em `useState` + `useEffect` dentro de `/src/app/game/page.tsx` (linhas 162-176). Isso significa que ao navegar para outra pagina, o componente desmonta e o timer para — mas `processTurn()` nao eh chamado, o que pode causar inconsistencia.
+### Por que pausar e incorreto
 
-**Arquivo:** `/src/stores/gameStore.ts`
+O timer e uma **regra de jogo global e imutavel**, compartilhada por todos os jogadores:
 
-Adicionar ao state:
+1. Se o timer pausasse para um jogador ao navegar, faria de fato o turno infinito para aquele jogador enquanto o jogo ficasse bloqueado para os demais — sem sentido num contexto multi-player ou single-player com progressao de era
+2. Em producao, o timer sera de **10 a 30 minutos** — tempo mais que suficiente para navegar entre paginas de territorio, exercito, cartas e diplomacia sem pressao
+3. Pausar o timer por navegacao seria uma brecha de design que contradiz a natureza de jogo baseado em turnos com tempo fixo
 
-```typescript
-// Estado do timer
-timerPaused: boolean;
-timeRemaining: number;  // ms restantes no turno atual
+## Conclusao
 
-// Actions
-pauseTimer: () => void;
-resumeTimer: () => void;
-```
+**Esta spec esta CANCELADA.** O problema nao e a pausa — e a duracao do timer no ambiente de teste (10s) que nao reflete o timer de producao (10-30 min).
 
-Mover a logica do intervalo para um hook dedicado:
+### Implicacoes
 
-### 2. Hook useTurnTimer
+- **F-007** (timer state no gameStore): A refatoracao de mover o timer para o store eh uma melhoria arquitetural valida. O estado `timerPaused` e as actions `pauseTimer()`/`resumeTimer()` introduzidas podem ser removidas em oportunidade futura, mas nao bloqueiam o jogo.
+- **F-008** (hook useTurnTimer): O hook introduz pause-on-unmount. Em producao, este comportamento de pausar ao navegar contradiz o design do jogo. O hook pode ser simplificado para apenas tick sem pause em versao futura.
+- **F-009** (indicador visual de timer pausado): **CANCELADA** — nao sera implementada.
 
-**Novo arquivo:** `/src/hooks/useTurnTimer.ts`
+### Acao Recomendada
 
-```typescript
-export function useTurnTimer() {
-  // Le timerPaused e timeRemaining do gameStore
-  // Quando NAO pausado, decrementa timeRemaining a cada 1s
-  // Quando timeRemaining <= 0, chama processTurn() e reseta
-  // Retorna { timeRemaining, isPaused }
-}
-```
-
-### 3. Pausar ao navegar
-
-**Arquivo:** `/src/app/game/page.tsx`
-
-- Chamar `useTurnTimer()` aqui — timer ativo
-- No `useEffect` de mount, chamar `resumeTimer()`
-- No cleanup (unmount), chamar `pauseTimer()`
-
-**Arquivos de paginas secundarias:**
-- `/src/app/game/territory/[id]/page.tsx`
-- `/src/app/game/cards/page.tsx`
-- `/src/app/game/army/page.tsx`
-- `/src/app/game/diplomacy/page.tsx`
-
-Em cada uma, **nao** chamar `useTurnTimer()` — o timer fica pausado naturalmente porque ninguem o avanca.
-
-### 4. Indicador visual de timer pausado
-
-Quando o jogador esta em pagina secundaria, exibir no header:
-
-```
-⏸ Timer pausado — voltar ao mapa para continuar
-```
-
-**Arquivo:** `/src/components/game/mobile/MobileGameHeader.tsx` (e equivalente desktop)
-
-- Ler `timerPaused` do gameStore
-- Se pausado, mostrar indicador em vez do countdown
-
----
-
-## Arquivos Afetados
-
-| Arquivo | Alteracao |
-|---------|-----------|
-| `/src/stores/gameStore.ts` | Adicionar `timerPaused`, `timeRemaining`, `pauseTimer()`, `resumeTimer()` |
-| `/src/hooks/useTurnTimer.ts` | **Novo** — Hook que gerencia o intervalo do timer |
-| `/src/app/game/page.tsx` | Usar `useTurnTimer()`, remover logica de timer local |
-| `/src/components/game/mobile/MobileGameHeader.tsx` | Exibir estado pausado |
-
----
-
-## Criterios de Aceite
-
-1. Timer avanca normalmente quando jogador esta em `/game`
-2. Timer pausa ao navegar para qualquer sub-pagina (`/game/territory/*`, `/game/cards`, `/game/army`, `/game/diplomacy`)
-3. Timer retoma ao voltar para `/game`
-4. Indicador visual "Timer pausado" aparece no header das paginas secundarias
-5. `processTurn()` nunca eh chamado enquanto timer esta pausado
-6. Funciona identicamente em desktop e mobile
+Quando o timer de producao for configurado (10-30 min), a dor D-002 desaparece naturalmente. Nenhuma feature de pause e necessaria.
