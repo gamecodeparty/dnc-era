@@ -139,6 +139,17 @@ export function TerritoryBottomSheet({
 
   const BonusIcon = territory?.bonusResource ? bonusIcons[territory.bonusResource] : null;
 
+  // Compute inline warnings for build/train buttons (F-032)
+  const buildWarnings = playerResources && buildCost
+    ? getProportionalCostWarnings(buildCost, playerResources)
+    : [];
+  const trainWarnings = playerResources && trainCost
+    ? getProportionalCostWarnings(trainCost, playerResources)
+    : [];
+
+  const makeCostTooltip = (ws: typeof buildWarnings) =>
+    ws.map((w) => `Custo elevado — usa ${Math.round(w.percent)}% do seu estoque de ${w.resourceLabel}`).join(" | ");
+
   return (
     <AnimatePresence>
       {territory && (
@@ -270,6 +281,14 @@ export function TerritoryBottomSheet({
                   >
                     <Building2 className="w-4 h-4 mr-2" />
                     Construir
+                    {buildWarnings.length > 0 && (
+                      <span
+                        title={makeCostTooltip(buildWarnings)}
+                        className="ml-1.5 inline-flex items-center"
+                      >
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                      </span>
+                    )}
                   </MedievalButton>
                   <MedievalButton
                     variant="secondary"
@@ -279,6 +298,14 @@ export function TerritoryBottomSheet({
                   >
                     <Users className="w-4 h-4 mr-2" />
                     Treinar
+                    {trainWarnings.length > 0 && (
+                      <span
+                        title={makeCostTooltip(trainWarnings)}
+                        className="ml-1.5 inline-flex items-center"
+                      >
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                      </span>
+                    )}
                   </MedievalButton>
                 </div>
               )}
