@@ -500,6 +500,13 @@ function createInitialDiplomacy(): DiplomacyState {
   };
 }
 
+// Player card in the store (simpler than Prisma's ClanCard)
+export interface PlayerCard {
+  id: string;
+  type: string;
+  used: boolean;
+}
+
 // Store
 interface GameState {
   // Estado
@@ -516,6 +523,7 @@ interface GameState {
   timerPaused: boolean;
   timeRemaining: number;
   revealedTerritories: Record<string, RevealedTerritory>;
+  playerCards: PlayerCard[];
 
   // Getters
   getPlayerClan: () => Clan;
@@ -571,6 +579,11 @@ export const useGameStore = create<GameState>((set, get) => ({
   timerPaused: false,
   timeRemaining: TURN_INTERVAL_MS,
   revealedTerritories: {},
+  playerCards: [
+    { id: "pc1", type: "REINFORCEMENTS", used: false },
+    { id: "pc2", type: "INFORMANT", used: false },
+    { id: "pc3", type: "SABOTAGE", used: false },
+  ],
 
   getPlayerClan: () => {
     return get().clans.find((c) => c.isPlayer)!;

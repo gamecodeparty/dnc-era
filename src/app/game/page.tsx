@@ -164,6 +164,7 @@ export default function GamePage() {
     sendExploration,
     sendSpy,
     revealedTerritories,
+    playerCards,
   } = useGameStore();
 
   const player = getPlayerClan();
@@ -245,7 +246,8 @@ export default function GamePage() {
   const handleSendExpedition = (
     fromTerritoryId: string,
     toTerritoryId: string,
-    units: { type: UnitType; quantity: number }[]
+    units: { type: UnitType; quantity: number }[],
+    _cardType?: string | null
   ) => {
     const fromTerritory = territories.find((t) => t.id === fromTerritoryId);
     const toTerritory = territories.find((t) => t.id === toTerritoryId);
@@ -1067,6 +1069,7 @@ export default function GamePage() {
           attackerOrigin={player?.origin}
           defenderOrigin={clans.find((c) => c.id === territories.find((t) => t.id === expeditionTarget)?.ownerId)?.origin}
           revealedTerritories={new Set(Object.keys(revealedTerritories))}
+          playerCards={playerCards.filter((c) => !c.used)}
           onSend={handleSendExpedition}
           onClose={handleCloseExpedition}
         />
