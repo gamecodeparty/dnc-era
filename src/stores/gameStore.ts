@@ -120,6 +120,7 @@ export interface Expedition {
   totalTurns: number;
   departedTurn: number;
   type: ExpeditionType;
+  cardType?: string | null;
 }
 
 export interface RevealedTerritory {
@@ -544,7 +545,8 @@ interface GameState {
   sendExpedition: (
     fromTerritoryId: string,
     toTerritoryId: string,
-    units: { type: UnitType; quantity: number }[]
+    units: { type: UnitType; quantity: number }[],
+    cardType?: string | null
   ) => { success: boolean; message: string; expeditionId?: string };
   cancelExpedition: (expeditionId: string) => { success: boolean; message: string };
   declareWar: (clanId: string) => { success: boolean; message: string };
@@ -740,7 +742,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     return true;
   },
 
-  sendExpedition: (fromTerritoryId, toTerritoryId, units) => {
+  sendExpedition: (fromTerritoryId, toTerritoryId, units, cardType) => {
     const state = get();
 
     // Validações
@@ -790,9 +792,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       totalTurns: travelTime,
       departedTurn: state.currentTurn,
       type: "ATTACK",
+      cardType: cardType ?? null,
     };
 
-    // Remover unidades do território de origem
+    // Remover unidades do território de origem; marcar carta como usada
     set((state) => ({
       territories: state.territories.map((t) => {
         if (t.id === fromTerritoryId) {
@@ -807,6 +810,19 @@ export const useGameStore = create<GameState>((set, get) => ({
         }
         return t;
       }),
+      // Se uma carta foi selecionada, marcar a primeira carta não usada desse tipo como usada
+      ...(cardType ? {
+        playerCards: (() => {
+          let marked = false;
+          return state.playerCards.map((c) => {
+            if (!marked && c.type === cardType && !c.used) {
+              marked = true;
+              return { ...c, used: true };
+            }
+            return c;
+          });
+        })(),
+      } : {}),
       expeditions: [...state.expeditions, expedition],
       events: [
         {
@@ -1158,6 +1174,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const conqueredTerritories: { id: string; newOwnerId: string; newOwnerName: string }[] = [];
     const returnedTroops: { territoryId: string; units: Unit[]; resources: { grain: number; wood: number; gold: number } }[] = [];
     const lootedClans: { clanId: string; grain: number; wood: number; gold: number }[] = [];
+    const sabotageTargets: string[] = []; // IDs de territórios onde estrutura deve ser destruída
     const exploredSites: { siteId: string; turn: number }[] = [];
     const spyReveals: { territoryId: string; units: Unit[]; structures: Structure[]; revealedAt: number; expiresAt: number }[] = [];
 
@@ -1170,7 +1187,24 @@ export const useGameStore = create<GameState>((set, get) => ({
           // Executar combate
           const targetTerritory = state.territories.find((t) => t.id === exp.toTerritoryId);
           if (targetTerritory) {
-            const attackPower = getAttackPower(exp.units);
+            // Efeito de carta INFORMANT: revelar território imediatamente
+            if (exp.cardType === "INFORMANT") {
+              spyReveals.push({
+                territoryId: targetTerritory.id,
+                units: [...targetTerritory.units],
+                structures: [...targetTerritory.structures],
+                revealedAt: newTurn,
+                expiresAt: newTurn + 3,
+              });
+            }
+
+            let attackPower = getAttackPower(exp.units);
+
+            // Efeito de carta REINFORCEMENTS: +50% poder de ataque
+            if (exp.cardType === "REINFORCEMENTS") {
+              attackPower = Math.floor(attackPower * 1.5);
+            }
+
             const wallLevel = targetTerritory.structures.find((s) => s.type === "WALL")?.level || 0;
             const defensePower = getDefensePower(targetTerritory.units, wallLevel);
 
@@ -1207,6 +1241,11 @@ export const useGameStore = create<GameState>((set, get) => ({
                 newOwnerName: exp.ownerName,
               });
 
+              // Efeito de carta SABOTAGE: destruir estrutura do território após vitória
+              if (exp.cardType === "SABOTAGE" && targetTerritory.structures.length > 0) {
+                sabotageTargets.push(exp.toTerritoryId);
+              }
+
               // Criar expedição de retorno com saque
               const returnTime = exp.totalTurns;
               updatedExpeditions.push({
@@ -1234,7 +1273,8 @@ export const useGameStore = create<GameState>((set, get) => ({
               if (lootWood > 0) lootParts.push(`+${lootWood} madeira`);
               if (lootGold > 0) lootParts.push(`+${lootGold} ouro`);
               const lootStr = lootParts.length > 0 ? lootParts.join(", ") : "nenhum";
-              const victoryMsg = `Você atacou Território ${targetTerritory.position + 1} de ${targetTerritory.ownerName}. VITÓRIA! Conquistou o território. Saqueou: ${lootStr}. Perdas: ${atkLosses} unidades.`;
+              const sabotageNote = exp.cardType === "SABOTAGE" && targetTerritory.structures.length > 0 ? " Sabotagem: estrutura destruída." : "";
+              const victoryMsg = `Você atacou Território ${targetTerritory.position + 1} de ${targetTerritory.ownerName}. VITÓRIA! Conquistou o território. Saqueou: ${lootStr}. Perdas: ${atkLosses} unidades.${sabotageNote}`;
               expeditionEvents.push({
                 turn: newTurn,
                 message: victoryMsg,
@@ -1540,6 +1580,14 @@ export const useGameStore = create<GameState>((set, get) => ({
           ? { ...t, ownerId: conquest.newOwnerId, ownerName: conquest.newOwnerName, units: [] }
           : t
       );
+    }
+
+    // Aplicar sabotagem: destruir primeira estrutura do território conquistado
+    for (const targetId of sabotageTargets) {
+      updatedTerritories = updatedTerritories.map((t) => {
+        if (t.id !== targetId || t.structures.length === 0) return t;
+        return { ...t, structures: t.structures.slice(1) };
+      });
     }
 
     // Aplicar tropas retornando

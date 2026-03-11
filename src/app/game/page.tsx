@@ -247,12 +247,12 @@ export default function GamePage() {
     fromTerritoryId: string,
     toTerritoryId: string,
     units: { type: UnitType; quantity: number }[],
-    _cardType?: string | null
+    cardType?: string | null
   ) => {
     const fromTerritory = territories.find((t) => t.id === fromTerritoryId);
     const toTerritory = territories.find((t) => t.id === toTerritoryId);
 
-    const result = sendExpedition(fromTerritoryId, toTerritoryId, units);
+    const result = sendExpedition(fromTerritoryId, toTerritoryId, units, cardType);
 
     if (result.success && fromTerritory && toTerritory) {
       // Animation feedback
