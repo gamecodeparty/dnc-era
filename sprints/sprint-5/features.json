@@ -192,7 +192,7 @@
     "id": "F-091",
     "name": "Dica de threshold de conquista 1.5x",
     "description": "Em ExpeditionModal.tsx, quando outcome é victory (parcial), adicionar dica em text-xs text-amber-400/80 sugerindo adicionar tropas para atingir ratio >= 1.5x. Adicionar marcador visual no ponto 1.5x na barra de ratio existente. Marcador não aparece para outros outcomes.",
-    "status": "blocked",
+    "status": "passing",
     "priority": 11,
     "agent": "coder",
     "task": "vibe-code",
@@ -204,7 +204,8 @@
       "Threshold 1.5x visualmente indicado na barra de ratio",
       "Marcador não aparece para outcomes decisive_victory, uncertain ou defeat"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-028-expedition-combat-ux.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-028-expedition-combat-ux.md",
+    "completed_at": "2026-03-11T00:00:00Z"
   },
   {
     "id": "F-092",

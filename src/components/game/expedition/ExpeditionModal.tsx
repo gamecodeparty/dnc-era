@@ -719,6 +719,13 @@ export function ExpeditionModal({
                   {outcomeExplanation[combatPreview.outcome]}
                 </p>
 
+                {/* F-091: Hint to add troops when outcome is partial victory */}
+                {combatPreview.outcome === "victory" && (
+                  <p className="text-xs text-amber-400/80">
+                    💡 Adicione {Math.ceil(combatPreview.defensePower * 1.5) - combatPreview.attackPower} de poder de ataque para conquistar o território (ratio ≥ 1.5x).
+                  </p>
+                )}
+
                 {/* Power bar */}
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs text-medieval-text-muted">
@@ -740,7 +747,8 @@ export function ExpeditionModal({
                   {combatPreview.isApproximate && (
                     <div className="text-xs text-grain/70 text-right">(sem reconhecimento)</div>
                   )}
-                  <div className="h-2.5 rounded-full overflow-hidden bg-era-peace/30 flex">
+                  {/* F-091: ratio bar with 1.5x threshold marker for partial victory */}
+                  <div className="relative h-2.5 rounded-full overflow-hidden bg-era-peace/30 flex">
                     {(() => {
                       const total = combatPreview.attackPower + combatPreview.defensePower;
                       const atkPct = total > 0 ? Math.round((combatPreview.attackPower / total) * 100) : 50;
@@ -751,7 +759,18 @@ export function ExpeditionModal({
                         />
                       );
                     })()}
+                    {/* 1.5x threshold marker — only for partial victory outcome */}
+                    {combatPreview.outcome === "victory" && (
+                      <div
+                        className="absolute top-0 bottom-0 w-0.5 bg-amber-400/80"
+                        style={{ left: "60%" }}
+                        title="Threshold 1.5x"
+                      />
+                    )}
                   </div>
+                  {combatPreview.outcome === "victory" && (
+                    <div className="text-xs text-amber-400/60 text-right">▲ 1.5x</div>
+                  )}
                 </div>
 
                 {/* Active modifiers (including F-039 card label) */}
