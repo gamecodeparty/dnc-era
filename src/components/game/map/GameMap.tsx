@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Territory } from "./Territory";
 import type { TerritoryWithDetails, HordaPreview } from "@/game/types";
@@ -134,6 +134,7 @@ export function GameMap({
 }: GameMapProps) {
   const gridWrapperRef = useRef<HTMLDivElement>(null);
   const [gridDims, setGridDims] = useState({ width: 0, height: 0 });
+  const [hoveredPosition, setHoveredPosition] = useState<number | null>(null);
 
   useEffect(() => {
     const el = gridWrapperRef.current;
@@ -148,6 +149,23 @@ export function GameMap({
     });
     ro.observe(el);
     return () => ro.disconnect();
+  }, []);
+
+  // F-093: Compute active position (hover takes precedence over click selection)
+  const selectedPosition = selectedTerritoryId
+    ? territories.find(t => t.id === selectedTerritoryId)?.position ?? null
+    : null;
+  const activePosition = hoveredPosition ?? selectedPosition;
+
+  // F-093: Set of positions adjacent to the active territory
+  const adjacentToActive = useMemo<Set<number>>(() => {
+    if (activePosition === null) return new Set();
+    return new Set(TERRITORY_ADJACENCY[activePosition] ?? []);
+  }, [activePosition]);
+
+  // F-093: Stable callbacks per territory position to avoid re-creating inline fns
+  const handleHoverChange = useCallback((pos: number, hovered: boolean) => {
+    setHoveredPosition(hovered ? pos : null);
   }, []);
 
   // Sort territories by position
@@ -192,6 +210,8 @@ export function GameMap({
             {ADJACENCY_LINES.map(([a, b]) => {
               const ca = getCellCenter(a, gridDims.width, gridDims.height);
               const cb = getCellCenter(b, gridDims.width, gridDims.height);
+              const isActive = activePosition !== null &&
+                (a === activePosition || b === activePosition);
               return (
                 <line
                   key={`${a}-${b}`}
@@ -199,9 +219,10 @@ export function GameMap({
                   y1={ca.y}
                   x2={cb.x}
                   y2={cb.y}
-                  stroke="#475569"
-                  strokeOpacity={0.3}
-                  strokeWidth={1.5}
+                  stroke={isActive ? "#fbbf24" : "#475569"}
+                  strokeOpacity={isActive ? 0.7 : 0.3}
+                  strokeWidth={isActive ? 2 : 1.5}
+                  style={{ transition: "stroke 0.15s, stroke-opacity 0.15s" }}
                 />
               );
             })}
@@ -241,6 +262,8 @@ export function GameMap({
           // F-069: Horda preview target — weakest player territory highlighted 1 turn before attack
           const isHordaPreviewTarget = isPlayerOwned && hordaPreview !== null && hordaPreview.targetTerritoryId === territory.id;
 
+          const isAdjacentToSelected = adjacentToActive.has(territory.position);
+
           return (
             <Territory
               key={territory.id}
@@ -270,7 +293,9 @@ export function GameMap({
               isAllied={isAllied}
               alliedDefensePower={alliedDefensePower}
               isHordaPreviewTarget={isHordaPreviewTarget}
+              isAdjacentToSelected={isAdjacentToSelected}
               onClick={() => onTerritoryClick?.(territory.id)}
+              onHoverChange={(hovered) => handleHoverChange(territory.position, hovered)}
             />
           );
         })}

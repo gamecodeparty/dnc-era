@@ -230,7 +230,7 @@
     "id": "F-093",
     "name": "Highlight de adjacências ao selecionar território",
     "description": "Em GameMap.tsx e Territory.tsx, ao clicar/hoverar um território, destacar conexões adjacentes (linhas stroke amber-400 opacity 0.7) e territórios adjacentes recebem indicação visual (borda/glow via prop isAdjacentToSelected). Highlight desaparece ao deselecionar.",
-    "status": "blocked",
+    "status": "passing",
     "priority": 13,
     "agent": "coder",
     "task": "vibe-code",
@@ -243,7 +243,8 @@
       "Highlight desaparece ao deselecionar",
       "Performance adequada (sem re-render de todos os territórios)"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-029-territory-adjacency-visualization.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-029-territory-adjacency-visualization.md",
+    "completed_at": "2026-03-11T20:00:00Z"
   },
   {
     "id": "F-094",
