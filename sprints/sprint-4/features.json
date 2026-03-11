@@ -184,7 +184,7 @@
     "id": "F-060",
     "name": "Pacto de não-agressão para relação TRUSTED",
     "description": "Em AIController.ts, quando relação jogador-AI é TRUSTED: AI não ataca por 5 turnos após aliança formada; após 5 turnos pode reavaliar (chance de quebra baseada em personalidade); se quebra, relação muda para NEUTRAL (nunca direto a HOSTILE). Em GameEngine.ts, impedir expedições de ataque do jogador contra territórios de clãs TRUSTED. Botão 'Atacar' desabilitado com tooltip 'Aliado — cancele a aliança antes de atacar'. Jogador pode cancelar aliança a qualquer momento via diplomacia.",
-    "status": "pending",
+    "status": "passing",
     "priority": 10,
     "agent": "coder",
     "task": "vibe-code",
@@ -196,7 +196,8 @@
       "Jogador pode cancelar aliança a qualquer momento via página de diplomacia",
       "Se AI quebra aliança, relação muda para NEUTRAL (nunca direto a HOSTILE)"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-019-diplomacy-concrete-effects.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-019-diplomacy-concrete-effects.md",
+    "completed_at": "2026-03-11T16:45:00Z"
   },
   {
     "id": "F-062",
@@ -218,7 +219,7 @@
     "id": "F-061",
     "name": "Visibilidade de tropas aliadas no mapa",
     "description": "Em Territory.tsx, territórios de clãs aliados (TRUSTED) exibem badges de defesa reais (não '?'), como se revelados por espião. Badge com ícone 🤝 em azul text-blue-400. Tooltip: 'Aliado — força visível pelo pacto'. Não expira enquanto aliança durar. Badges desaparecem imediatamente se aliança for quebrada. Reutilizar sistema TerritoryIntel de F-056 para consistência.",
-    "status": "blocked",
+    "status": "pending",
     "priority": 12,
     "agent": "coder",
     "task": "vibe-code",
@@ -238,7 +239,7 @@
     "id": "F-063",
     "name": "Indicador de saúde da aliança na página de diplomacia",
     "description": "Em diplomacy/page.tsx, adicionar indicador visual de saúde da relação para clãs TRUSTED. Barra visual com percentual + turnos restantes do pacto + botão 'Cancelar Aliança'. Saúde inicia em 100%: -10%/turno se AI personalidade HOSTILE, -20% se jogador ataca perto do aliado, -5%/turno decaimento natural. Quando saúde < 30%, aliança pode ser quebrada pela AI. Tipos em index.ts: campos allianceHealth e allianceTurnFormed.",
-    "status": "blocked",
+    "status": "pending",
     "priority": 13,
     "agent": "coder",
     "task": "vibe-code",
@@ -257,7 +258,7 @@
     "id": "F-064",
     "name": "Notificação de quebra de aliança",
     "description": "Em GameEngine.ts, quando AI quebra aliança: evento no log 'O Clã X rompeu a aliança! Relação mudou para Neutro.', TipBanner alerta 'Aliança rompida — seus territórios perto de X estão vulneráveis'. Transição: TRUSTED → NEUTRAL (nunca direto a HOSTILE por quebra automática).",
-    "status": "blocked",
+    "status": "pending",
     "priority": 14,
     "agent": "coder",
     "task": "vibe-code",

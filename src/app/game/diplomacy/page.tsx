@@ -103,8 +103,11 @@ export default function DiplomacyPage() {
     getDiplomacy,
     declareWar,
     proposePeace,
+    cancelAlliance,
     territories,
     currentEra,
+    allianceTurnFormed,
+    currentTurn,
   } = useGameStore();
 
   const aiClans = getAIClans();
@@ -139,6 +142,15 @@ export default function DiplomacyPage() {
     const result = proposePeace(clanId);
     setFeedback({
       type: result.success ? "success" : "warning",
+      message: result.message,
+    });
+    setTimeout(() => setFeedback(null), 3000);
+  };
+
+  const handleCancelAlliance = (clanId: string) => {
+    const result = cancelAlliance(clanId);
+    setFeedback({
+      type: result.success ? "success" : "error",
       message: result.message,
     });
     setTimeout(() => setFeedback(null), 3000);
@@ -236,6 +248,11 @@ export default function DiplomacyPage() {
             const territoryCount = getClanTerritoryCount(clan.id);
             const militaryPower = getClanPower(clan.id);
 
+            const allianceSince = allianceTurnFormed[clan.id];
+            const turnsSinceAlliance = allianceSince != null ? currentTurn - allianceSince : null;
+            const pactActive = turnsSinceAlliance != null && turnsSinceAlliance <= 5;
+            const pactoTurnsLeft = pactActive ? 5 - turnsSinceAlliance! : 0;
+
             return (
               <motion.div key={clan.id} variants={staggerItem}>
                 <MedievalCard variant="elevated">
@@ -291,6 +308,13 @@ export default function DiplomacyPage() {
                       </div>
                     </div>
 
+                    {/* F-060: Indicador de pacto ativo */}
+                    {relation === "TRUSTED" && pactActive && (
+                      <div className="bg-era-peace/10 border border-era-peace/30 rounded-lg px-3 py-2 text-xs text-era-peace">
+                        🤝 Pacto de não-agressão ativo — {pactoTurnsLeft} turno{pactoTurnsLeft !== 1 ? "s" : ""} restante{pactoTurnsLeft !== 1 ? "s" : ""}
+                      </div>
+                    )}
+
                     <div className="flex gap-2 pt-2">
                       {relation !== "TRUSTED" && (
                         <MedievalButton
@@ -303,7 +327,7 @@ export default function DiplomacyPage() {
                           Propor Paz
                         </MedievalButton>
                       )}
-                      {relation !== "HOSTILE" && (
+                      {relation !== "HOSTILE" && relation !== "TRUSTED" && (
                         <MedievalButton
                           variant="danger"
                           size="sm"
@@ -316,13 +340,13 @@ export default function DiplomacyPage() {
                       )}
                       {relation === "TRUSTED" && (
                         <MedievalButton
-                          variant="ghost"
+                          variant="danger"
                           size="sm"
-                          className="flex-1 text-era-peace"
-                          disabled
-                          icon={<Check className="w-4 h-4" />}
+                          className="flex-1"
+                          onClick={() => handleCancelAlliance(clan.id)}
+                          icon={<Sword className="w-4 h-4" />}
                         >
-                          Aliados
+                          Cancelar Aliança
                         </MedievalButton>
                       )}
                       {relation === "HOSTILE" && (
@@ -350,8 +374,8 @@ export default function DiplomacyPage() {
             <PanelHeader title="Regras de Diplomacia" />
             <PanelContent className="text-sm space-y-2">
               <p>
-                <strong className="text-era-peace">Aliados:</strong> Nao podem se
-                atacar. Bonus de comercio.
+                <strong className="text-era-peace">Aliados:</strong> Pacto de não-agressão ativo por 5 turnos.
+                Nenhum dos lados pode atacar o outro. Você pode cancelar a aliança a qualquer momento.
               </p>
               <p>
                 <strong className="text-medieval-text-secondary">Neutros:</strong>{" "}

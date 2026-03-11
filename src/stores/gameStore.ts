@@ -577,6 +577,7 @@ interface GameState {
   playerCards: PlayerCard[];
   invasionModalShown: boolean;
   marketTradesUsed: string[]; // territoryIds that have used their trade this turn
+  allianceTurnFormed: Record<string, number>; // clanId -> turn when TRUSTED was formed
 
   // Getters
   getPlayerClan: () => Clan;
@@ -603,6 +604,7 @@ interface GameState {
   cancelExpedition: (expeditionId: string) => { success: boolean; message: string };
   declareWar: (clanId: string) => { success: boolean; message: string };
   proposePeace: (clanId: string) => { success: boolean; message: string };
+  cancelAlliance: (clanId: string) => { success: boolean; message: string };
   sendExploration: (
     fromTerritoryId: string,
     siteId: string,
@@ -639,6 +641,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   incomingAttacks: [],
   invasionModalShown: false,
   marketTradesUsed: [],
+  allianceTurnFormed: {},
   playerCards: [
     { id: "pc1", type: "REINFORCEMENTS", used: false },
     { id: "pc2", type: "INFORMANT", used: false },
@@ -814,6 +817,11 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (!from || !to) return { success: false, message: "Territorio invalido" };
     if (from.ownerId !== "player") return { success: false, message: "Voce so pode enviar de seus territorios" };
     if (to.ownerId === "player") return { success: false, message: "Nao pode atacar a si mesmo" };
+
+    // F-060: Bloquear ataque a clãs aliados (TRUSTED)
+    if (to.ownerId && state.diplomacy[to.ownerId] === "TRUSTED") {
+      return { success: false, message: "Aliado — cancele a aliança antes de atacar" };
+    }
 
     // Validar unidades disponíveis
     for (const unit of units) {
@@ -1064,6 +1072,9 @@ export const useGameStore = create<GameState>((set, get) => ({
           ...state.diplomacy,
           [clanId]: newRelation,
         },
+        allianceTurnFormed: newRelation === "TRUSTED"
+          ? { ...state.allianceTurnFormed, [clanId]: state.currentTurn }
+          : state.allianceTurnFormed,
         events: [
           { turn: state.currentTurn, message: `PAZ! ${clan.name} aceitou sua proposta de paz!`, type: "success" as const },
           ...state.events.slice(0, 9),
@@ -1079,6 +1090,33 @@ export const useGameStore = create<GameState>((set, get) => ({
       }));
       return { success: false, message: `${clan.name} rejeitou sua proposta de paz.` };
     }
+  },
+
+  cancelAlliance: (clanId: string) => {
+    const state = get();
+    const clan = state.clans.find((c) => c.id === clanId);
+    if (!clan) return { success: false, message: "Clã não encontrado" };
+
+    const currentRelation = state.diplomacy[clanId];
+    if (currentRelation !== "TRUSTED") {
+      return { success: false, message: "Você não tem aliança com este clã" };
+    }
+
+    const newAllianceTurnFormed = { ...state.allianceTurnFormed };
+    delete newAllianceTurnFormed[clanId];
+
+    set((s) => ({
+      diplomacy: {
+        ...s.diplomacy,
+        [clanId]: "NEUTRAL" as DiplomacyRelation,
+      },
+      allianceTurnFormed: newAllianceTurnFormed,
+      events: [
+        { turn: s.currentTurn, message: `Você cancelou a aliança com ${clan.name}. Relação agora Neutra.`, type: "warning" as const },
+        ...s.events.slice(0, 9),
+      ],
+    }));
+    return { success: true, message: `Aliança com ${clan.name} cancelada.` };
   },
 
   sendExploration: (fromTerritoryId, siteId, units) => {
@@ -1823,7 +1861,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
 
     // IA faz acoes simples
-    const { actions: aiActions, newIncomingAttacks } = processAI(updatedTerritories, updatedClans, newEra, newTurn);
+    const { actions: aiActions, newIncomingAttacks, diplomacyBreaks } = processAI(
+      updatedTerritories, updatedClans, newEra, newTurn,
+      state.diplomacy, state.allianceTurnFormed
+    );
 
     aiActions.forEach((action) => {
       newEvents.push({ turn: newTurn, message: action.message, type: "warning", ...(action.combatData ?? {}) });
@@ -1968,6 +2009,18 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
     }
 
+    // F-060: Gerar eventos de quebra de aliança pela AI
+    for (const { clanId } of diplomacyBreaks) {
+      const brokenClan = updatedClans.find((c) => c.id === clanId);
+      if (brokenClan) {
+        newEvents.push({
+          turn: newTurn,
+          message: `${brokenClan.name} rompeu a aliança! Relação mudou para Neutro.`,
+          type: "warning",
+        } as GameEvent);
+      }
+    }
+
     // Combinar todos os eventos
     const allEvents = [...expeditionEvents, ...newEvents];
 
@@ -2033,6 +2086,20 @@ export const useGameStore = create<GameState>((set, get) => ({
       ],
       // Reset market trades used at start of new turn (F-066)
       marketTradesUsed: [],
+      // F-060: Apply diplomacy breaks from AI (TRUSTED → NEUTRAL)
+      diplomacy: diplomacyBreaks.length > 0
+        ? diplomacyBreaks.reduce(
+            (d, { clanId, newRelation }) => ({ ...d, [clanId]: newRelation }),
+            state.diplomacy
+          )
+        : state.diplomacy,
+      allianceTurnFormed: diplomacyBreaks.length > 0
+        ? (() => {
+            const updated = { ...state.allianceTurnFormed };
+            diplomacyBreaks.forEach(({ clanId }) => { delete updated[clanId]; });
+            return updated;
+          })()
+        : state.allianceTurnFormed,
       events: [...allEvents, ...state.events.slice(0, 10 - allEvents.length)],
     }));
 
@@ -2065,6 +2132,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       incomingAttacks: [],
       invasionModalShown: false,
       marketTradesUsed: [],
+      allianceTurnFormed: {},
     });
   },
 
@@ -2100,9 +2168,17 @@ type AIAction = {
   combatData?: Omit<GameEvent, "turn" | "message" | "type">;
 };
 
-function processAI(territories: Territory[], clans: Clan[], era: Era, currentTurn: number): { actions: AIAction[], newIncomingAttacks: IncomingAttack[] } {
+function processAI(
+  territories: Territory[],
+  clans: Clan[],
+  era: Era,
+  currentTurn: number,
+  diplomacy: DiplomacyState = {},
+  allianceTurnFormed: Record<string, number> = {}
+): { actions: AIAction[], newIncomingAttacks: IncomingAttack[], diplomacyBreaks: { clanId: string; newRelation: DiplomacyRelation }[] } {
   const actions: AIAction[] = [];
   const newIncomingAttacks: IncomingAttack[] = [];
+  const diplomacyBreaks: { clanId: string; newRelation: DiplomacyRelation }[] = [];
 
   const aiIds = ["ai1", "ai2", "ai3", "ai4"];
   let updatedTerritories = [...territories];
@@ -2169,10 +2245,37 @@ function processAI(territories: Territory[], clans: Clan[], era: Era, currentTur
       }
     }
 
+    // F-060: Pacto de não-agressão — verificar relação com jogador
+    const relationWithPlayer = diplomacy[aiId] ?? "NEUTRAL";
+    const allianceTurn = allianceTurnFormed[aiId] ?? 0;
+    const turnsSinceAlliance = currentTurn - allianceTurn;
+
+    if (relationWithPlayer === "TRUSTED") {
+      // Dentro dos primeiros 5 turnos: não ataca o jogador
+      if (turnsSinceAlliance <= 5) {
+        // Pacto ativo — pula ataque ao jogador
+      } else {
+        // Após 5 turnos: chance de quebrar aliança baseada em personalidade
+        const breakChance = clan.personality === "CONQUEROR" ? 0.20
+          : clan.personality === "OPPORTUNIST" ? 0.15
+          : clan.personality === "DEFENDER" ? 0.05
+          : 0.03; // MERCHANT
+
+        if (Math.random() < breakChance) {
+          diplomacyBreaks.push({ clanId: aiId, newRelation: "NEUTRAL" });
+          // Quebrou aliança — pode atacar este turno ainda (vai cair no bloco abaixo sem TRUSTED)
+        }
+      }
+    }
+
+    // Verificar relação atualizada (pode ter quebrado acima)
+    const updatedRelation = diplomacyBreaks.some((b) => b.clanId === aiId) ? "NEUTRAL" : relationWithPlayer;
+
     // IA telegrafar ataque contra território do jogador (F-058)
     // 25% chance na Era de Guerra, 35% na Era de Invasão
+    // F-060: Não ataca jogador se aliança ativa (TRUSTED e sem quebra)
     const attackChance = era === "INVASION" ? 0.65 : era === "WAR" ? 0.75 : 1;
-    if ((era === "WAR" || era === "INVASION") && Math.random() > attackChance) {
+    if ((era === "WAR" || era === "INVASION") && Math.random() > attackChance && updatedRelation !== "TRUSTED") {
       const playerTerritories = updatedTerritories.filter((t) => t.ownerId === "player");
       // Só atacar se AI tem soldados suficientes
       const aiSoldiers = aiTerritories.reduce((sum, t) => sum + t.units.reduce((s, u) => u.type === "SOLDIER" ? s + u.quantity : s, 0), 0);
@@ -2195,7 +2298,7 @@ function processAI(territories: Territory[], clans: Clan[], era: Era, currentTur
     actions[actions.length - 1].territories = updatedTerritories;
   }
 
-  return { actions, newIncomingAttacks };
+  return { actions, newIncomingAttacks, diplomacyBreaks };
 }
 
 // ─── F-044: Agregação de estatísticas da partida ─────────────────────────────
