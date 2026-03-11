@@ -399,7 +399,7 @@
     "id": "F-054",
     "name": "Componente TipBanner",
     "description": "Criar /src/components/game/hud/TipBanner.tsx: banner flutuante no topo da tela de jogo. Fundo semi-transparente dourado (bg-amber-900/80 border-amber-500/50), ícone à esquerda, texto curto, botão X para fechar. Posição fixa no topo acima do mapa. Animação slide-in de cima para baixo (Framer Motion). Auto-dismiss após 10 segundos se jogador não interagir. Máximo 1 dica visível por vez. Estilo medieval consistente.",
-    "status": "pending",
+    "status": "passing",
     "priority": 22,
     "agent": "coder",
     "task": "vibe-code",
@@ -410,13 +410,14 @@
       "Auto-fechamento após 10 segundos sem interação",
       "Estilo medieval consistente com o resto da UI (bg-amber-900/80 border-amber-500/50)"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-017-contextual-tips-system.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-017-contextual-tips-system.md",
+    "completed_at": "2026-03-11T14:30:00Z"
   },
   {
     "id": "F-055",
     "name": "Integração do sistema de dicas no layout do jogo",
     "description": "Em /src/app/game/page.tsx, adicionar useTips() hook e renderizar TipBanner no layout: const { currentTip, dismissTip } = useTips(); renderizar <TipBanner tip={currentTip} onDismiss={() => dismissTip(currentTip.id)} /> acima do conteúdo do jogo. Dicas não bloqueiam interação com o jogo (banner é overlay). Fluxo de jogo normal não é afetado.",
-    "status": "blocked",
+    "status": "pending",
     "priority": 23,
     "agent": "coder",
     "task": "vibe-code",
