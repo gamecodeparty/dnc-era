@@ -67,7 +67,7 @@
     "id": "F-059",
     "name": "Notificação de ataque iminente no log de eventos",
     "description": "Em GameEngine.ts, no início do turno do jogador, se há IncomingAttack com arrivesTurn === currentTurn + 1, gerar evento no log: 'Expedição inimiga detectada se movendo em direção a [território]!'. Evento não revela identidade do atacante (a menos que espião ativo). Evento aparece apenas 1 vez por ataque iminente.",
-    "status": "pending",
+    "status": "passing",
     "priority": 4,
     "agent": "coder",
     "task": "vibe-code",
@@ -79,7 +79,8 @@
       "Evento não revela identidade do atacante (a menos que espião ativo no território)",
       "Evento aparece apenas 1 vez por ataque iminente (não repete no próximo turno)"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-018-military-intel-map.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-018-military-intel-map.md",
+    "completed_at": "2026-03-11T16:15:00Z"
   },
   {
     "id": "F-075",

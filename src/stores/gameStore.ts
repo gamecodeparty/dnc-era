@@ -1773,6 +1773,35 @@ export const useGameStore = create<GameState>((set, get) => ({
       if (action.clans) updatedClans = action.clans;
     });
 
+    // F-059: Notificação de ataque iminente no log de eventos
+    // Apenas para novos ataques (newIncomingAttacks) — garante evento 1 vez por ataque
+    for (const attack of newIncomingAttacks) {
+      const targetTerritory = updatedTerritories.find((t) => t.id === attack.targetTerritoryId);
+      if (!targetTerritory || targetTerritory.ownerId !== "player") continue;
+
+      // Verificar se espião ativo em algum território do clã atacante
+      const revealedWithNew: Record<string, boolean> = {};
+      for (const [tid, rev] of Object.entries(state.revealedTerritories) as [string, RevealedTerritory][]) {
+        if (rev.expiresAt > newTurn) revealedWithNew[tid] = true;
+      }
+      for (const reveal of spyReveals) {
+        revealedWithNew[reveal.territoryId] = true;
+      }
+      const spyActiveOnSourceClan = updatedTerritories.some(
+        (t) => t.ownerId === attack.sourceClanId && revealedWithNew[t.id]
+      );
+
+      let attackMessage: string;
+      if (spyActiveOnSourceClan) {
+        const sourceClan = updatedClans.find((c) => c.id === attack.sourceClanId);
+        attackMessage = `⚠ Expedição inimiga de ${sourceClan?.name ?? "clã desconhecido"} detectada se movendo em direção ao Território ${targetTerritory.position + 1}!`;
+      } else {
+        attackMessage = `⚠ Expedição inimiga detectada se movendo em direção ao Território ${targetTerritory.position + 1}!`;
+      }
+
+      newEvents.push({ turn: newTurn, message: attackMessage, type: "warning" });
+    }
+
     // Horda na Era 3
     if (newEra === "INVASION" && newTurn % 3 === 0) {
       const hordaStrength = 50 + (newTurn - 36) * 20;
