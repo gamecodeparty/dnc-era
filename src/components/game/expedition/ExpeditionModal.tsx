@@ -5,6 +5,16 @@ import { X, Swords, MapPin, Clock, Package, ChevronDown, ChevronUp, AlertTriangl
 import { motion, AnimatePresence } from "framer-motion";
 import { MedievalButton } from "@/components/ui/medieval";
 import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
+import {
   Territory,
   Unit,
   UnitType,
@@ -120,6 +130,7 @@ export function ExpeditionModal({
   // UI state
   const [showOriginSelect, setShowOriginSelect] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showUnprotectedDialog, setShowUnprotectedDialog] = useState(false);
 
   // Available combat cards (unused, relevant context only, deduplicated by type)
   const availableCombatCards = useMemo(() => {
@@ -292,18 +303,18 @@ export function ExpeditionModal({
     });
   };
 
-  // Send expedition
-  const handleSend = () => {
-    if (currentEra === "PEACE") {
-      setError("Expedicoes bloqueadas na Era da Paz!");
-      return;
-    }
+  // Remaining units in origin territory after expedition
+  const remainingUnits = useMemo(
+    () =>
+      Object.entries(availableUnits).reduce((sum, [type, qty]) => {
+        const sent = selectedUnits[type as UnitType] ?? 0;
+        return sum + (qty - sent);
+      }, 0),
+    [availableUnits, selectedUnits]
+  );
 
-    if (expeditionStats.totalUnits === 0) {
-      setError("Selecione pelo menos uma unidade!");
-      return;
-    }
-
+  // Execute expedition without confirmation
+  const executeSend = () => {
     const result = onSend(
       fromTerritory.id,
       toTerritory.id,
@@ -316,13 +327,58 @@ export function ExpeditionModal({
     }
   };
 
+  // Send expedition — shows confirmation if territory will be left with 0 units
+  const handleSend = () => {
+    if (currentEra === "PEACE") {
+      setError("Expedicoes bloqueadas na Era da Paz!");
+      return;
+    }
+
+    if (expeditionStats.totalUnits === 0) {
+      setError("Selecione pelo menos uma unidade!");
+      return;
+    }
+
+    if (remainingUnits === 0) {
+      setShowUnprotectedDialog(true);
+      return;
+    }
+
+    executeSend();
+  };
+
   // Filter territories with units
   const territoriesWithUnits = playerTerritories.filter(
     (t) => t.units.length > 0 && t.units.some((u) => u.quantity > 0)
   );
 
   return (
-    <AnimatePresence>
+    <>
+      {/* Unprotected territory confirmation dialog */}
+      <AlertDialog open={showUnprotectedDialog} onOpenChange={setShowUnprotectedDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>⚠️ Território desprotegido!</AlertDialogTitle>
+            <AlertDialogDescription>
+              O Território {fromTerritory.position + 1} ficará com 0 unidades após esta expedição.
+              Qualquer ataque inimigo conquistará este território sem resistência.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowUnprotectedDialog(false);
+                executeSend();
+              }}
+            >
+              Enviar mesmo assim
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -780,5 +836,6 @@ export function ExpeditionModal({
         </motion.div>
       </motion.div>
     </AnimatePresence>
+    </>
   );
 }

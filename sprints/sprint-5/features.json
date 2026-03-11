@@ -136,7 +136,7 @@
     "id": "F-088",
     "name": "Modal de confirmação ao desproteger território",
     "description": "Em ExpeditionModal.tsx, antes de executar sendExpedition, calcular unidades restantes no território de origem. Se remainingUnits === 0, exibir AlertDialog (shadcn/ui) avisando que território ficará desprotegido, com opções Cancelar e Enviar mesmo assim.",
-    "status": "pending",
+    "status": "passing",
     "priority": 8,
     "agent": "coder",
     "task": "vibe-code",
@@ -147,7 +147,8 @@
       "Jogador pode cancelar ou confirmar",
       "Modal usa AlertDialog do shadcn/ui"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-028-expedition-combat-ux.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-028-expedition-combat-ux.md",
+    "completed_at": "2026-03-11T23:30:00Z"
   },
   {
     "id": "F-089",
