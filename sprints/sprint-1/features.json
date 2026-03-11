@@ -337,7 +337,7 @@
     "id": "F-019",
     "name": "Header de slots no TerritoryBottomSheet",
     "description": "Em TerritoryBottomSheet.tsx, adicionar header 'Estruturas (X/4 slots)' na grid de estruturas. Mesmo esquema de cores do tile do mapa (verde/amarelo/vermelho).",
-    "status": "pending",
+    "status": "passing",
     "priority": 19,
     "agent": "coder",
     "task": "vibe-code",
@@ -346,6 +346,7 @@
       "Header 'Estruturas (X/4 slots)' visível na grid do TerritoryBottomSheet",
       "Cores consistentes com tile do mapa (verde 0-2, amarelo 3, vermelho 4/4)"
     ],
-    "prp_path": "sprints/sprint-1/3-prps/PRP-005-information-transparency.md"
+    "prp_path": "sprints/sprint-1/3-prps/PRP-005-information-transparency.md",
+    "completed_at": "2026-03-11T00:59:58Z"
   }
 ]

@@ -4,6 +4,7 @@ import { X, MapPin, Building2, Users, Wheat, Trees, Coins } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MedievalButton } from "@/components/ui/medieval";
 import { useHaptic } from "@/hooks/useHaptic";
+import { UI } from "@/game/constants/balance";
 
 interface Territory {
   id: string;
@@ -154,10 +155,21 @@ export function TerritoryBottomSheet({
               {/* Structures */}
               {structures.length > 0 && (
                 <div className="mb-4">
-                  <h4 className="text-sm font-semibold text-medieval-text-secondary mb-2 flex items-center gap-2">
-                    <Building2 className="w-4 h-4" />
-                    Estruturas
-                  </h4>
+                  {(() => {
+                    const MAX_SLOTS = UI.MAX_STRUCTURE_SLOTS;
+                    const count = structures.length;
+                    const slotColor =
+                      count <= 2 ? "text-green-400" :
+                      count === 3 ? "text-yellow-400" :
+                      "text-red-400";
+                    return (
+                      <h4 className="text-sm font-semibold text-medieval-text-secondary mb-2 flex items-center gap-2">
+                        <Building2 className="w-4 h-4" />
+                        Estruturas{" "}
+                        <span className={slotColor}>({count}/{MAX_SLOTS} slots)</span>
+                      </h4>
+                    );
+                  })()}
                   <div className="grid grid-cols-2 gap-2">
                     {structures.map((structure) => (
                       <div
