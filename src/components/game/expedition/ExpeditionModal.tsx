@@ -18,6 +18,7 @@ import {
 } from "@/stores/gameStore";
 import type { CombatPreviewOutcome } from "@/game/types";
 import { CARDS } from "@/game/constants/cards";
+import { calculateTravelTime } from "@/game/engine/TravelSystem";
 
 /** Minimal card shape needed by the modal */
 export type CombatCardEntry = { id: string; type: string; used: boolean };
@@ -164,6 +165,13 @@ export function ExpeditionModal({
 
   // F-038: show hint when cards are available but none selected
   const showNoCardHint = availableCombatCards.length > 0 && selectedCard === null;
+
+  // F-041: travel time preview — recalculates in real time as origin changes
+  const travelTimePreview = useMemo(
+    () => calculateTravelTime(fromTerritory.position + 1, toTerritory.position + 1),
+    [fromTerritory.position, toTerritory.position]
+  );
+  const showLongTravelWarning = travelTimePreview >= 3;
 
   // F-039: card modifier label shown in combat preview with 🃏 icon
   const cardModifierLabel: string | null =
@@ -423,8 +431,22 @@ export function ExpeditionModal({
                 <div className="text-xs text-medieval-text-muted mt-1">
                   {toTerritory.ownerName}
                 </div>
+                <div className="text-xs mt-1 flex items-center gap-1 text-medieval-text-secondary">
+                  <span>⏱</span>
+                  <span>{travelTimePreview} {travelTimePreview === 1 ? "turno" : "turnos"}</span>
+                </div>
               </div>
             </div>
+
+            {/* F-041: Long travel warning */}
+            {showLongTravelWarning && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-900/20 border border-amber-600/40">
+                <span className="text-base leading-none mt-0.5">⚠</span>
+                <p className="text-xs text-amber-300">
+                  Viagem longa: tropas chegarão em {travelTimePreview} turnos. Seus territórios ficarão sem essas unidades durante a viagem.
+                </p>
+              </div>
+            )}
 
             {/* F-037: Proactive card suggestion banner */}
             <AnimatePresence>

@@ -149,7 +149,7 @@
     "id": "F-041",
     "name": "Exibição de tempo de viagem no ExpeditionModal",
     "description": "Em ExpeditionModal.tsx, na seção de seleção de destino, exibir tempo de viagem ao lado do território alvo: 'Destino: Território 7 (Clã do Norte) — ⏱ 2 turnos'. Se tempo >= 3 turnos, exibir aviso adicional: '⚠ Viagem longa: tropas chegarão em 3 turnos. Seus territórios ficarão sem essas unidades durante a viagem.' Tempo recalcula em tempo real ao mudar território de origem.",
-    "status": "pending",
+    "status": "passing",
     "priority": 9,
     "agent": "coder",
     "task": "vibe-code",
@@ -162,7 +162,8 @@
       "Aviso de viagem longa aparece para expedições de 3+ turnos",
       "Aviso inclui mensagem sobre tropas ficarem ausentes durante a viagem"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-013-expedition-travel-time-preview.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-013-expedition-travel-time-preview.md",
+    "completed_at": "2026-03-11T12:41:00Z"
   },
   {
     "id": "F-042",
