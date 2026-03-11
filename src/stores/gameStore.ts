@@ -2457,23 +2457,27 @@ export interface EpicMoment {
 export interface GameStats {
   turnsPlayed: number;
   territoriesCaptured: number;
+  territoriesLost: number;
   battlesWon: number;
   battlesTotal: number;
   structuresBuilt: number;
   unitsTrained: number;
   cardsUsed: number;
+  totalCards: number;
   hordeRepelled: number;
   epicMoment: EpicMoment | null;
 }
 
-export function getGameStats(events: GameEvent[]): GameStats {
+export function getGameStats(events: GameEvent[], playerCards?: PlayerCard[]): GameStats {
   let turnsPlayed = 0;
   let territoriesCaptured = 0;
+  let territoriesLost = 0;
   let battlesWon = 0;
   let battlesTotal = 0;
   let structuresBuilt = 0;
   let unitsTrained = 0;
-  let cardsUsed = 0;
+  let cardsUsed = playerCards ? playerCards.filter((c) => c.used).length : 0;
+  const totalCards = playerCards ? playerCards.length : 0;
   let hordeRepelled = 0;
 
   const playerVictories: EpicMoment[] = [];
@@ -2499,8 +2503,8 @@ export function getGameStats(events: GameEvent[]): GameStats {
       hordeRepelled += 1;
     }
 
-    // Cartas usadas: SABOTAGE deixa marca na mensagem
-    if (ev.message.includes("Sabotagem:")) {
+    // Cartas usadas: SABOTAGE deixa marca na mensagem (fallback quando playerCards não disponível)
+    if (!playerCards && ev.message.includes("Sabotagem:")) {
       cardsUsed += 1;
     }
 
@@ -2539,6 +2543,9 @@ export function getGameStats(events: GameEvent[]): GameStats {
           message: ev.message,
           powerScore,
         });
+      } else if (ev.result === "victory" && ev.defenderClanId === "player" && ev.territoryConquered) {
+        // Inimigo atacou e conquistou território do jogador
+        territoriesLost += 1;
       }
     }
   }
@@ -2559,11 +2566,13 @@ export function getGameStats(events: GameEvent[]): GameStats {
   return {
     turnsPlayed,
     territoriesCaptured,
+    territoriesLost,
     battlesWon,
     battlesTotal,
     structuresBuilt,
     unitsTrained,
     cardsUsed,
+    totalCards,
     hordeRepelled,
     epicMoment,
   };

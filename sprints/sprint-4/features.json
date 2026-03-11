@@ -411,7 +411,7 @@
     "id": "F-077",
     "name": "Estatísticas expandidas na GameResultsScreen",
     "description": "Em GameResultsScreen.tsx, adicionar seção 'Estatísticas da Partida' abaixo do breakdown. Exibir: batalhas vencidas (X/Y), territórios conquistados, territórios perdidos, estruturas construídas, unidades treinadas, cartas usadas (X/Y), horda repelida (Nx). Usar getGameStats(events) existente, adicionando campos faltantes: territoriesLost e totalCards. Layout responsivo mobile-first.",
-    "status": "pending",
+    "status": "passing",
     "priority": 22,
     "agent": "coder",
     "task": "vibe-code",
@@ -422,13 +422,14 @@
       "Layout responsivo (mobile-first)",
       "Campos territoriesLost e totalCards adicionados ao getGameStats"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-024-score-breakdown-results.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-024-score-breakdown-results.md",
+    "completed_at": "2026-03-11T17:49:27.927Z"
   },
   {
     "id": "F-078",
     "name": "Breakdown expandível para todos os clãs",
     "description": "Em GameResultsScreen.tsx, permitir que jogador clique em qualquer clã do ranking para ver breakdown inline (mesma estrutura de F-076). Botão 'ver detalhes' ao lado do nome. Expansão/colapso com animação suave (Framer Motion). Breakdown do jogador aparece expandido por default.",
-    "status": "blocked",
+    "status": "pending",
     "priority": 23,
     "agent": "coder",
     "task": "vibe-code",

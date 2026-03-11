@@ -10,6 +10,7 @@ import {
   Territory,
   GameEvent,
   getGameStats,
+  useGameStore,
 } from "@/stores/gameStore";
 
 // ─── Score ────────────────────────────────────────────────────────────────────
@@ -132,6 +133,32 @@ function ScoreBreakdownSection({
         </motion.div>
       </div>
     </motion.section>
+  );
+}
+
+// ─── Stat Item ────────────────────────────────────────────────────────────────
+
+function StatItem({
+  label,
+  value,
+  highlight,
+}: {
+  label: string;
+  value: string | number;
+  highlight?: "success" | "danger";
+}) {
+  const valueClass =
+    highlight === "success"
+      ? "font-bold text-era-peace"
+      : highlight === "danger"
+      ? "font-bold text-red-400"
+      : "font-bold text-medieval-text-primary";
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-xs text-medieval-text-muted leading-tight">{label}</span>
+      <span className={valueClass}>{value}</span>
+    </div>
   );
 }
 
@@ -259,7 +286,9 @@ export function GameResultsScreen({
   onRestart,
   onViewDetails,
 }: Props) {
-  const stats = getGameStats(events);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const playerCards = useGameStore((s: any) => s.playerCards);
+  const stats = getGameStats(events, playerCards);
 
   // Build ranked list
   const ranked: RankedClan[] = clans
@@ -363,29 +392,37 @@ export function GameResultsScreen({
           <h2 className="text-sm font-cinzel font-bold text-medieval-text-muted uppercase tracking-widest mb-3">
             Estatísticas da Partida
           </h2>
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            {[
-              { label: "Turnos jogados", value: stats.turnsPlayed || turn },
-              {
-                label: "Territórios conquistados",
-                value: stats.territoriesCaptured,
-              },
-              {
-                label: "Batalhas vencidas",
-                value: `${stats.battlesWon}/${stats.battlesTotal}`,
-              },
-              { label: "Estruturas construídas", value: stats.structuresBuilt },
-              { label: "Unidades treinadas", value: stats.unitsTrained },
-              { label: "Cartas usadas", value: stats.cardsUsed },
-              { label: "Horda repelida", value: stats.hordeRepelled },
-            ].map(({ label, value }) => (
-              <div key={label} className="flex flex-col">
-                <span className="text-xs text-medieval-text-muted">{label}</span>
-                <span className="font-bold text-medieval-text-primary">
-                  {value}
-                </span>
-              </div>
-            ))}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+            <StatItem
+              label="Batalhas vencidas"
+              value={`${stats.battlesWon}/${stats.battlesTotal}`}
+            />
+            <StatItem
+              label="Territórios conquistados"
+              value={stats.territoriesCaptured}
+            />
+            <StatItem
+              label="Territórios perdidos"
+              value={stats.territoriesLost}
+              highlight={stats.territoriesLost > 0 ? "danger" : undefined}
+            />
+            <StatItem
+              label="Estruturas construídas"
+              value={stats.structuresBuilt}
+            />
+            <StatItem
+              label="Unidades treinadas"
+              value={stats.unitsTrained}
+            />
+            <StatItem
+              label="Cartas usadas"
+              value={stats.totalCards > 0 ? `${stats.cardsUsed}/${stats.totalCards}` : stats.cardsUsed}
+            />
+            <StatItem
+              label="Horda repelida"
+              value={`${stats.hordeRepelled}x`}
+              highlight={stats.hordeRepelled > 0 ? "success" : undefined}
+            />
           </div>
         </motion.section>
 
