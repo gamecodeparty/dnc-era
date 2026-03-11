@@ -308,7 +308,7 @@
     "id": "F-049",
     "name": "Modal informativo ao iniciar Era da Invasão",
     "description": "Em page.tsx ou componente de transição de era, quando era muda para INVASION, exibir modal informativo APÓS animação de transição. Modal explica: Horda ataca a cada 3 turnos, alvo é clã com mais territórios, força crescente 50→100→300. Aparece uma única vez por partida (flag no state). Botão 'Entendi' fecha. Estilo medieval dark (bg escuro, borda vermelha, ícone de caveira).",
-    "status": "pending",
+    "status": "passing",
     "priority": 17,
     "agent": "coder",
     "task": "vibe-code",
@@ -319,7 +319,8 @@
       "Botão 'Entendi' fecha o modal",
       "Modal aparece APÓS a animação de transição de era, não durante"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-016-horde-mechanics-explanation.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-016-horde-mechanics-explanation.md",
+    "completed_at": "2026-03-11T14:05:00Z"
   },
   {
     "id": "F-050",

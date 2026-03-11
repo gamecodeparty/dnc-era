@@ -557,6 +557,7 @@ interface GameState {
   timeRemaining: number;
   revealedTerritories: Record<string, RevealedTerritory>;
   playerCards: PlayerCard[];
+  invasionModalShown: boolean;
 
   // Getters
   getPlayerClan: () => Clan;
@@ -597,6 +598,7 @@ interface GameState {
   pauseTimer: () => void;
   resumeTimer: () => void;
   tickTimer: () => void;
+  markInvasionModalShown: () => void;
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -613,6 +615,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   timerPaused: false,
   timeRemaining: TURN_DURATION_MS,
   revealedTerritories: {},
+  invasionModalShown: false,
   playerCards: [
     { id: "pc1", type: "REINFORCEMENTS", used: false },
     { id: "pc2", type: "INFORMANT", used: false },
@@ -1809,7 +1812,12 @@ export const useGameStore = create<GameState>((set, get) => ({
       timerPaused: false,
       timeRemaining: TURN_DURATION_MS,
       revealedTerritories: {},
+      invasionModalShown: false,
     });
+  },
+
+  markInvasionModalShown: () => {
+    set({ invasionModalShown: true });
   },
 
   pauseTimer: () => {

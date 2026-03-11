@@ -39,3 +39,6 @@ export {
   GameNotification,
 } from "./AchievementToast";
 export type { AchievementType } from "./AchievementToast";
+
+// Invasion info modal (F-049)
+export { InvasionInfoModal } from "./InvasionInfoModal";
