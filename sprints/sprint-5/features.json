@@ -306,7 +306,7 @@
     "id": "F-097",
     "name": "Tooltip com estimativa numérica no alerta de ataque",
     "description": "Em Territory.tsx, ao hover no alerta de ataque, tooltip mostra poder estimado vs defesa do jogador, com nota '±20% (envie Espião para valor exato)'. Com espião ativo, mostra valor exato sem ressalva. Tooltip aparece ao hover no badge de alerta.",
-    "status": "pending",
+    "status": "passing",
     "priority": 17,
     "agent": "coder",
     "task": "vibe-code",
@@ -319,6 +319,7 @@
       "Com espião ativo, tooltip mostra valor exato sem nota de ±20%",
       "Tooltip aparece ao hover no badge de alerta"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-030-attack-threat-scale.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-030-attack-threat-scale.md",
+    "completed_at": "2026-03-11T20:15:00Z"
   }
 ]
