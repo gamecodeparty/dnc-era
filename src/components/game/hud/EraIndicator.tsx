@@ -7,6 +7,7 @@ import { ERA_DURATION, HORDA } from "@/game/constants";
 interface EraIndicatorProps {
   currentEra: string;
   currentTurn: number;
+  hordaTarget?: { position: number } | null;
 }
 
 const ERA_CONFIG = {
@@ -53,7 +54,7 @@ function calcHordeCountdown(currentTurn: number) {
   return { turnsRemaining, strength };
 }
 
-export function EraIndicator({ currentEra, currentTurn }: EraIndicatorProps) {
+export function EraIndicator({ currentEra, currentTurn, hordaTarget }: EraIndicatorProps) {
   const config = ERA_CONFIG[currentEra as keyof typeof ERA_CONFIG] || ERA_CONFIG.PEACE;
   const Icon = config.icon;
 
@@ -104,6 +105,11 @@ export function EraIndicator({ currentEra, currentTurn }: EraIndicatorProps) {
             )}
           >
             ☠ Horda: {horde.turnsRemaining} {horde.turnsRemaining === 1 ? "turno" : "turnos"} | Força: {horde.strength}
+          </span>
+        )}
+        {isInvasion && horde?.turnsRemaining === 1 && hordaTarget && (
+          <span className="text-xs font-bold text-red-500 animate-pulse">
+            Alvo: T{hordaTarget.position + 1}
           </span>
         )}
       </div>

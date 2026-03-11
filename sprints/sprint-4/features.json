@@ -319,7 +319,7 @@
     "id": "F-070",
     "name": "Info de território-alvo no modal da Horda e EraIndicator",
     "description": "Em InvasionInfoModal.tsx, adicionar linha quando há preview: 'Alvo atual: Território TX (defesa: Y)' + dica de reforço. Em EraIndicator.tsx, quando countdown Horda em 1 turno e há preview, adicionar indicador textual 'Alvo: TX' em cor vermelha abaixo do countdown. Informações consistentes entre mapa, modal e HUD.",
-    "status": "pending",
+    "status": "passing",
     "priority": 17,
     "agent": "coder",
     "task": "vibe-code",
@@ -331,7 +331,8 @@
       "EraIndicator mostra 'Alvo: TX' quando countdown está em 1",
       "Informações são consistentes entre mapa, modal e HUD"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-021-horde-territory-indicator.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-021-horde-territory-indicator.md",
+    "completed_at": "2026-03-11T17:30:00Z"
   },
   {
     "id": "F-071",

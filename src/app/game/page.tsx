@@ -74,6 +74,7 @@ import { GameResultsScreen } from "@/components/game/results/GameResultsScreen";
 
 // Tips
 import { TipBanner } from "@/components/game/hud/TipBanner";
+import { EraIndicator } from "@/components/game/hud/EraIndicator";
 
 // Timer hook
 import { useTurnTimer } from "@/hooks/useTurnTimer";
@@ -221,6 +222,14 @@ export default function GamePage() {
     SPY_SUCCESS_CHANCE_BASE + (isUmbral ? SPY_UMBRAL_BONUS : 0)
   );
   const spySuccessPercent = Math.round(spySuccessChance * 100);
+
+  // F-070: HordaPreview target info for EraIndicator and InvasionInfoModal (passed via GameAnimationProvider)
+  const hordaTargetTerritory = hordaPreview
+    ? territories.find((t) => t.id === hordaPreview.targetTerritoryId)
+    : null;
+  const hordaTargetForHud = hordaTargetTerritory
+    ? { position: hordaTargetTerritory.position }
+    : null;
 
   // Auto-update troop badge visibility when era changes (unless manually set)
   useEffect(() => {
@@ -549,6 +558,15 @@ export default function GamePage() {
                 </p>
               </PanelContent>
             </ParchmentPanel>
+
+            {/* F-070: Era + Horda indicator (INVASION era only) */}
+            {currentEra === "INVASION" && (
+              <EraIndicator
+                currentEra={currentEra}
+                currentTurn={currentTurn}
+                hordaTarget={hordaTargetForHud}
+              />
+            )}
 
             {/* Recursos */}
             <ParchmentPanel animated>

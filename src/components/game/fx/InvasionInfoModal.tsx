@@ -3,12 +3,18 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Skull } from "lucide-react";
 
+interface HordaTarget {
+  position: number;
+  defensePower: number;
+}
+
 interface InvasionInfoModalProps {
   isVisible: boolean;
   onClose: () => void;
+  hordaTarget?: HordaTarget | null;
 }
 
-export function InvasionInfoModal({ isVisible, onClose }: InvasionInfoModalProps) {
+export function InvasionInfoModal({ isVisible, onClose, hordaTarget }: InvasionInfoModalProps) {
   return (
     <AnimatePresence>
       {isVisible && (
@@ -69,6 +75,18 @@ export function InvasionInfoModal({ isVisible, onClose }: InvasionInfoModalProps
             <p className="text-red-400/80 font-crimson text-sm italic mb-6 border-l-2 border-red-700 pl-3">
               Quanto mais territórios você tem, mais a Horda o perseguirá.
             </p>
+
+            {/* F-070: Horda target territory info */}
+            {hordaTarget && (
+              <div className="mb-5 p-3 rounded border border-red-800/60 bg-red-950/30">
+                <p className="text-white/90 font-crimson text-sm font-semibold mb-1.5">
+                  ☠ Alvo atual: Território T{hordaTarget.position + 1} (defesa: {hordaTarget.defensePower})
+                </p>
+                <p className="text-yellow-400/80 font-crimson text-xs">
+                  💡 Reforce este território ou a Horda pode mudar para outro alvo.
+                </p>
+              </div>
+            )}
 
             {/* Divider */}
             <div className="h-px bg-red-900/50 mb-5" />

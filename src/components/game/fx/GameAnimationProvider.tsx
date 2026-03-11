@@ -70,6 +70,19 @@ export function GameAnimationProvider({ children }: GameAnimationProviderProps) 
   const invasionModalShown = useGameStore((state: any) => state.invasionModalShown as boolean);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const markInvasionModalShown = useGameStore((state: any) => state.markInvasionModalShown as () => void);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const hordaPreview = useGameStore((state: any) => state.hordaPreview) as { targetTerritoryId: string } | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const territories = useGameStore((state: any) => state.territories) as Array<{ id: string; position: number; units: Array<{ type: string; quantity: number }> }>;
+
+  const DEF_VALUES: Record<string, number> = { SOLDIER: 2, ARCHER: 1, KNIGHT: 3, SPY: 0 };
+  const hordaTarget = (() => {
+    if (!hordaPreview) return null;
+    const t = territories.find((t: { id: string }) => t.id === hordaPreview.targetTerritoryId);
+    if (!t) return null;
+    const defensePower = t.units.reduce((sum: number, u: { type: string; quantity: number }) => sum + u.quantity * (DEF_VALUES[u.type] ?? 0), 0);
+    return { position: t.position, defensePower };
+  })();
 
   // Track when an INVASION era transition was in progress so we show
   // the modal after the overlay disappears (not during the animation)
@@ -153,7 +166,7 @@ export function GameAnimationProvider({ children }: GameAnimationProviderProps) 
       )}
 
       {/* Invasion Info Modal (F-049) */}
-      <InvasionInfoModal isVisible={showInvasionModal} onClose={handleCloseInvasionModal} />
+      <InvasionInfoModal isVisible={showInvasionModal} onClose={handleCloseInvasionModal} hordaTarget={hordaTarget} />
 
       {/* Combat Feedback */}
       <CombatFeedback
