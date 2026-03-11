@@ -117,7 +117,7 @@
     "id": "F-087",
     "name": "Tooltip com breakdown de produção por território",
     "description": "Em ResourcePanel.tsx, ao hover no valor de produção, tooltip mostra de onde vem cada recurso: território (posição), estrutura (tipo + nível), e bônus. Ex: '+18 Grão/turno: T0: Fazenda Nv2 (+15) + Bônus território (+3)'. Tooltip atualiza quando produção muda.",
-    "status": "pending",
+    "status": "passing",
     "priority": 7,
     "agent": "coder",
     "task": "vibe-code",
@@ -129,7 +129,8 @@
       "Cada linha identifica território (posição), estrutura (tipo + nível), e bônus",
       "Tooltip atualiza quando produção muda"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-027-production-hud-panel.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-027-production-hud-panel.md",
+    "completed_at": "2026-03-11T19:40:00Z"
   },
   {
     "id": "F-088",

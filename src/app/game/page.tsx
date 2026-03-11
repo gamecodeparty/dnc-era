@@ -7,6 +7,7 @@ import { useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGameStore, TOTAL_TURNS, SPY_SUCCESS_CHANCE_BASE, SPY_UMBRAL_BONUS, getDistance, type UnitType } from "@/stores/gameStore";
 import { ResourcePanel } from "@/components/game/sidebar/ResourcePanel";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { TURN_DURATION_MS } from "@/game/constants/balance";
 import { calculateTravelTime } from "@/game/engine";
 import {
@@ -264,6 +265,7 @@ export default function GamePage() {
   const grainProd = playerProduction.grain;
   const woodProd = playerProduction.wood;
   const goldProd = playerProduction.gold;
+  const productionBreakdown = playerProduction.breakdown;
 
   // Open expedition modal
   const handleAttack = (toTerritoryId: string) => {
@@ -576,54 +578,60 @@ export default function GamePage() {
             <ParchmentPanel animated>
               <PanelHeader title="Recursos" />
               <PanelContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Wheat className="w-5 h-5 text-grain" />
-                    <span className="text-medieval-text-secondary">Graos</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-bold font-mono text-grain text-lg">
-                      {Math.floor(player.grain)}
-                    </span>
-                    {Math.floor(grainProd) > 0 ? (
-                      <span className="text-xs text-green-400 ml-2">+{Math.floor(grainProd)}/turno</span>
-                    ) : (
-                      <span className="text-xs text-slate-500 ml-2">±0/turno</span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <TreePine className="w-5 h-5 text-wood-light" />
-                    <span className="text-medieval-text-secondary">Madeira</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-bold font-mono text-wood-light text-lg">
-                      {Math.floor(player.wood)}
-                    </span>
-                    {Math.floor(woodProd) > 0 ? (
-                      <span className="text-xs text-green-400 ml-2">+{Math.floor(woodProd)}/turno</span>
-                    ) : (
-                      <span className="text-xs text-slate-500 ml-2">±0/turno</span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Coins className="w-5 h-5 text-gold" />
-                    <span className="text-medieval-text-secondary">Ouro</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-bold font-mono text-gold text-lg">
-                      {Math.floor(player.gold)}
-                    </span>
-                    {Math.floor(goldProd) > 0 ? (
-                      <span className="text-xs text-green-400 ml-2">+{Math.floor(goldProd)}/turno</span>
-                    ) : (
-                      <span className="text-xs text-slate-500 ml-2">±0/turno</span>
-                    )}
-                  </div>
-                </div>
+                <TooltipProvider>
+                {[
+                  { icon: Wheat, label: "Graos", value: Math.floor(player.grain), prod: Math.floor(grainProd), resource: "grain" as const, colorClass: "text-grain" },
+                  { icon: TreePine, label: "Madeira", value: Math.floor(player.wood), prod: Math.floor(woodProd), resource: "wood" as const, colorClass: "text-wood-light" },
+                  { icon: Coins, label: "Ouro", value: Math.floor(player.gold), prod: Math.floor(goldProd), resource: "gold" as const, colorClass: "text-gold" },
+                ].map(({ icon: Icon, label, value, prod, resource, colorClass }) => {
+                  const cap = resource.charAt(0).toUpperCase() + resource.slice(1) as "Grain" | "Wood" | "Gold";
+                  const baseKey = `base${cap}` as const;
+                  const bonusKey = `bonus${cap}` as const;
+                  const SNAMES: Record<string, string> = { FARM: "Fazenda", SAWMILL: "Serraria", MINE: "Mina" };
+                  const relevantItems = productionBreakdown.filter(item => item[baseKey] > 0);
+                  const prodEl = prod > 0
+                    ? <span className="text-xs text-green-400 ml-2">+{prod}/turno</span>
+                    : <span className="text-xs text-slate-500 ml-2">±0/turno</span>;
+                  return (
+                    <div key={resource} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Icon className={`w-5 h-5 ${colorClass}`} />
+                        <span className="text-medieval-text-secondary">{label}</span>
+                      </div>
+                      <div className="text-right flex items-center">
+                        <span className={`font-bold font-mono ${colorClass} text-lg`}>{value}</span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button className="cursor-help focus:outline-none">{prodEl}</button>
+                          </TooltipTrigger>
+                          <TooltipContent side="left" className="max-w-xs">
+                            {relevantItems.length === 0 ? (
+                              <p className="text-slate-400">Nenhuma estrutura produtiva</p>
+                            ) : (
+                              <div className="space-y-1">
+                                {relevantItems.map((item, i) => (
+                                  <div key={i} className="whitespace-nowrap">
+                                    <span className="text-slate-300">T{item.territoryPosition}:</span>{" "}
+                                    <span className="text-slate-200">
+                                      {SNAMES[item.structureType] ?? item.structureType} Nv{item.structureLevel} (+{item[baseKey]})
+                                    </span>
+                                    {item[bonusKey] > 0 && (
+                                      <span className="text-amber-300"> + Bônus território (+{item[bonusKey]})</span>
+                                    )}
+                                  </div>
+                                ))}
+                                <div className="border-t border-slate-700 pt-1 mt-1 text-slate-300 font-semibold">
+                                  Total: +{prod}/turno
+                                </div>
+                              </div>
+                            )}
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </div>
+                  );
+                })}
+                </TooltipProvider>
               </PanelContent>
             </ParchmentPanel>
 
