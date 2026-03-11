@@ -60,7 +60,7 @@
     "id": "F-084",
     "name": "Validar custo Muralha Nv1 = 25 madeira",
     "description": "Em /src/game/constants/balance.ts, confirmar que Muralha Nv1 custa {wood: 25, gold: 10}. Se valor for diferente, ajustar. Com recursos iniciais (50 madeira, 50 ouro), jogador deve poder construir Muralha no turno 1-2. Bônus de defesa (+20% por nível) não deve ser alterado.",
-    "status": "pending",
+    "status": "passing",
     "priority": 4,
     "agent": "coder",
     "task": "vibe-code",
@@ -73,7 +73,8 @@
       "AI defensiva (DEFENDER) consegue construir Muralha antes da Era da Guerra",
       "Bônus de defesa (+20% por nível) permanece inalterado"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-026-structure-costs-consolidation.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-026-structure-costs-consolidation.md",
+    "completed_at": "2026-03-11T21:00:00.000Z"
   },
   {
     "id": "F-085",
