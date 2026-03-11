@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MedievalButton } from "@/components/ui/medieval";
 import { useHaptic } from "@/hooks/useHaptic";
 import { UI } from "@/game/constants/balance";
-import { STRUCTURES, getStructureLabel } from "@/game/constants/structures";
+import { STRUCTURES } from "@/game/constants/structures";
 import { getProportionalCostWarnings, UNIT_COSTS, type CostWarning } from "@/stores/gameStore";
 
 type ResourceCost = { grain?: number; wood?: number; gold?: number };
@@ -48,6 +48,67 @@ function getMissingLabel(cost: ResourceCost, resources: Resources): string {
   if (diff(cost.wood, resources.wood) > 0) missing.push(`${diff(cost.wood, resources.wood)} madeira`);
   if (diff(cost.gold, resources.gold) > 0) missing.push(`${diff(cost.gold, resources.gold)} ouro`);
   return missing.length > 0 ? `Faltam: ${missing.join(", ")}` : "";
+}
+
+const RESOURCE_COLOR: Record<string, string> = {
+  GRAIN: "text-amber-400",
+  WOOD:  "text-emerald-400",
+  GOLD:  "text-yellow-400",
+};
+
+const RESOURCE_LABEL: Record<string, string> = {
+  GRAIN: "grão",
+  WOOD:  "madeira",
+  GOLD:  "ouro",
+};
+
+function getStructureLabelData(
+  structureType: string,
+  level: number
+): { label: string; colorClass: string } {
+  const def = STRUCTURES[structureType];
+  if (!def) return { label: "", colorClass: "text-medieval-text-muted" };
+
+  if (def.type === "production" && def.produces && def.productionPerLevel) {
+    const res = def.produces as string;
+    const color = RESOURCE_COLOR[res] ?? "text-medieval-text-muted";
+    const resName = RESOURCE_LABEL[res] ?? res.toLowerCase();
+    const currentProd = def.productionPerLevel[level - 1] ?? def.productionPerLevel[0];
+    const nextProd =
+      level < def.productionPerLevel.length ? def.productionPerLevel[level] : undefined;
+    const label =
+      nextProd !== undefined
+        ? `+${nextProd} ${resName}/turno (atual: +${currentProd})`
+        : `+${currentProd} ${resName}/turno`;
+    return { label, colorClass: color };
+  }
+
+  if (def.type === "military" && def.unlocks) {
+    const names = def.unlocks.map((u) => UNIT_NAMES[u] ?? u).join(", ");
+    return { label: `Desbloqueia: ${names}`, colorClass: "text-medieval-text-muted" };
+  }
+
+  if (def.type === "defense" && def.defenseBonusPerLevel !== undefined) {
+    return {
+      label: `Defesa: +${def.defenseBonusPerLevel * 100}% por nível`,
+      colorClass: "text-blue-400",
+    };
+  }
+
+  if (def.type === "special") {
+    if (def.cardIntervalTurns) {
+      return {
+        label: `Gera cartas a cada ${def.cardIntervalTurns} turnos`,
+        colorClass: "text-purple-400",
+      };
+    }
+    if (def.unlocks) {
+      const names = def.unlocks.map((u) => UNIT_NAMES[u] ?? u).join(", ");
+      return { label: `Desbloqueia: ${names}`, colorClass: "text-medieval-text-muted" };
+    }
+  }
+
+  return { label: def.description, colorClass: "text-medieval-text-muted" };
 }
 
 interface Territory {
@@ -301,7 +362,7 @@ export function TerritoryBottomSheet({
                   <div className="grid grid-cols-2 gap-2">
                     {structures.map((structure) => {
                       const def = STRUCTURES[structure.type];
-                      const label = getStructureLabel(structure.type, structure.level);
+                      const { label, colorClass } = getStructureLabelData(structure.type, structure.level);
                       return (
                         <div
                           key={structure.id}
@@ -314,7 +375,7 @@ export function TerritoryBottomSheet({
                             <span className="text-medieval-text-muted text-xs">Nv.{structure.level}</span>
                           </div>
                           {label && (
-                            <p className="text-xs text-medieval-text-muted mt-0.5 leading-tight">
+                            <p className={`text-xs mt-0.5 leading-tight ${colorClass}`}>
                               {label}
                             </p>
                           )}

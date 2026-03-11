@@ -40,7 +40,7 @@
     "id": "F-035",
     "name": "Labels de produção visíveis no card de estrutura",
     "description": "Em TerritoryBottomSheet.tsx (seção de construção), adicionar linha de produção abaixo do nome de cada estrutura usando dados de structures.ts. Estruturas de produção: Farm '+10 grão/turno', Sawmill '+8 madeira/turno', Mine '+5 ouro/turno'. Militares: Quartel 'Desbloqueia: Soldado, Arqueiro'. Especiais: Muralha 'Defesa: +20% por nível'. Se upgrade, mostrar produção atual e do próximo nível. Cores por recurso: amber=grão, emerald=madeira, yellow=ouro.",
-    "status": "pending",
+    "status": "passing",
     "priority": 3,
     "agent": "coder",
     "task": "vibe-code",
@@ -51,7 +51,8 @@
       "Upgrade mostra produção do próximo nível E produção atual (ex: '+15 grão/turno (atual: +10)')",
       "Cores dos recursos consistentes: amber=grão, emerald=madeira, yellow=ouro"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-011-build-menu-clarity.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-011-build-menu-clarity.md",
+    "completed_at": "2026-03-11T05:14:22Z"
   },
   {
     "id": "F-036",
