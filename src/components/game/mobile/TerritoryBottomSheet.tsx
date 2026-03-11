@@ -386,6 +386,35 @@ export function TerritoryBottomSheet({
                 </div>
               )}
 
+              {/* F-036: Current territory production summary */}
+              {isOwned && (() => {
+                const production = { grain: 0, wood: 0, gold: 0 };
+                const resourceMap: Record<string, keyof typeof production> = {
+                  GRAIN: "grain", WOOD: "wood", GOLD: "gold",
+                };
+                for (const s of structures) {
+                  const def = STRUCTURES[s.type];
+                  if (def?.type === "production" && def.produces && def.productionPerLevel) {
+                    const res = resourceMap[def.produces as string];
+                    if (res) {
+                      production[res] += def.productionPerLevel[s.level - 1] ?? def.productionPerLevel[0] ?? 0;
+                    }
+                  }
+                }
+                return (
+                  <div className="mb-3 px-1 py-1.5 rounded-lg bg-medieval-bg-card/40 border border-medieval-primary/10">
+                    <p className="text-xs text-medieval-text-muted font-medium">
+                      Produção atual:{" "}
+                      <span className="text-amber-400">🌾{production.grain}/t</span>
+                      {"  "}
+                      <span className="text-emerald-400">🪵{production.wood}/t</span>
+                      {"  "}
+                      <span className="text-yellow-400">💰{production.gold}/t</span>
+                    </p>
+                  </div>
+                );
+              })()}
+
               {/* Actions */}
               {isOwned && (
                 <div className="flex flex-col gap-1.5">
