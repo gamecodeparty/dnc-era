@@ -718,6 +718,7 @@ interface GameState {
   resumeTimer: () => void;
   tickTimer: () => void;
   markInvasionModalShown: () => void;
+  autoDistributeTroops: () => void;
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -2390,6 +2391,58 @@ export const useGameStore = create<GameState>((set, get) => ({
     } else {
       set({ timeRemaining: state.timeRemaining - 1000 });
     }
+  },
+
+  autoDistributeTroops: () => {
+    const state = get();
+    const playerTerritories = state.territories.filter((t) => t.ownerId === "player");
+    if (playerTerritories.length <= 1) return;
+
+    // Agregar tropas estacionadas (territory.units já exclui tropas em expedições ativas)
+    const totalUnits: Record<UnitType, number> = { SOLDIER: 0, ARCHER: 0, KNIGHT: 0, SPY: 0 };
+    for (const territory of playerTerritories) {
+      for (const unit of territory.units) {
+        totalUnits[unit.type] = (totalUnits[unit.type] ?? 0) + unit.quantity;
+      }
+    }
+
+    const n = playerTerritories.length;
+
+    // Ordenar territórios por número de estruturas (mais estruturas = prioridade para remainder)
+    const sortedByStructures = [...playerTerritories].sort(
+      (a, b) => b.structures.length - a.structures.length
+    );
+
+    // Distribuição base (floor)
+    const baseDistribution: Record<string, Unit[]> = {};
+    for (const territory of playerTerritories) {
+      baseDistribution[territory.id] = (Object.entries(totalUnits) as [UnitType, number][])
+        .filter(([, count]) => count > 0 && Math.floor(count / n) > 0)
+        .map(([type, count]) => ({ type, quantity: Math.floor(count / n) }));
+    }
+
+    // Distribuir remainder para territórios com mais estruturas
+    for (const [unitType, count] of Object.entries(totalUnits) as [UnitType, number][]) {
+      const remainder = count % n;
+      for (let i = 0; i < remainder; i++) {
+        const territory = sortedByStructures[i];
+        if (!territory) break;
+        const existing = baseDistribution[territory.id]?.find((u) => u.type === unitType);
+        if (existing) {
+          existing.quantity += 1;
+        } else {
+          baseDistribution[territory.id] = baseDistribution[territory.id] ?? [];
+          baseDistribution[territory.id].push({ type: unitType, quantity: 1 });
+        }
+      }
+    }
+
+    set((state) => ({
+      territories: state.territories.map((t) => {
+        if (t.ownerId !== "player") return t;
+        return { ...t, units: baseDistribution[t.id] ?? [] };
+      }),
+    }));
   },
 }));
 

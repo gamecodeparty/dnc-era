@@ -60,7 +60,7 @@
     "id": "F-105",
     "name": "Lógica auto-distribuir tropas",
     "description": "Em /src/stores/gameStore.ts, adicionar função autoDistributeTroops(). Agregar todas as tropas estacionadas do jogador (excluir tropas em expedições ativas). Para cada tipo de unidade (SOLDIER, ARCHER, KNIGHT, SPY), dividir igualmente entre territórios via Math.floor. Remainder vai para territórios com mais estruturas (prioridade defensiva). Distribuição instantânea (sem custo de turno). Noop se jogador tem <= 1 território.",
-    "status": "pending",
+    "status": "passing",
     "priority": 4,
     "agent": "coder",
     "task": "vibe-code",
@@ -73,7 +73,8 @@
       "Espiões (SPY) são distribuídos junto com outras unidades",
       "Função não faz nada se jogador tem <= 1 território"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-034-auto-distribute-troops.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-034-auto-distribute-troops.md",
+    "completed_at": "2026-03-11T23:30:00.000Z"
   },
   {
     "id": "F-107",
@@ -190,7 +191,7 @@
     "id": "F-106",
     "name": "Botão Auto-Distribuir na página exército",
     "description": "Em /src/app/game/army/page.tsx, adicionar botão MedievalButton variant='secondary' no topo da página (abaixo do título, acima da lista de territórios). onClick chama gameStore.autoDistributeTroops(). Desabilitado quando jogador tem <= 1 território. Tooltip explica comportamento. Toast de confirmação após distribuição: 'Tropas distribuídas igualmente entre {n} territórios'.",
-    "status": "blocked",
+    "status": "pending",
     "priority": 11,
     "agent": "coder",
     "task": "vibe-code",
