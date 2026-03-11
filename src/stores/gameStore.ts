@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { TURN_DURATION_MS } from "@/game/constants/balance";
 
 // Tipos
 export type Era = "PEACE" | "WAR" | "INVASION";
@@ -134,7 +135,9 @@ export interface RevealedTerritory {
 export const SPY_SUCCESS_CHANCE_BASE = 0.7;   // 70% base
 export const SPY_UMBRAL_BONUS = 0.3;           // +30% para Umbral = 100%
 export const SPY_REVEAL_DURATION = 5;          // expira após 5 turnos
-export const TURN_INTERVAL_MS = 10 * 1000; // 10 segundos para teste
+export { TURN_DURATION_MS };
+/** @deprecated Use TURN_DURATION_MS from balance.ts */
+export const TURN_INTERVAL_MS = TURN_DURATION_MS;
 export const TOTAL_TURNS = 50;
 
 export const STRUCTURE_COSTS: Record<StructureType, { grain?: number; wood?: number; gold?: number }> = {
@@ -579,7 +582,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   expeditions: [],
   explorationSites: createRandomExplorationSites(),
   timerPaused: false,
-  timeRemaining: TURN_INTERVAL_MS,
+  timeRemaining: TURN_DURATION_MS,
   revealedTerritories: {},
   playerCards: [
     { id: "pc1", type: "REINFORCEMENTS", used: false },
@@ -1775,7 +1778,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       expeditions: [],
       explorationSites: createRandomExplorationSites(),
       timerPaused: false,
-      timeRemaining: TURN_INTERVAL_MS,
+      timeRemaining: TURN_DURATION_MS,
       revealedTerritories: {},
     });
   },
@@ -1792,7 +1795,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const state = get();
     if (state.timerPaused || state.gameOver) return;
     if (state.timeRemaining <= 1000) {
-      set({ timeRemaining: TURN_INTERVAL_MS });
+      set({ timeRemaining: TURN_DURATION_MS });
       get().processTurn();
     } else {
       set({ timeRemaining: state.timeRemaining - 1000 });

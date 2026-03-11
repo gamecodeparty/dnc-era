@@ -5,7 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useGameStore, TURN_INTERVAL_MS, TOTAL_TURNS, SPY_SUCCESS_CHANCE_BASE, SPY_UMBRAL_BONUS, getDistance, type UnitType } from "@/stores/gameStore";
+import { useGameStore, TOTAL_TURNS, SPY_SUCCESS_CHANCE_BASE, SPY_UMBRAL_BONUS, getDistance, type UnitType } from "@/stores/gameStore";
+import { TURN_DURATION_MS } from "@/game/constants/balance";
 import {
   LogOut,
   Scroll,
@@ -198,7 +199,7 @@ export default function GamePage() {
   useTurnTimer();
 
   const selectedTerritory = territories.find((t) => t.id === selectedTerritoryId);
-  const timerProgress = ((TURN_INTERVAL_MS - timeRemaining) / TURN_INTERVAL_MS) * 100;
+  const timerProgress = ((TURN_DURATION_MS - timeRemaining) / TURN_DURATION_MS) * 100;
 
   // Calcula producao
   let grainProd = 0, woodProd = 0, goldProd = 0;
@@ -452,7 +453,7 @@ export default function GamePage() {
         currentTurn={currentTurn}
         totalTurns={TOTAL_TURNS}
         timeRemaining={timeRemaining}
-        turnIntervalMs={TURN_INTERVAL_MS}
+        turnIntervalMs={TURN_DURATION_MS}
         onMenuClick={() => setIsDrawerOpen(true)}
         className="lg:hidden"
       />

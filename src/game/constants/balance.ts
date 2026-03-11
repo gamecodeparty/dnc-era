@@ -238,6 +238,17 @@ export const TERRITORY_ADJACENCY: Record<number, number[]> = {
 } as const;
 
 // ==============================================================================
+// TURN TIMER
+// ==============================================================================
+
+// Duration of each turn in milliseconds.
+// Recommended values:
+//   Debug:       10_000  (10s  — ciclo rápido para testar mecânicas)
+//   Playtesting: 30_000  (30s  — tempo confortável para decisões)
+//   Produção:    600_000–1_800_000 (10–30min — sessões reais de jogo)
+export const TURN_DURATION_MS = 30_000;
+
+// ==============================================================================
 // UI CONSTANTS
 // ==============================================================================
 
