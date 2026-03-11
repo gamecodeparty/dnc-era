@@ -184,6 +184,8 @@ export default function GamePage() {
     incomingAttacks,
     playerCards,
     train,
+    marketTradesUsed,
+    marketTrade,
   } = useGameStore();
 
   const player = getPlayerClan();
@@ -1120,6 +1122,12 @@ export default function GamePage() {
         onAttack={(territory) => {
           setSelectedTerritoryId(null);
           handleAttack(territory.id);
+        }}
+        marketTradesUsed={marketTradesUsed}
+        onMarketTrade={(trade) => {
+          if (selectedTerritory?.ownerId === "player") {
+            marketTrade(selectedTerritory.id, trade);
+          }
         }}
         className="lg:hidden"
       />
