@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { TURN_DURATION_MS, MARKET, TERRITORY_ADJACENCY } from "@/game/constants/balance";
+import { STRUCTURES } from "@/game/constants/structures";
 
 // Tipos
 export type Era = "PEACE" | "WAR" | "INVASION";
@@ -190,16 +191,6 @@ export function getProportionalCostWarnings(
   return warnings;
 }
 
-export const STRUCTURE_COSTS: Record<StructureType, { grain?: number; wood?: number; gold?: number }> = {
-  FARM: { wood: 20, gold: 10 },
-  SAWMILL: { grain: 15, gold: 10 },
-  MINE: { grain: 20, wood: 20 },
-  BARRACKS: { grain: 30, wood: 40 },
-  STABLE: { grain: 50, wood: 60, gold: 30 },
-  WALL: { wood: 50, gold: 20 },
-  TAVERN: { wood: 15, gold: 20 },
-  SHADOW_GUILD: { wood: 20, gold: 30 },
-};
 
 export const STRUCTURE_PRODUCTION: Record<StructureType, { resource?: ResourceType; amount?: number }> = {
   FARM: { resource: "GRAIN", amount: 10 },
@@ -720,7 +711,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (territory.structures.length >= 4) return false;
     if (territory.structures.some((s) => s.type === structureType)) return false;
 
-    const cost = STRUCTURE_COSTS[structureType];
+    const cost = STRUCTURES[structureType].costPerLevel[0];
     if (!state.canAfford(cost)) return false;
 
     set((state) => ({

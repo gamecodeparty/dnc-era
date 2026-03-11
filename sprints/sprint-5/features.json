@@ -3,7 +3,7 @@
     "id": "F-081",
     "name": "Remover STRUCTURE_COSTS duplicado do gameStore",
     "description": "Remover a exportação STRUCTURE_COSTS de gameStore.ts (definição flat duplicada com valores divergentes de balance.ts). Após remoção, grep -r 'STRUCTURE_COSTS' src/stores/ deve retornar zero definições. Isso elimina a fonte do bug D-063 onde UI e engine usavam custos diferentes.",
-    "status": "pending",
+    "status": "passing",
     "priority": 1,
     "agent": "coder",
     "task": "vibe-code",
@@ -13,7 +13,8 @@
       "grep -r 'STRUCTURE_COSTS' src/stores/ retorna zero resultados",
       "Projeto compila sem erros (npm run build ou tsc --noEmit)"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-026-structure-costs-consolidation.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-026-structure-costs-consolidation.md",
+    "completed_at": "2026-03-11T19:03:00.000Z"
   },
   {
     "id": "F-082",
@@ -23,7 +24,9 @@
     "priority": 2,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-081"],
+    "dependencies": [
+      "F-081"
+    ],
     "tests": [
       "buildStructure consome recursos conforme balance.ts com índice de nível",
       "getResourceWarnings usa mesma fonte de custos de balance.ts",
@@ -40,7 +43,9 @@
     "priority": 3,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-081"],
+    "dependencies": [
+      "F-081"
+    ],
     "tests": [
       "UI do território exibe custos idênticos aos de balance.ts",
       "Custos são indexados por nível da estrutura (Nv1, Nv2, Nv3)",
@@ -53,11 +58,13 @@
     "id": "F-084",
     "name": "Validar custo Muralha Nv1 = 25 madeira",
     "description": "Em /src/game/constants/balance.ts, confirmar que Muralha Nv1 custa {wood: 25, gold: 10}. Se valor for diferente, ajustar. Com recursos iniciais (50 madeira, 50 ouro), jogador deve poder construir Muralha no turno 1-2. Bônus de defesa (+20% por nível) não deve ser alterado.",
-    "status": "pending",
+    "status": "blocked",
     "priority": 4,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-082"],
+    "dependencies": [
+      "F-082"
+    ],
     "tests": [
       "Muralha Nv1 custa 25 madeira e 10 ouro em balance.ts",
       "Com 50 madeira e 50 ouro iniciais, é possível construir Muralha Nv1 no turno 1",
@@ -87,11 +94,13 @@
     "id": "F-086",
     "name": "Exibir produção por turno no ResourcePanel",
     "description": "Em ResourcePanel.tsx, componente pai passa valores de produção calculados por F-085. Exibir '+X' em verde (text-green-400) quando produção > 0, e '±0' em cinza (text-slate-500) quando produção = 0. Valores refletem cálculo do gameStore.",
-    "status": "pending",
+    "status": "blocked",
     "priority": 6,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-085"],
+    "dependencies": [
+      "F-085"
+    ],
     "tests": [
       "Painel de recursos exibe +X por turno para grão, madeira e ouro",
       "Produção zero exibida como ±0 em cinza (não omitida)",
@@ -103,11 +112,13 @@
     "id": "F-087",
     "name": "Tooltip com breakdown de produção por território",
     "description": "Em ResourcePanel.tsx, ao hover no valor de produção, tooltip mostra de onde vem cada recurso: território (posição), estrutura (tipo + nível), e bônus. Ex: '+18 Grão/turno: T0: Fazenda Nv2 (+15) + Bônus território (+3)'. Tooltip atualiza quando produção muda.",
-    "status": "pending",
+    "status": "blocked",
     "priority": 7,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-086"],
+    "dependencies": [
+      "F-086"
+    ],
     "tests": [
       "Tooltip no valor de produção mostra breakdown por território",
       "Cada linha identifica território (posição), estrutura (tipo + nível), e bônus",
@@ -136,11 +147,13 @@
     "id": "F-089",
     "name": "Aviso leve para defesa fraca (1-2 unidades)",
     "description": "Em ExpeditionModal.tsx, se remainingUnits > 0 mas <= 2, exibir banner amarelo não-bloqueante acima do botão Enviar. Expedições REINFORCE não exibem aviso. Aviso não aparece durante Era da Paz (sem ameaça de ataque).",
-    "status": "pending",
+    "status": "blocked",
     "priority": 9,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-088"],
+    "dependencies": [
+      "F-088"
+    ],
     "tests": [
       "Banner amarelo aparece quando restam 1-2 unidades no território",
       "Banner é não-bloqueante (não exige confirmação)",
@@ -170,11 +183,13 @@
     "id": "F-091",
     "name": "Dica de threshold de conquista 1.5x",
     "description": "Em ExpeditionModal.tsx, quando outcome é victory (parcial), adicionar dica em text-xs text-amber-400/80 sugerindo adicionar tropas para atingir ratio >= 1.5x. Adicionar marcador visual no ponto 1.5x na barra de ratio existente. Marcador não aparece para outros outcomes.",
-    "status": "pending",
+    "status": "blocked",
     "priority": 11,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-090"],
+    "dependencies": [
+      "F-090"
+    ],
     "tests": [
       "Dica sugere adicionar tropas quando outcome é victory parcial",
       "Threshold 1.5x visualmente indicado na barra de ratio",
@@ -204,11 +219,13 @@
     "id": "F-093",
     "name": "Highlight de adjacências ao selecionar território",
     "description": "Em GameMap.tsx e Territory.tsx, ao clicar/hoverar um território, destacar conexões adjacentes (linhas stroke amber-400 opacity 0.7) e territórios adjacentes recebem indicação visual (borda/glow via prop isAdjacentToSelected). Highlight desaparece ao deselecionar.",
-    "status": "pending",
+    "status": "blocked",
     "priority": 13,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-092"],
+    "dependencies": [
+      "F-092"
+    ],
     "tests": [
       "Ao clicar/hoverar território, conexões adjacentes são destacadas",
       "Territórios adjacentes recebem indicação visual (borda ou glow)",
@@ -221,11 +238,13 @@
     "id": "F-094",
     "name": "Highlight de alcance durante ExpeditionModal",
     "description": "Em ExpeditionModal.tsx e GameMap.tsx, quando ExpeditionModal está aberto e jogador seleciona território de origem, territórios alcançáveis (adjacentes) ficam com highlight normal e territórios fora de alcance ficam com opacidade reduzida. Highlight reseta ao fechar modal.",
-    "status": "pending",
+    "status": "blocked",
     "priority": 14,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-093"],
+    "dependencies": [
+      "F-093"
+    ],
     "tests": [
       "Territórios não alcançáveis ficam com opacidade reduzida durante seleção de destino",
       "Apenas territórios adjacentes ao de origem são destacados como alcançáveis",
@@ -254,11 +273,13 @@
     "id": "F-096",
     "name": "Indicação visual de escala de ameaça no mapa",
     "description": "Em Territory.tsx, no alerta de ataque existente, aplicar ícone e cor por escala: LOW (amarelo), MEDIUM (laranja), HIGH (vermelho), CRITICAL (vermelho pulsante). Cada escala tem texto descritivo distinto (ex: 'Expedição pequena detectada' até 'Força esmagadora detectada!').",
-    "status": "pending",
+    "status": "blocked",
     "priority": 16,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-095"],
+    "dependencies": [
+      "F-095"
+    ],
     "tests": [
       "Cada escala tem ícone e cor distintos",
       "CRITICAL usa animação pulsante para urgência visual",
@@ -270,11 +291,13 @@
     "id": "F-097",
     "name": "Tooltip com estimativa numérica no alerta de ataque",
     "description": "Em Territory.tsx, ao hover no alerta de ataque, tooltip mostra poder estimado vs defesa do jogador, com nota '±20% (envie Espião para valor exato)'. Com espião ativo, mostra valor exato sem ressalva. Tooltip aparece ao hover no badge de alerta.",
-    "status": "pending",
+    "status": "blocked",
     "priority": 17,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-095"],
+    "dependencies": [
+      "F-095"
+    ],
     "tests": [
       "Tooltip mostra poder estimado vs defesa do jogador",
       "Tooltip sugere enviar espião para informação precisa",

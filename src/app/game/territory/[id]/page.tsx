@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import {
   useGameStore,
-  STRUCTURE_COSTS,
   UNIT_COSTS,
   UNIT_STATS,
   StructureType,
@@ -122,7 +121,7 @@ export default function TerritoryPage() {
   }
 
   const handleBuild = (structureType: StructureType) => {
-    const cost = STRUCTURE_COSTS[structureType];
+    const cost = STRUCTURES[structureType].costPerLevel[0];
     const success = build(territoryId, structureType);
 
     if (success) {
@@ -351,7 +350,7 @@ export default function TerritoryPage() {
               <PanelContent className="space-y-3">
                 {(Object.keys(STRUCTURE_INFO) as StructureType[]).map((type) => {
                   const info = STRUCTURE_INFO[type];
-                  const cost = STRUCTURE_COSTS[type];
+                  const cost = STRUCTURES[type].costPerLevel[0];
                   const Icon = info.icon;
                   const alreadyBuilt = hasStructure(type);
                   const affordable = canAfford(cost);
