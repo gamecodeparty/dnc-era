@@ -268,7 +268,7 @@
     "id": "F-047",
     "name": "Indicador de território indefeso com alerta visual",
     "description": "Em Territory.tsx, territórios do jogador com 0 unidades militares durante Era da Guerra ou Invasão: borda com pulse vermelho suave (animate-pulse ring-red-500/40), badge '⚠ 0' em vermelho, tooltip 'Território sem defesa! Vulnerável a ataques.'. Durante Era da Paz: sem alerta.",
-    "status": "blocked",
+    "status": "passing",
     "priority": 15,
     "agent": "coder",
     "task": "vibe-code",
@@ -281,13 +281,14 @@
       "Alerta NÃO aparece na Era da Paz",
       "Tooltip explica a vulnerabilidade: 'Território sem defesa! Vulnerável a ataques.'"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-015-troop-overview-map-badges.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-015-troop-overview-map-badges.md",
+    "completed_at": "2026-03-11T13:55:00Z"
   },
   {
     "id": "F-048",
     "name": "Toggle de visibilidade dos badges de tropas no HUD",
     "description": "Em page.tsx ou componente de HUD, adicionar toggle '⚔ Tropas: ON/OFF' para mostrar/esconder badges de tropas no mapa. Default: ON durante Era da Guerra/Invasão, OFF durante Era da Paz. Estado persistido durante a partida (não entre partidas).",
-    "status": "blocked",
+    "status": "pending",
     "priority": 16,
     "agent": "coder",
     "task": "vibe-code",

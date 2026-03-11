@@ -26,6 +26,8 @@ interface TerritoryProps {
   avgDefensePower?: number;
   /** Computed defense power for enemy territory revealed by SPY */
   revealedDefensePower?: number;
+  /** Current game era — used for undefended territory alert */
+  currentEra?: string;
   onClick?: () => void;
 }
 
@@ -72,6 +74,7 @@ export function Territory({
   defensePower,
   avgDefensePower = 0,
   revealedDefensePower,
+  currentEra,
   onClick,
 }: TerritoryProps) {
   const ResourceIcon = RESOURCE_ICONS[bonusResource as keyof typeof RESOURCE_ICONS] || Wheat;
@@ -85,6 +88,11 @@ export function Territory({
     ? "bg-slate-800/30"
     : ORIGIN_BG_COLORS[ownerOrigin as keyof typeof ORIGIN_BG_COLORS] || "bg-slate-800/30";
 
+  const isUndefendedAlert =
+    isPlayerOwned &&
+    defensePower === 0 &&
+    (currentEra === "WAR" || currentEra === "INVASION");
+
   return (
     <button
       onClick={onClick}
@@ -96,6 +104,7 @@ export function Territory({
         bgColor,
         isSelected && "ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900",
         isAttackable && !isSelected && "ring-2 ring-red-500/30 animate-pulse",
+        isUndefendedAlert && !isSelected && "ring-2 ring-red-500/40 animate-pulse",
         isPlayerOwned && "shadow-md"
       )}
     >
@@ -161,15 +170,26 @@ export function Territory({
           )}
         </div>
         {isPlayerOwned && defensePower !== undefined && (
-          <div className={cn(
-            "flex items-center gap-0.5",
-            defensePower === 0 ? "text-red-400" :
-            defensePower >= avgDefensePower ? "text-green-400" :
-            "text-yellow-400"
-          )}>
-            <Swords className="w-3 h-3" />
-            <span>⚔ {defensePower}</span>
-          </div>
+          isUndefendedAlert ? (
+            <div className="flex items-center gap-0.5 text-red-400 relative group/undefended">
+              <span>⚠ 0</span>
+              <div className="absolute bottom-5 left-1/2 -translate-x-1/2 invisible group-hover/undefended:visible z-20
+                bg-slate-900 border border-red-500/50 rounded p-1.5 text-xs text-red-300
+                whitespace-nowrap shadow-lg">
+                Território sem defesa! Vulnerável a ataques.
+              </div>
+            </div>
+          ) : (
+            <div className={cn(
+              "flex items-center gap-0.5",
+              defensePower === 0 ? "text-red-400" :
+              defensePower >= avgDefensePower ? "text-green-400" :
+              "text-yellow-400"
+            )}>
+              <Swords className="w-3 h-3" />
+              <span>⚔ {defensePower}</span>
+            </div>
+          )
         )}
         {!isPlayerOwned && ownerId !== null && (
           isRevealed && revealedDefensePower !== undefined ? (

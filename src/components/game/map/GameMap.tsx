@@ -144,6 +144,7 @@ export function GameMap({
               defensePower={defensePower}
               avgDefensePower={avgDefensePower}
               revealedDefensePower={revealedDefensePower}
+              currentEra={currentEra}
               onClick={() => onTerritoryClick?.(territory.id)}
             />
           );
