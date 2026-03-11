@@ -165,6 +165,13 @@ export function ExpeditionModal({
   // F-038: show hint when cards are available but none selected
   const showNoCardHint = availableCombatCards.length > 0 && selectedCard === null;
 
+  // F-039: card modifier label shown in combat preview with 🃏 icon
+  const cardModifierLabel: string | null =
+    selectedCard === "REINFORCEMENTS" ? "Reforços +50% atk" :
+    selectedCard === "INFORMANT" ? "Informante: revela defesa" :
+    selectedCard !== null ? `${selectedCard} (ativo)` :
+    null;
+
   // Available units from selected territory
   const availableUnits = useMemo(() => {
     const available: Record<UnitType, number> = {
@@ -229,7 +236,7 @@ export function ExpeditionModal({
         attackPower: boostedAttack,
         ratio,
         outcome,
-        attackerModifiers: [...preview.attackerModifiers, "Reforcos: +50% atk"],
+        attackerModifiers: preview.attackerModifiers,
       };
     }
     return preview;
@@ -657,12 +664,15 @@ export function ExpeditionModal({
                   </div>
                 </div>
 
-                {/* Active modifiers */}
-                {(combatPreview.attackerModifiers.length > 0 || combatPreview.defenderModifiers.length > 0) && (
+                {/* Active modifiers (including F-039 card label) */}
+                {(combatPreview.attackerModifiers.length > 0 || combatPreview.defenderModifiers.length > 0 || cardModifierLabel) && (
                   <div className="text-xs space-y-0.5 pt-0.5 border-t border-white/5">
                     {combatPreview.attackerModifiers.map((m, i) => (
                       <div key={i} className="text-era-war/80">⚔ {m}</div>
                     ))}
+                    {cardModifierLabel && (
+                      <div className="text-amber-400">🃏 {cardModifierLabel}</div>
+                    )}
                     {combatPreview.defenderModifiers.map((m, i) => (
                       <div key={i} className="text-era-peace/80">🛡 {m}</div>
                     ))}

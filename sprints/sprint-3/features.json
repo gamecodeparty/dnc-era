@@ -112,7 +112,7 @@
     "id": "F-039",
     "name": "Label de carta selecionada no preview de combate",
     "description": "Em ExpeditionModal.tsx, no preview de combate que já aplica efeitos de REINFORCEMENTS (+50%) e INFORMANT (revela defesa), adicionar label visual quando carta está selecionada: 'Seu Poder: ~127 └ Ferronatos +20% └ 🃏 Reforços +50%'. Label aparece/desaparece em tempo real ao selecionar/deselecionar carta. Seção existente de 'Cartas Disponíveis' (F-024) continua funcionando.",
-    "status": "pending",
+    "status": "passing",
     "priority": 7,
     "agent": "coder",
     "task": "vibe-code",
@@ -122,7 +122,9 @@
       "Label aparece/desaparece em tempo real ao selecionar/deselecionar carta",
       "Seção existente de 'Cartas Disponíveis' (F-024) continua funcionando sem regressão"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-012-cards-contextual-highlight.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-012-cards-contextual-highlight.md",
+    "retries": 1,
+    "completed_at": "2026-03-11T06:00:00Z"
   },
   {
     "id": "F-040",
