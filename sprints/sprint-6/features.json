@@ -197,7 +197,7 @@
     "id": "F-106",
     "name": "Botão Auto-Distribuir na página exército",
     "description": "Em /src/app/game/army/page.tsx, adicionar botão MedievalButton variant='secondary' no topo da página (abaixo do título, acima da lista de territórios). onClick chama gameStore.autoDistributeTroops(). Desabilitado quando jogador tem <= 1 território. Tooltip explica comportamento. Toast de confirmação após distribuição: 'Tropas distribuídas igualmente entre {n} territórios'.",
-    "status": "pending",
+    "status": "passing",
     "priority": 11,
     "agent": "coder",
     "task": "vibe-code",
@@ -211,7 +211,8 @@
       "Tooltip explica o comportamento do botão",
       "Botão usa componente MedievalButton existente com variant secondary"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-034-auto-distribute-troops.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-034-auto-distribute-troops.md",
+    "completed_at": "2026-03-11T22:00:00.000Z"
   },
   {
     "id": "F-109",
