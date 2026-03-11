@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Territory } from "./Territory";
 import type { TerritoryWithDetails, HordaPreview } from "@/game/types";
 import type { TerritoryIntel, IncomingAttack } from "@/stores/gameStore";
+import { TERRITORY_ADJACENCY } from "@/game/constants/balance";
 
 const HINT_DISMISSED_KEY = "dnc-expedition-hint-dismissed";
 
@@ -92,6 +93,30 @@ interface GameMapProps {
   onTerritoryClick?: (territoryId: string) => void;
 }
 
+// Precomputed deduplicated adjacency pairs (id < neighbor → no duplicates)
+const ADJACENCY_LINES: [number, number][] = [];
+for (const [posStr, neighbors] of Object.entries(TERRITORY_ADJACENCY)) {
+  const pos = Number(posStr);
+  for (const neighbor of neighbors) {
+    if (pos < neighbor) ADJACENCY_LINES.push([pos, neighbor]);
+  }
+}
+
+const GRID_COLS = 3;
+const GRID_ROWS = 4;
+const GRID_GAP = 12; // gap-3 = 0.75rem = 12px
+
+function getCellCenter(pos: number, w: number, h: number) {
+  const col = pos % GRID_COLS;
+  const row = Math.floor(pos / GRID_COLS);
+  const cellW = (w - (GRID_COLS - 1) * GRID_GAP) / GRID_COLS;
+  const cellH = (h - (GRID_ROWS - 1) * GRID_GAP) / GRID_ROWS;
+  return {
+    x: col * (cellW + GRID_GAP) + cellW / 2,
+    y: row * (cellH + GRID_GAP) + cellH / 2,
+  };
+}
+
 export function GameMap({
   territories,
   playerClanId,
@@ -107,6 +132,42 @@ export function GameMap({
   hordaPreview = null,
   onTerritoryClick,
 }: GameMapProps) {
+  const gridWrapperRef = useRef<HTMLDivElement>(null);
+  const [gridDims, setGridDims] = useState({ width: 0, height: 0 });
+  const [hoveredPosition, setHoveredPosition] = useState<number | null>(null);
+
+  useEffect(() => {
+    const el = gridWrapperRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      if (entry) {
+        setGridDims({
+          width: entry.contentRect.width,
+          height: entry.contentRect.height,
+        });
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // F-093: Compute active position (hover takes precedence over click selection)
+  const selectedPosition = selectedTerritoryId
+    ? territories.find(t => t.id === selectedTerritoryId)?.position ?? null
+    : null;
+  const activePosition = hoveredPosition ?? selectedPosition;
+
+  // F-093: Set of positions adjacent to the active territory
+  const adjacentToActive = useMemo<Set<number>>(() => {
+    if (activePosition === null) return new Set();
+    return new Set(TERRITORY_ADJACENCY[activePosition] ?? []);
+  }, [activePosition]);
+
+  // F-093: Stable callbacks per territory position to avoid re-creating inline fns
+  const handleHoverChange = useCallback((pos: number, hovered: boolean) => {
+    setHoveredPosition(hovered ? pos : null);
+  }, []);
+
   // Sort territories by position
   const sortedTerritories = [...territories].sort(
     (a, b) => a.position - b.position
@@ -136,7 +197,38 @@ export function GameMap({
 
   return (
     <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
-      <div className="grid grid-cols-3 gap-3">
+      <div ref={gridWrapperRef} className="relative">
+        {/* SVG adjacency lines — rendered below territory cells */}
+        {gridDims.width > 0 && (
+          <svg
+            className="absolute inset-0 pointer-events-none"
+            width={gridDims.width}
+            height={gridDims.height}
+            style={{ zIndex: -1 }}
+            aria-hidden="true"
+          >
+            {ADJACENCY_LINES.map(([a, b]) => {
+              const ca = getCellCenter(a, gridDims.width, gridDims.height);
+              const cb = getCellCenter(b, gridDims.width, gridDims.height);
+              const isActive = activePosition !== null &&
+                (a === activePosition || b === activePosition);
+              return (
+                <line
+                  key={`${a}-${b}`}
+                  x1={ca.x}
+                  y1={ca.y}
+                  x2={cb.x}
+                  y2={cb.y}
+                  stroke={isActive ? "#fbbf24" : "#475569"}
+                  strokeOpacity={isActive ? 0.7 : 0.3}
+                  strokeWidth={isActive ? 2 : 1.5}
+                  style={{ transition: "stroke 0.15s, stroke-opacity 0.15s" }}
+                />
+              );
+            })}
+          </svg>
+        )}
+        <div className="grid grid-cols-3 gap-3">
         {sortedTerritories.map((territory) => {
           const unitsCount = territory.units.reduce(
             (sum, u) => sum + u.quantity,
@@ -170,6 +262,8 @@ export function GameMap({
           // F-069: Horda preview target — weakest player territory highlighted 1 turn before attack
           const isHordaPreviewTarget = isPlayerOwned && hordaPreview !== null && hordaPreview.targetTerritoryId === territory.id;
 
+          const isAdjacentToSelected = adjacentToActive.has(territory.position);
+
           return (
             <Territory
               key={territory.id}
@@ -199,10 +293,13 @@ export function GameMap({
               isAllied={isAllied}
               alliedDefensePower={alliedDefensePower}
               isHordaPreviewTarget={isHordaPreviewTarget}
+              isAdjacentToSelected={isAdjacentToSelected}
               onClick={() => onTerritoryClick?.(territory.id)}
+              onHoverChange={(hovered) => handleHoverChange(territory.position, hovered)}
             />
           );
         })}
+        </div>
       </div>
 
       {/* Map legend */}

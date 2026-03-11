@@ -18,13 +18,13 @@ import {
 } from "lucide-react";
 import {
   useGameStore,
-  STRUCTURE_COSTS,
   UNIT_COSTS,
   UNIT_STATS,
   StructureType,
   UnitType,
 } from "@/stores/gameStore";
 import { STRUCTURES } from "@/game/constants/structures";
+import { STRUCTURE_COSTS } from "@/game/constants/balance";
 
 // Medieval components
 import { MedievalButton } from "@/components/ui/medieval";
@@ -122,7 +122,8 @@ export default function TerritoryPage() {
   }
 
   const handleBuild = (structureType: StructureType) => {
-    const cost = STRUCTURE_COSTS[structureType];
+    const currentLevel = (territory.structures as Array<{ type: StructureType; level: number }>).find((s) => s.type === structureType)?.level ?? 0;
+    const cost = STRUCTURE_COSTS[structureType][currentLevel];
     const success = build(territoryId, structureType);
 
     if (success) {
@@ -130,7 +131,6 @@ export default function TerritoryPage() {
       triggerBuildComplete(territoryId, structureType);
 
       // Trigger resource deduction animations
-      if (cost.grain) triggerResourcePopup("GRAIN", -cost.grain);
       if (cost.wood) triggerResourcePopup("WOOD", -cost.wood);
       if (cost.gold) triggerResourcePopup("GOLD", -cost.gold);
 
@@ -351,7 +351,8 @@ export default function TerritoryPage() {
               <PanelContent className="space-y-3">
                 {(Object.keys(STRUCTURE_INFO) as StructureType[]).map((type) => {
                   const info = STRUCTURE_INFO[type];
-                  const cost = STRUCTURE_COSTS[type];
+                  const currentLevel = (territory.structures as Array<{ type: StructureType; level: number }>).find((s) => s.type === type)?.level ?? 0;
+                  const cost = STRUCTURE_COSTS[type][currentLevel];
                   const Icon = info.icon;
                   const alreadyBuilt = hasStructure(type);
                   const affordable = canAfford(cost);
@@ -415,13 +416,6 @@ export default function TerritoryPage() {
                         return null;
                       })()}
                       <div className="flex flex-wrap gap-2 text-xs">
-                        {cost.grain ? (
-                          <span className={`flex items-center gap-1 ${player.grain >= cost.grain ? "text-amber-400" : "text-red-400"}`}>
-                            <Wheat className="w-3 h-3" />
-                            <span>Grão {cost.grain}</span>
-                            {player.grain < cost.grain && <span>(insuficiente)</span>}
-                          </span>
-                        ) : null}
                         {cost.wood ? (
                           <span className={`flex items-center gap-1 ${player.wood >= cost.wood ? "text-emerald-400" : "text-red-400"}`}>
                             <TreePine className="w-3 h-3" />

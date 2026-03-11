@@ -5,6 +5,16 @@ import { X, Swords, MapPin, Clock, Package, ChevronDown, ChevronUp, AlertTriangl
 import { motion, AnimatePresence } from "framer-motion";
 import { MedievalButton } from "@/components/ui/medieval";
 import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
+import {
   Territory,
   Unit,
   UnitType,
@@ -65,6 +75,13 @@ const BANNER_CONTEXTS: Record<string, Set<string>> = {
   REINFORCE: new Set(),
 };
 
+const outcomeExplanation: Record<CombatPreviewOutcome, string> = {
+  decisive_victory: "Ratio > 1.5x: você conquistará o território.",
+  victory: "Vitória parcial: causa baixas mas NÃO conquista o território.",
+  uncertain: "Resultado incerto: espere perdas significativas dos dois lados.",
+  defeat: "Provável derrota: suas tropas sofrerão baixas pesadas.",
+};
+
 const outcomeConfig: Record<CombatPreviewOutcome, { label: string; colorClass: string; borderClass: string; bgClass: string }> = {
   decisive_victory: { label: "Vitória Decisiva", colorClass: "text-clan-verdaneos", borderClass: "border-clan-verdaneos/30", bgClass: "bg-clan-verdaneos/10" },
   victory: { label: "Vitória", colorClass: "text-era-peace", borderClass: "border-era-peace/30", bgClass: "bg-era-peace/10" },
@@ -120,6 +137,7 @@ export function ExpeditionModal({
   // UI state
   const [showOriginSelect, setShowOriginSelect] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showUnprotectedDialog, setShowUnprotectedDialog] = useState(false);
 
   // Available combat cards (unused, relevant context only, deduplicated by type)
   const availableCombatCards = useMemo(() => {
@@ -292,18 +310,18 @@ export function ExpeditionModal({
     });
   };
 
-  // Send expedition
-  const handleSend = () => {
-    if (currentEra === "PEACE") {
-      setError("Expedicoes bloqueadas na Era da Paz!");
-      return;
-    }
+  // Remaining units in origin territory after expedition
+  const remainingUnits = useMemo(
+    () =>
+      Object.entries(availableUnits).reduce((sum, [type, qty]) => {
+        const sent = selectedUnits[type as UnitType] ?? 0;
+        return sum + (qty - sent);
+      }, 0),
+    [availableUnits, selectedUnits]
+  );
 
-    if (expeditionStats.totalUnits === 0) {
-      setError("Selecione pelo menos uma unidade!");
-      return;
-    }
-
+  // Execute expedition without confirmation
+  const executeSend = () => {
     const result = onSend(
       fromTerritory.id,
       toTerritory.id,
@@ -316,13 +334,58 @@ export function ExpeditionModal({
     }
   };
 
+  // Send expedition — shows confirmation if territory will be left with 0 units
+  const handleSend = () => {
+    if (currentEra === "PEACE") {
+      setError("Expedicoes bloqueadas na Era da Paz!");
+      return;
+    }
+
+    if (expeditionStats.totalUnits === 0) {
+      setError("Selecione pelo menos uma unidade!");
+      return;
+    }
+
+    if (remainingUnits === 0) {
+      setShowUnprotectedDialog(true);
+      return;
+    }
+
+    executeSend();
+  };
+
   // Filter territories with units
   const territoriesWithUnits = playerTerritories.filter(
     (t) => t.units.length > 0 && t.units.some((u) => u.quantity > 0)
   );
 
   return (
-    <AnimatePresence>
+    <>
+      {/* Unprotected territory confirmation dialog */}
+      <AlertDialog open={showUnprotectedDialog} onOpenChange={setShowUnprotectedDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>⚠️ Território desprotegido!</AlertDialogTitle>
+            <AlertDialogDescription>
+              O Território {fromTerritory.position + 1} ficará com 0 unidades após esta expedição.
+              Qualquer ataque inimigo conquistará este território sem resistência.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowUnprotectedDialog(false);
+                executeSend();
+              }}
+            >
+              Enviar mesmo assim
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -651,6 +714,18 @@ export function ExpeditionModal({
                   </span>
                 </div>
 
+                {/* F-090: Explanatory text per outcome */}
+                <p className="text-xs text-slate-400">
+                  {outcomeExplanation[combatPreview.outcome]}
+                </p>
+
+                {/* F-091: Hint to add troops when outcome is partial victory */}
+                {combatPreview.outcome === "victory" && (
+                  <p className="text-xs text-amber-400/80">
+                    💡 Adicione {Math.ceil(combatPreview.defensePower * 1.5) - combatPreview.attackPower} de poder de ataque para conquistar o território (ratio ≥ 1.5x).
+                  </p>
+                )}
+
                 {/* Power bar */}
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs text-medieval-text-muted">
@@ -672,7 +747,8 @@ export function ExpeditionModal({
                   {combatPreview.isApproximate && (
                     <div className="text-xs text-grain/70 text-right">(sem reconhecimento)</div>
                   )}
-                  <div className="h-2.5 rounded-full overflow-hidden bg-era-peace/30 flex">
+                  {/* F-091: ratio bar with 1.5x threshold marker for partial victory */}
+                  <div className="relative h-2.5 rounded-full overflow-hidden bg-era-peace/30 flex">
                     {(() => {
                       const total = combatPreview.attackPower + combatPreview.defensePower;
                       const atkPct = total > 0 ? Math.round((combatPreview.attackPower / total) * 100) : 50;
@@ -683,7 +759,18 @@ export function ExpeditionModal({
                         />
                       );
                     })()}
+                    {/* 1.5x threshold marker — only for partial victory outcome */}
+                    {combatPreview.outcome === "victory" && (
+                      <div
+                        className="absolute top-0 bottom-0 w-0.5 bg-amber-400/80"
+                        style={{ left: "60%" }}
+                        title="Threshold 1.5x"
+                      />
+                    )}
                   </div>
+                  {combatPreview.outcome === "victory" && (
+                    <div className="text-xs text-amber-400/60 text-right">▲ 1.5x</div>
+                  )}
                 </div>
 
                 {/* Active modifiers (including F-039 card label) */}
@@ -747,6 +834,16 @@ export function ExpeditionModal({
                 </p>
               </div>
             )}
+
+            {/* F-089: Weak defense warning (1-2 units remaining, non-blocking) */}
+            {remainingUnits > 0 && remainingUnits <= 2 && expeditionType !== "REINFORCE" && currentEra !== "PEACE" && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-900/20 border border-amber-500/50">
+                <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-300">
+                  Defesa fraca: apenas {remainingUnits} {remainingUnits === 1 ? "unidade ficará" : "unidades ficarão"} no Território {fromTerritory.position + 1}. O território estará vulnerável a ataques.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Footer */}
@@ -780,5 +877,6 @@ export function ExpeditionModal({
         </motion.div>
       </motion.div>
     </AnimatePresence>
+    </>
   );
 }

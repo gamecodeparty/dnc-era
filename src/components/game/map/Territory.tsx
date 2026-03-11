@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { cn } from "@/lib/utils";
 import { Wheat, Trees, Coins, Swords, Home, Eye, Compass } from "lucide-react";
 import { UI } from "@/game/constants/balance";
@@ -46,7 +47,10 @@ interface TerritoryProps {
   alliedDefensePower?: number | null;
   /** F-069: This specific territory is the Horda's preview attack target (weakest player territory) */
   isHordaPreviewTarget?: boolean;
+  /** F-093: This territory is adjacent to the currently selected/hovered territory */
+  isAdjacentToSelected?: boolean;
   onClick?: () => void;
+  onHoverChange?: (hovered: boolean) => void;
 }
 
 const ORIGIN_BORDER_COLORS = {
@@ -73,7 +77,7 @@ const RESOURCE_COLORS = {
   GOLD: "text-yellow-400",
 };
 
-export function Territory({
+export const Territory = memo(function Territory({
   id,
   position,
   ownerId,
@@ -102,7 +106,9 @@ export function Territory({
   isAllied = false,
   alliedDefensePower,
   isHordaPreviewTarget = false,
+  isAdjacentToSelected = false,
   onClick,
+  onHoverChange,
 }: TerritoryProps) {
   const ResourceIcon = RESOURCE_ICONS[bonusResource as keyof typeof RESOURCE_ICONS] || Wheat;
   const resourceColor = RESOURCE_COLORS[bonusResource as keyof typeof RESOURCE_COLORS] || "text-slate-400";
@@ -128,6 +134,8 @@ export function Territory({
   return (
     <button
       onClick={onClick}
+      onMouseEnter={() => onHoverChange?.(true)}
+      onMouseLeave={() => onHoverChange?.(false)}
       className={cn(
         "relative aspect-square rounded-lg border-2 p-2 transition-all",
         "hover:scale-105 hover:shadow-lg hover:z-10",
@@ -135,6 +143,7 @@ export function Territory({
         borderColor,
         bgColor,
         isSelected && "ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900",
+        isAdjacentToSelected && !isSelected && "ring-2 ring-amber-400/50 ring-offset-1 ring-offset-slate-900",
         isAttackable && !isSelected && "ring-2 ring-red-500/30 animate-pulse",
         isUndefendedAlert && !isSelected && "ring-2 ring-red-500/40 animate-pulse",
         isPlayerHordaTarget && !isSelected && "ring-2 ring-red-600 ring-offset-1 ring-offset-slate-900 animate-pulse border-red-600",
@@ -324,6 +333,6 @@ export function Territory({
       </div>
     </button>
   );
-}
+});
 
 export default Territory;

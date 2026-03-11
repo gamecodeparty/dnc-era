@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { TURN_DURATION_MS, MARKET, TERRITORY_ADJACENCY } from "@/game/constants/balance";
+import { TURN_DURATION_MS, MARKET, TERRITORY_ADJACENCY, STRUCTURE_COSTS, PRODUCTION_PER_LEVEL, TERRITORY_BONUS_MULTIPLIER, ORIGIN_BONUSES } from "@/game/constants/balance";
 
 // Tipos
 export type Era = "PEACE" | "WAR" | "INVASION";
@@ -143,6 +143,8 @@ export interface IncomingAttack {
   targetTerritoryId: string;
   sourceClanId: string;
   arrivesTurn: number;
+  /** Poder de ataque real da expedição inimiga (usado para classifyThreat + fog of war) */
+  attackPower: number;
 }
 
 export interface HordaPreview {
@@ -190,16 +192,98 @@ export function getProportionalCostWarnings(
   return warnings;
 }
 
-export const STRUCTURE_COSTS: Record<StructureType, { grain?: number; wood?: number; gold?: number }> = {
-  FARM: { wood: 20, gold: 10 },
-  SAWMILL: { grain: 15, gold: 10 },
-  MINE: { grain: 20, wood: 20 },
-  BARRACKS: { grain: 30, wood: 40 },
-  STABLE: { grain: 50, wood: 60, gold: 30 },
-  WALL: { wood: 50, gold: 20 },
-  TAVERN: { wood: 15, gold: 20 },
-  SHADOW_GUILD: { wood: 20, gold: 30 },
-};
+
+export interface ProductionBreakdownItem {
+  territoryId: string;
+  territoryPosition: number;
+  structureType: StructureType;
+  structureLevel: number;
+  baseGrain: number;
+  baseWood: number;
+  baseGold: number;
+  bonusGrain: number;
+  bonusWood: number;
+  bonusGold: number;
+}
+
+export interface ProductionResult {
+  grain: number;
+  wood: number;
+  gold: number;
+  breakdown: ProductionBreakdownItem[];
+}
+
+/** Calcula a produção total de recursos por turno do jogador.
+ *  Usa PRODUCTION_PER_LEVEL de balance.ts como fonte canônica.
+ *  Inclui bônus de território (bonusResource) e bônus de facção (origin).
+ */
+export function calculateTotalProduction(
+  playerClan: Clan,
+  playerTerritories: Territory[]
+): ProductionResult {
+  let grain = 0;
+  let wood = 0;
+  let gold = 0;
+  const breakdown: ProductionBreakdownItem[] = [];
+
+  for (const territory of playerTerritories) {
+    for (const structure of territory.structures) {
+      const levelIndex = structure.level - 1;
+      let baseGrain = 0;
+      let baseWood = 0;
+      let baseGold = 0;
+      let bonusGrain = 0;
+      let bonusWood = 0;
+      let bonusGold = 0;
+
+      if (structure.type === "FARM") {
+        const base = PRODUCTION_PER_LEVEL.FARM[levelIndex] ?? 0;
+        baseGrain = base;
+        if (territory.bonusResource === "GRAIN") {
+          bonusGrain = Math.floor(base * (TERRITORY_BONUS_MULTIPLIER - 1));
+        }
+      } else if (structure.type === "SAWMILL") {
+        const base = PRODUCTION_PER_LEVEL.SAWMILL[levelIndex] ?? 0;
+        baseWood = base;
+        if (territory.bonusResource === "WOOD") {
+          bonusWood = Math.floor(base * (TERRITORY_BONUS_MULTIPLIER - 1));
+        }
+      } else if (structure.type === "MINE") {
+        const base = PRODUCTION_PER_LEVEL.MINE[levelIndex] ?? 0;
+        baseGold = base;
+        if (territory.bonusResource === "GOLD") {
+          bonusGold = Math.floor(base * (TERRITORY_BONUS_MULTIPLIER - 1));
+        }
+      }
+
+      if (baseGrain + baseWood + baseGold > 0) {
+        breakdown.push({
+          territoryId: territory.id,
+          territoryPosition: territory.position,
+          structureType: structure.type,
+          structureLevel: structure.level,
+          baseGrain,
+          baseWood,
+          baseGold,
+          bonusGrain,
+          bonusWood,
+          bonusGold,
+        });
+        grain += baseGrain + bonusGrain;
+        wood += baseWood + bonusWood;
+        gold += baseGold + bonusGold;
+      }
+    }
+  }
+
+  // Apply origin bonus (Verdaneos: +20% grain production)
+  if (playerClan.origin === "VERDANEOS") {
+    const verdaneosBonus = Math.floor(grain * ORIGIN_BONUSES.VERDANEOS.value);
+    grain += verdaneosBonus;
+  }
+
+  return { grain, wood, gold, breakdown };
+}
 
 export const STRUCTURE_PRODUCTION: Record<StructureType, { resource?: ResourceType; amount?: number }> = {
   FARM: { resource: "GRAIN", amount: 10 },
@@ -601,6 +685,7 @@ interface GameState {
   getIncomingAttacks: (territoryId: string) => Expedition[];
   getExplorationSites: () => ExplorationSite[];
   getExplorationSite: (id: string) => ExplorationSite | undefined;
+  getPlayerProduction: () => ProductionResult;
 
   // Acoes
   build: (territoryId: string, structureType: StructureType) => boolean;
@@ -712,6 +797,13 @@ export const useGameStore = create<GameState>((set, get) => ({
     return get().explorationSites.find((s) => s.id === id);
   },
 
+  getPlayerProduction: () => {
+    const state = get();
+    const playerClan = state.clans.find((c) => c.isPlayer)!;
+    const playerTerritories = state.territories.filter((t) => t.ownerId === "player");
+    return calculateTotalProduction(playerClan, playerTerritories);
+  },
+
   build: (territoryId, structureType) => {
     const state = get();
     const territory = state.territories.find((t) => t.id === territoryId);
@@ -720,7 +812,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (territory.structures.length >= 4) return false;
     if (territory.structures.some((s) => s.type === structureType)) return false;
 
-    const cost = STRUCTURE_COSTS[structureType];
+    const currentLevel = territory.structures.find((s: Structure) => s.type === structureType)?.level ?? 0;
+    const cost = STRUCTURE_COSTS[structureType as StructureType][currentLevel];
     if (!state.canAfford(cost)) return false;
 
     set((state) => ({
@@ -728,7 +821,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         c.isPlayer
           ? {
               ...c,
-              grain: c.grain - (cost.grain || 0),
+              grain: c.grain - ((cost as { grain?: number; wood?: number; gold?: number }).grain || 0),
               wood: c.wood - (cost.wood || 0),
               gold: c.gold - (cost.gold || 0),
             }
@@ -2423,10 +2516,14 @@ function processAI(
         // Não telegrafar se já há ataque pendente para este território
         const alreadyPending = newIncomingAttacks.some((a) => a.targetTerritoryId === target.id);
         if (!alreadyPending) {
+          // Calcular poder de ataque real para fog of war / classifyThreat (F-095)
+          const allAiUnits = aiTerritories.flatMap((t) => t.units);
+          const aiAttackPower = getAttackPower(allAiUnits);
           newIncomingAttacks.push({
             targetTerritoryId: target.id,
             sourceClanId: aiId,
             arrivesTurn: currentTurn + 1,
+            attackPower: aiAttackPower,
           });
         }
       }

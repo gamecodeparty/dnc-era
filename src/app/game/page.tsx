@@ -5,9 +5,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useGameStore, TOTAL_TURNS, SPY_SUCCESS_CHANCE_BASE, SPY_UMBRAL_BONUS, getDistance, type UnitType } from "@/stores/gameStore";
-import { TURN_DURATION_MS } from "@/game/constants/balance";
-import { calculateTravelTime } from "@/game/engine";
+import { useGameStore, TOTAL_TURNS, SPY_SUCCESS_CHANCE_BASE, SPY_UMBRAL_BONUS, getDistance, getDefensePower, type UnitType } from "@/stores/gameStore";
+import { ResourcePanel } from "@/components/game/sidebar/ResourcePanel";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import { TURN_DURATION_MS, TERRITORY_ADJACENCY } from "@/game/constants/balance";
+import { calculateTravelTime, estimateThreatForDisplay } from "@/game/engine";
 import {
   LogOut,
   Scroll,
@@ -189,6 +191,7 @@ export default function GamePage() {
     marketTrade,
     diplomacy,
     hordaPreview,
+    getPlayerProduction,
   } = useGameStore();
 
   const player = getPlayerClan();
@@ -257,15 +260,12 @@ export default function GamePage() {
       ? "text-yellow-400"
       : "text-medieval-primary";
 
-  // Calcula producao
-  let grainProd = 0, woodProd = 0, goldProd = 0;
-  playerTerritories.forEach((t) => {
-    t.structures.forEach((s) => {
-      if (s.type === "FARM") grainProd += 10 * s.level * (t.bonusResource === "GRAIN" ? 1.25 : 1);
-      if (s.type === "SAWMILL") woodProd += 8 * s.level * (t.bonusResource === "WOOD" ? 1.25 : 1);
-      if (s.type === "MINE") goldProd += 5 * s.level * (t.bonusResource === "GOLD" ? 1.25 : 1);
-    });
-  });
+  // Calcula producao via getPlayerProduction (fonte canônica: balance.ts)
+  const playerProduction = getPlayerProduction();
+  const grainProd = playerProduction.grain;
+  const woodProd = playerProduction.wood;
+  const goldProd = playerProduction.gold;
+  const productionBreakdown = playerProduction.breakdown;
 
   // Open expedition modal
   const handleAttack = (toTerritoryId: string) => {
@@ -578,48 +578,60 @@ export default function GamePage() {
             <ParchmentPanel animated>
               <PanelHeader title="Recursos" />
               <PanelContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Wheat className="w-5 h-5 text-grain" />
-                    <span className="text-medieval-text-secondary">Graos</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-bold font-mono text-grain text-lg">
-                      {Math.floor(player.grain)}
-                    </span>
-                    <span className="text-xs text-era-peace ml-2">
-                      +{Math.floor(grainProd)}/turno
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <TreePine className="w-5 h-5 text-wood-light" />
-                    <span className="text-medieval-text-secondary">Madeira</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-bold font-mono text-wood-light text-lg">
-                      {Math.floor(player.wood)}
-                    </span>
-                    <span className="text-xs text-era-peace ml-2">
-                      +{Math.floor(woodProd)}/turno
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Coins className="w-5 h-5 text-gold" />
-                    <span className="text-medieval-text-secondary">Ouro</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-bold font-mono text-gold text-lg">
-                      {Math.floor(player.gold)}
-                    </span>
-                    <span className="text-xs text-era-peace ml-2">
-                      +{Math.floor(goldProd)}/turno
-                    </span>
-                  </div>
-                </div>
+                <TooltipProvider>
+                {[
+                  { icon: Wheat, label: "Graos", value: Math.floor(player.grain), prod: Math.floor(grainProd), resource: "grain" as const, colorClass: "text-grain" },
+                  { icon: TreePine, label: "Madeira", value: Math.floor(player.wood), prod: Math.floor(woodProd), resource: "wood" as const, colorClass: "text-wood-light" },
+                  { icon: Coins, label: "Ouro", value: Math.floor(player.gold), prod: Math.floor(goldProd), resource: "gold" as const, colorClass: "text-gold" },
+                ].map(({ icon: Icon, label, value, prod, resource, colorClass }) => {
+                  const cap = resource.charAt(0).toUpperCase() + resource.slice(1) as "Grain" | "Wood" | "Gold";
+                  const baseKey = `base${cap}` as const;
+                  const bonusKey = `bonus${cap}` as const;
+                  const SNAMES: Record<string, string> = { FARM: "Fazenda", SAWMILL: "Serraria", MINE: "Mina" };
+                  const relevantItems = productionBreakdown.filter(item => item[baseKey] > 0);
+                  const prodEl = prod > 0
+                    ? <span className="text-xs text-green-400 ml-2">+{prod}/turno</span>
+                    : <span className="text-xs text-slate-500 ml-2">±0/turno</span>;
+                  return (
+                    <div key={resource} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Icon className={`w-5 h-5 ${colorClass}`} />
+                        <span className="text-medieval-text-secondary">{label}</span>
+                      </div>
+                      <div className="text-right flex items-center">
+                        <span className={`font-bold font-mono ${colorClass} text-lg`}>{value}</span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button className="cursor-help focus:outline-none">{prodEl}</button>
+                          </TooltipTrigger>
+                          <TooltipContent side="left" className="max-w-xs">
+                            {relevantItems.length === 0 ? (
+                              <p className="text-slate-400">Nenhuma estrutura produtiva</p>
+                            ) : (
+                              <div className="space-y-1">
+                                {relevantItems.map((item, i) => (
+                                  <div key={i} className="whitespace-nowrap">
+                                    <span className="text-slate-300">T{item.territoryPosition}:</span>{" "}
+                                    <span className="text-slate-200">
+                                      {SNAMES[item.structureType] ?? item.structureType} Nv{item.structureLevel} (+{item[baseKey]})
+                                    </span>
+                                    {item[bonusKey] > 0 && (
+                                      <span className="text-amber-300"> + Bônus território (+{item[bonusKey]})</span>
+                                    )}
+                                  </div>
+                                ))}
+                                <div className="border-t border-slate-700 pt-1 mt-1 text-slate-300 font-semibold">
+                                  Total: +{prod}/turno
+                                </div>
+                              </div>
+                            )}
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </div>
+                  );
+                })}
+                </TooltipProvider>
               </PanelContent>
             </ParchmentPanel>
 
@@ -721,6 +733,17 @@ export default function GamePage() {
                   (currentEra === "WAR" || currentEra === "INVASION") &&
                   playerHasTroops;
 
+                // F-094: When expedition modal is open, dim territories out of reach from origin
+                const expeditionOriginTerritory = expeditionOrigin
+                  ? territories.find((t) => t.id === expeditionOrigin)
+                  : null;
+                const isExpeditionModalOpen = !!(expeditionTarget && expeditionOrigin);
+                const isOriginTerritory = territory.id === expeditionOrigin;
+                const isReachable = expeditionOriginTerritory
+                  ? (TERRITORY_ADJACENCY[expeditionOriginTerritory.position] ?? []).includes(territory.position)
+                  : false;
+                const isOutOfReach = isExpeditionModalOpen && !isOriginTerritory && !isReachable;
+
                 return (
                   <motion.div
                     key={territory.id}
@@ -739,6 +762,7 @@ export default function GamePage() {
                       ${isSelected ? "ring-2 ring-medieval-primary-bright scale-105 shadow-golden-glow" : ""}
                       ${hasExplorationSite ? "ring-1 ring-era-peace/50" : ""}
                       ${isAttackable && !isSelected ? "ring-2 ring-red-500/30 animate-pulse" : ""}
+                      ${isOutOfReach ? "opacity-40" : ""}
                     `}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.98 }}
@@ -793,21 +817,50 @@ export default function GamePage() {
                       </div>
                     )}
 
-                    {/* Incoming attack alert (F-058) — shown during WAR/INVASION for player territories */}
-                    {isPlayer && (currentEra === "WAR" || currentEra === "INVASION") && incomingAttacks.some((a) => a.targetTerritoryId === territory.id) && (
-                      <div className="absolute top-0.5 right-0.5 z-10 group/attack">
-                        <div className="rounded px-0.5 sm:px-1 py-0.5 bg-red-900/60 flex items-center gap-0.5 animate-pulse">
-                          <span className="text-red-400 text-[8px] sm:text-[9px] leading-none">⚠</span>
-                          <span className="text-red-400 text-[7px] sm:text-[8px] leading-none font-semibold hidden sm:inline">Ataque!</span>
+                    {/* Incoming attack alert (F-058/F-096/F-097) — shown during WAR/INVASION for player territories */}
+                    {isPlayer && (currentEra === "WAR" || currentEra === "INVASION") && (() => {
+                      const attack = incomingAttacks.find((a) => a.targetTerritoryId === territory.id);
+                      if (!attack) return null;
+                      const wallLevel = territory.structures.find((s) => s.type === "WALL")?.level ?? 0;
+                      const defPower = getDefensePower(territory.units, wallLevel);
+                      // F-097: check if player has spy intel on any territory of the attacker
+                      const hasActiveSpy = territories.some(
+                        (t) => t.ownerId === attack.sourceClanId && !!revealedTerritories[t.id]
+                      );
+                      const { scale, estimatedPower, isExact } = estimateThreatForDisplay(attack.attackPower, defPower, hasActiveSpy);
+                      const THREAT_CONFIG = {
+                        LOW:      { icon: "⚔️",    color: "text-yellow-400", bg: "bg-yellow-900/60", border: "border-yellow-500/60", label: "Expedição pequena detectada",   pulse: false },
+                        MEDIUM:   { icon: "⚔️⚔️",  color: "text-orange-400", bg: "bg-orange-900/60", border: "border-orange-500/60", label: "Expedição média detectada",      pulse: false },
+                        HIGH:     { icon: "⚔️⚔️⚔️", color: "text-red-400",    bg: "bg-red-900/60",    border: "border-red-500/60",    label: "Expedição grande detectada",     pulse: false },
+                        CRITICAL: { icon: "💀",      color: "text-red-500",    bg: "bg-red-950/80",    border: "border-red-600/80",    label: "Força esmagadora detectada!", pulse: true  },
+                      } as const;
+                      const cfg = THREAT_CONFIG[scale];
+                      return (
+                        <div className="absolute top-0.5 right-0.5 z-10 group/attack">
+                          <div className={`rounded px-0.5 sm:px-1 py-0.5 ${cfg.bg} flex items-center gap-0.5 ${cfg.pulse ? "animate-pulse" : ""}`}>
+                            <span className={`${cfg.color} text-[8px] sm:text-[9px] leading-none`}>{cfg.icon}</span>
+                          </div>
+                          <div className={`absolute right-0 top-6 invisible group-hover/attack:visible z-30
+                            bg-slate-900 border ${cfg.border} rounded p-2 text-[10px] sm:text-xs
+                            text-slate-200 whitespace-nowrap shadow-lg pointer-events-none min-w-[240px]`}>
+                            <p className={`font-bold ${cfg.color} mb-1`}>{cfg.label}</p>
+                            <p className="mb-0.5">
+                              <span className="text-slate-400">Poder estimado: </span>
+                              <span className={cfg.color}>{isExact ? "" : "~"}{estimatedPower}</span>
+                            </p>
+                            <p className="mb-0.5">
+                              <span className="text-slate-400">Sua defesa: </span>
+                              <span className="text-green-400">{defPower}</span>
+                            </p>
+                            {isExact ? (
+                              <p className="text-purple-300 mt-1">👁 Valor exato via espião</p>
+                            ) : (
+                              <p className="text-slate-500 mt-1">±20% — envie Espião para valor exato</p>
+                            )}
+                          </div>
                         </div>
-                        <div className="absolute right-0 top-6 invisible group-hover/attack:visible z-30
-                          bg-slate-900 border border-red-500/60 rounded p-2 text-[10px] sm:text-xs
-                          text-slate-200 whitespace-nowrap shadow-lg pointer-events-none min-w-[200px]">
-                          <p className="font-bold text-red-300 mb-0.5">Ataque iminente!</p>
-                          <p>Expedição inimiga detectada — chegará no próximo turno. Reforce a defesa!</p>
-                        </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {/* F-069: Horda preview target badge — shown during INVASION era for weakest player territory */}
                     {isPlayer && currentEra === "INVASION" && hordaPreview?.targetTerritoryId === territory.id && (
