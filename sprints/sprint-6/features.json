@@ -116,7 +116,7 @@
     "id": "F-099",
     "name": "Exibir território-alvo no InvasionInfoModal",
     "description": "Em /src/components/game/fx/InvasionInfoModal.tsx, adicionar seção mostrando território-alvo quando turnsUntilAttack === 1. Exibir: posição do território (position + 1), poder defensivo atual (targetDefensePower), e aviso de que reforçar pode mudar o alvo da Horda. Seção só aparece quando turnsUntilAttack === 1.",
-    "status": "pending",
+    "status": "passing",
     "priority": 7,
     "agent": "coder",
     "task": "vibe-code",
@@ -129,7 +129,8 @@
       "Modal inclui aviso de que reforçar o alvo pode mudar a escolha da Horda",
       "Seção só aparece quando turnsUntilAttack === 1 (não antes)"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-031-horda-territory-target-display.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-031-horda-territory-target-display.md",
+    "completed_at": "2026-03-11T21:43:00.000Z"
   },
   {
     "id": "F-100",
