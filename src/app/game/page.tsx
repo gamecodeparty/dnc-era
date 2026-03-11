@@ -976,6 +976,8 @@ export default function GamePage() {
                           className={`py-1.5 border-b border-medieval-primary/10 last:border-0 ${
                             isAICombat
                               ? "text-sky-400"
+                              : event.type === "hint"
+                              ? "text-amber-400"
                               : event.type === "success"
                               ? "text-era-peace"
                               : event.type === "danger"

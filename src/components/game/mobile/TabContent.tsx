@@ -23,7 +23,7 @@ interface GameEvent {
   message: string;
   turn: number;
   // Combat fields (F-016)
-  eventKind?: "COMBAT";
+  eventKind?: "COMBAT" | "HINT";
   result?: "victory" | "defeat" | "draw";
   attackerClanName?: string;
   defenderClanName?: string;
@@ -194,7 +194,7 @@ export function TabContent({
                 <motion.div
                   key={event.id}
                   variants={staggerItem}
-                  className={`p-3 rounded-lg ${isAICombat ? "bg-sky-950/30 border border-sky-900/40" : "bg-medieval-bg-card"}`}
+                  className={`p-3 rounded-lg ${isAICombat ? "bg-sky-950/30 border border-sky-900/40" : event.type === "hint" ? "bg-amber-950/30 border border-amber-700/40" : "bg-medieval-bg-card"}`}
                 >
                   <div className="flex items-start gap-2">
                     {isAICombat
@@ -224,7 +224,7 @@ export function TabContent({
                           )}
                         </div>
                       ) : (
-                        <p className="text-sm text-medieval-text-primary">{event.message}</p>
+                        <p className={`text-sm ${event.type === "hint" ? "text-amber-400" : "text-medieval-text-primary"}`}>{event.message}</p>
                       )}
                       <p className="text-xs text-medieval-text-muted flex items-center gap-1 mt-1">
                         <Clock className="w-3 h-3" />

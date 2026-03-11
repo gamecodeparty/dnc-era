@@ -86,9 +86,9 @@ export interface DiplomacyState {
 export interface GameEvent {
   turn: number;
   message: string;
-  type: "info" | "success" | "warning" | "danger";
+  type: "info" | "success" | "warning" | "danger" | "hint";
   // Optional COMBAT fields (F-015)
-  eventKind?: "COMBAT";
+  eventKind?: "COMBAT" | "HINT";
   result?: "victory" | "defeat" | "draw";
   attackerClanId?: string;
   attackerClanName?: string;
@@ -1687,6 +1687,19 @@ export const useGameStore = create<GameState>((set, get) => ({
         events: [{ turn: newTurn, message: "GAME OVER - Voce perdeu todos os territorios!", type: "danger" }, ...newEvents, ...state.events.slice(0, 5)],
       });
       return;
+    }
+
+    // Evento HINT no turno 3 se jogador não enviou expedições
+    if (newTurn === 3) {
+      const playerExpeditions = state.expeditions.filter((e) => e.ownerId === "player");
+      if (playerExpeditions.length === 0) {
+        newEvents.push({
+          turn: newTurn,
+          message: "Seus batedores reportam locais inexplorados no mapa. Envie tropas a um território neutro para iniciar uma Expedição.",
+          type: "hint",
+          eventKind: "HINT",
+        });
+      }
     }
 
     // Combinar todos os eventos
