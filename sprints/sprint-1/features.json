@@ -267,7 +267,7 @@
     "id": "F-015",
     "name": "Enriquecer evento COMBAT no gameStore",
     "description": "Em processTurn(), na seção de combates AI, enriquecer evento COMBAT com: result (victory/defeat/draw), attackerLosses, defenderLosses, territoryConquered, isPlayerInvolved. Flag isPlayerInvolved=false para combates AI, true para combates do jogador.",
-    "status": "pending",
+    "status": "passing",
     "priority": 15,
     "agent": "coder",
     "task": "vibe-code",
@@ -277,7 +277,8 @@
       "Flag isPlayerInvolved=false distingue combates AI de combates do jogador",
       "Combates do jogador também incluem isPlayerInvolved=true"
     ],
-    "prp_path": "sprints/sprint-1/3-prps/PRP-005-information-transparency.md"
+    "prp_path": "sprints/sprint-1/3-prps/PRP-005-information-transparency.md",
+    "completed_at": "2026-03-11T00:45:42.141Z"
   },
   {
     "id": "F-016",

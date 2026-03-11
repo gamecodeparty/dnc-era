@@ -87,6 +87,19 @@ export interface GameEvent {
   turn: number;
   message: string;
   type: "info" | "success" | "warning" | "danger";
+  // Optional COMBAT fields (F-015)
+  eventKind?: "COMBAT";
+  result?: "victory" | "defeat" | "draw";
+  attackerClanId?: string;
+  attackerClanName?: string;
+  defenderClanId?: string;
+  defenderClanName?: string;
+  territoryId?: string;
+  territoryName?: string;
+  attackerLosses?: number;
+  defenderLosses?: number;
+  territoryConquered?: boolean;
+  isPlayerInvolved?: boolean;
 }
 
 export interface Expedition {
@@ -1199,10 +1212,26 @@ export const useGameStore = create<GameState>((set, get) => ({
                 type: "RETURN_VICTORY",
               });
 
+              const origCount = exp.units.reduce((s: number, u: Unit) => s + u.quantity, 0);
+              const survivorCount = survivors.reduce((s: number, u: Unit) => s + u.quantity, 0);
+              const atkLosses = origCount - survivorCount;
+              const defLosses = targetTerritory.units.reduce((s: number, u: Unit) => s + u.quantity, 0);
               expeditionEvents.push({
                 turn: newTurn,
                 message: `VITORIA! Territorio ${targetTerritory.position + 1} conquistado! Tropas retornando com saque.`,
                 type: "success",
+                eventKind: "COMBAT",
+                result: "victory",
+                attackerClanId: exp.ownerId,
+                attackerClanName: exp.ownerName,
+                defenderClanId: targetTerritory.ownerId ?? "neutral",
+                defenderClanName: targetTerritory.ownerName,
+                territoryId: targetTerritory.id,
+                territoryName: `Territorio ${targetTerritory.position + 1}`,
+                attackerLosses: atkLosses,
+                defenderLosses: defLosses,
+                territoryConquered: true,
+                isPlayerInvolved: true,
               });
             } else {
               // Derrota - calcular perdas (60-80%)
@@ -1232,10 +1261,26 @@ export const useGameStore = create<GameState>((set, get) => ({
                 });
               }
 
+              const defOrigCount = exp.units.reduce((s: number, u: Unit) => s + u.quantity, 0);
+              const defSurvivorCount = survivors.reduce((s: number, u: Unit) => s + u.quantity, 0);
+              const defAtkLosses = defOrigCount - defSurvivorCount;
+              const defDefLosses = Math.floor(attackPower / 10);
               expeditionEvents.push({
                 turn: newTurn,
                 message: `DERROTA! Ataque ao territorio ${targetTerritory.position + 1} falhou! Sobreviventes em fuga.`,
                 type: "danger",
+                eventKind: "COMBAT",
+                result: "defeat",
+                attackerClanId: exp.ownerId,
+                attackerClanName: exp.ownerName,
+                defenderClanId: targetTerritory.ownerId ?? "neutral",
+                defenderClanName: targetTerritory.ownerName,
+                territoryId: targetTerritory.id,
+                territoryName: `Territorio ${targetTerritory.position + 1}`,
+                attackerLosses: defAtkLosses,
+                defenderLosses: defDefLosses,
+                territoryConquered: false,
+                isPlayerInvolved: true,
               });
             }
           }
@@ -1512,7 +1557,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const aiActions = processAI(updatedTerritories, updatedClans, newEra);
 
     aiActions.forEach((action) => {
-      newEvents.push({ turn: newTurn, message: action.message, type: "warning" });
+      newEvents.push({ turn: newTurn, message: action.message, type: "warning", ...(action.combatData ?? {}) });
       if (action.territories) updatedTerritories = action.territories;
       if (action.clans) updatedClans = action.clans;
     });
@@ -1666,8 +1711,15 @@ export const useGameStore = create<GameState>((set, get) => ({
 }));
 
 // IA simples
+type AIAction = {
+  message: string;
+  territories?: Territory[];
+  clans?: Clan[];
+  combatData?: Omit<GameEvent, "turn" | "message" | "type">;
+};
+
 function processAI(territories: Territory[], clans: Clan[], era: Era) {
-  const actions: { message: string; territories?: Territory[]; clans?: Clan[] }[] = [];
+  const actions: AIAction[] = [];
 
   const aiIds = ["ai1", "ai2", "ai3", "ai4"];
   let updatedTerritories = [...territories];
@@ -1714,7 +1766,23 @@ function processAI(territories: Territory[], clans: Clan[], era: Era) {
         updatedTerritories = updatedTerritories.map((t) =>
           t.id === target.id ? { ...t, ownerId: aiId, ownerName: clan.name } : t
         );
-        actions.push({ message: `${clan.name} conquistou territorio ${target.position + 1}!` });
+        actions.push({
+          message: `${clan.name} conquistou territorio ${target.position + 1}!`,
+          combatData: {
+            eventKind: "COMBAT",
+            result: "victory",
+            attackerClanId: aiId,
+            attackerClanName: clan.name,
+            defenderClanId: target.ownerId ?? "neutral",
+            defenderClanName: target.ownerName,
+            territoryId: target.id,
+            territoryName: `Territorio ${target.position + 1}`,
+            attackerLosses: 0,
+            defenderLosses: target.units.reduce((s, u) => s + u.quantity, 0),
+            territoryConquered: true,
+            isPlayerInvolved: false,
+          },
+        });
       }
     }
   });
