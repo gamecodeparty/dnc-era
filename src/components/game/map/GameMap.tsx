@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Territory } from "./Territory";
 import type { TerritoryWithDetails } from "@/game/types";
+import type { TerritoryIntel } from "@/stores/gameStore";
 
 const HINT_DISMISSED_KEY = "dnc-expedition-hint-dismissed";
 
@@ -78,8 +79,11 @@ interface GameMapProps {
   playerClanId: string;
   selectedTerritoryId?: string;
   currentEra?: string;
+  currentTurn?: number;
   playerHasTroops?: boolean;
   revealedTerritories?: Record<string, { units: { type: string; quantity: number }[] }>;
+  territoryIntel?: TerritoryIntel[];
+  showBadges?: boolean;
   onTerritoryClick?: (territoryId: string) => void;
 }
 
@@ -88,8 +92,11 @@ export function GameMap({
   playerClanId,
   selectedTerritoryId,
   currentEra,
+  currentTurn = 0,
   playerHasTroops = false,
   revealedTerritories = {},
+  territoryIntel = [],
+  showBadges = true,
   onTerritoryClick,
 }: GameMapProps) {
   // Sort territories by position
@@ -142,6 +149,11 @@ export function GameMap({
           const revealedDefensePower = isRevealed ? calcDefensePower(revealedData.units) : undefined;
           const isHordaTarget = hordaTargetClanId !== null && territory.ownerId === hordaTargetClanId;
 
+          const intel = !isPlayerOwned ? territoryIntel.find(i => i.territoryId === territory.id) : undefined;
+          const intelSource = intel?.source;
+          const intelDefensePower = intel?.defensePower ?? null;
+          const intelTurnsRemaining = intel ? Math.max(0, intel.expiresAt - currentTurn) : undefined;
+
           return (
             <Territory
               key={territory.id}
@@ -163,6 +175,10 @@ export function GameMap({
               revealedDefensePower={revealedDefensePower}
               currentEra={currentEra}
               isHordaTarget={isHordaTarget}
+              intelSource={intelSource}
+              intelDefensePower={intelDefensePower}
+              intelTurnsRemaining={intelTurnsRemaining}
+              showBadges={showBadges}
               onClick={() => onTerritoryClick?.(territory.id)}
             />
           );

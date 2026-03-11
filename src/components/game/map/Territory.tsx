@@ -26,10 +26,18 @@ interface TerritoryProps {
   avgDefensePower?: number;
   /** Computed defense power for enemy territory revealed by SPY */
   revealedDefensePower?: number;
-  /** Current game era — used for undefended territory alert */
+  /** Current game era — used for undefended territory alert and badge visibility */
   currentEra?: string;
   /** This territory's owner is the Horda target (clan with most territories) */
   isHordaTarget?: boolean;
+  /** Intel source for enemy territory (F-056/F-057) */
+  intelSource?: 'SPY' | 'COMBAT' | 'NONE';
+  /** Observed/estimated defense power from intel */
+  intelDefensePower?: number | null;
+  /** Turns remaining before intel expires */
+  intelTurnsRemaining?: number;
+  /** Whether to show troop badges (F-048 toggle) */
+  showBadges?: boolean;
   onClick?: () => void;
 }
 
@@ -78,6 +86,10 @@ export function Territory({
   revealedDefensePower,
   currentEra,
   isHordaTarget = false,
+  intelSource,
+  intelDefensePower,
+  intelTurnsRemaining,
+  showBadges = true,
   onClick,
 }: TerritoryProps) {
   const ResourceIcon = RESOURCE_ICONS[bonusResource as keyof typeof RESOURCE_ICONS] || Wheat;
@@ -86,7 +98,9 @@ export function Territory({
   const isNeutral = !ownerId;
   const borderColor = isNeutral
     ? "border-slate-600"
-    : ORIGIN_BORDER_COLORS[ownerOrigin as keyof typeof ORIGIN_BORDER_COLORS] || "border-slate-600";
+    : isPlayerOwned
+    ? "border-green-500/60"
+    : "border-red-500/60";
   const bgColor = isNeutral
     ? "bg-slate-800/30"
     : ORIGIN_BG_COLORS[ownerOrigin as keyof typeof ORIGIN_BG_COLORS] || "bg-slate-800/30";
@@ -198,7 +212,7 @@ export function Territory({
             </div>
           )}
         </div>
-        {isPlayerOwned && defensePower !== undefined && (
+        {isPlayerOwned && defensePower !== undefined && showBadges && (
           isUndefendedAlert ? (
             <div className="flex items-center gap-0.5 text-red-400 relative group/undefended">
               <span>⚠ 0</span>
@@ -220,15 +234,34 @@ export function Territory({
             </div>
           )
         )}
-        {!isPlayerOwned && ownerId !== null && (
-          isRevealed && revealedDefensePower !== undefined ? (
-            <div className="flex items-center gap-0.5 text-purple-300">
-              <span className="text-[10px]">👁 {revealedDefensePower}</span>
+        {!isPlayerOwned && ownerId !== null && showBadges && (currentEra === "WAR" || currentEra === "INVASION") && (
+          intelSource === "SPY" && intelDefensePower != null ? (
+            <div className="flex items-center gap-0.5 text-purple-400 relative group/intel">
+              <span className="text-[10px]">👁 {intelDefensePower}</span>
+              <div className="absolute bottom-5 left-1/2 -translate-x-1/2 invisible group-hover/intel:visible z-20
+                bg-slate-900 border border-purple-500/50 rounded p-1.5 text-xs text-slate-200
+                whitespace-nowrap shadow-lg">
+                Intel de espião — expira em {intelTurnsRemaining ?? 0} turno(s)
+              </div>
+            </div>
+          ) : intelSource === "COMBAT" && intelDefensePower != null ? (
+            <div className="flex items-center gap-0.5 text-orange-400 relative group/intel">
+              <span className="text-[10px]">⚔ {intelDefensePower}</span>
+              <div className="absolute bottom-5 left-1/2 -translate-x-1/2 invisible group-hover/intel:visible z-20
+                bg-slate-900 border border-orange-500/50 rounded p-1.5 text-xs text-slate-200
+                whitespace-nowrap shadow-lg">
+                Estimativa baseada em combate recente
+              </div>
             </div>
           ) : (
-            <div className="flex items-center gap-0.5 text-slate-400">
+            <div className="flex items-center gap-0.5 text-slate-400 relative group/intel">
               <Swords className="w-3 h-3" />
               <span>?</span>
+              <div className="absolute bottom-5 left-1/2 -translate-x-1/2 invisible group-hover/intel:visible z-20
+                bg-slate-900 border border-slate-500/50 rounded p-1.5 text-xs text-slate-200
+                whitespace-nowrap shadow-lg">
+                Força desconhecida — envie um Espião para revelar
+              </div>
             </div>
           )
         )}

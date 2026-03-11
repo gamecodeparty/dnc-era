@@ -22,7 +22,7 @@
     "id": "F-057",
     "name": "Badges de tropas inimigas com 3 níveis de intel",
     "description": "Em Territory.tsx, para territórios inimigos, exibir badge de força com 3 níveis: (1) Sem intel: ícone espada + '?' em cinza text-slate-400 com tooltip 'Força desconhecida — envie um Espião'; (2) Revelado por SPY: poder real + ícone 👁 em roxo text-purple-400; (3) Combate recente: ícone ⚔ + valor estimado em laranja text-orange-400. Territórios próprios borda verde border-green-500/60, inimigos borda vermelha border-red-500/60. Badges inimigos só aparecem durante Era da Guerra e Invasão. Toggle F-048 controla visibilidade.",
-    "status": "blocked",
+    "status": "passing",
     "priority": 2,
     "agent": "coder",
     "task": "vibe-code",
@@ -38,13 +38,14 @@
       "Badges inimigos só aparecem durante Era da Guerra e Invasão",
       "Toggle de visibilidade (F-048) controla badges próprios e inimigos"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-018-military-intel-map.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-018-military-intel-map.md",
+    "completed_at": "2026-03-11T15:50:00Z"
   },
   {
     "id": "F-058",
     "name": "Alerta de ataque iminente no mapa",
     "description": "Em types/index.ts, adicionar interface IncomingAttack { targetTerritoryId, sourceClanId, arrivesTurn }. Em GameEngine.ts, quando AI lança ataque contra território do jogador, adicionar IncomingAttack ao array incomingAttacks no game state e remover entradas cujo arrivesTurn já passou. Em Territory.tsx, quando território do jogador tem ataque pendente, exibir badge vermelho pulsante: ⚠ 'Ataque iminente!' (text-red-400 bg-red-900/60, animate-pulse). Tooltip: 'Expedição inimiga detectada — chegará no próximo turno.' NÃO revelar atacante ou força. Só durante Era da Guerra e Invasão.",
-    "status": "blocked",
+    "status": "pending",
     "priority": 3,
     "agent": "coder",
     "task": "vibe-code",

@@ -180,6 +180,7 @@ export default function GamePage() {
     sendExploration,
     sendSpy,
     revealedTerritories,
+    territoryIntel,
     playerCards,
     train,
   } = useGameStore();
@@ -822,12 +823,19 @@ export default function GamePage() {
                               </div>
                             );
                           })()}
-                          {showTroopBadges && !isPlayer && !isNeutral && (() => {
-                            if (isRevealed && revealedData) {
-                              const dp = calcDefensePower(revealedData.units);
+                          {showTroopBadges && !isPlayer && !isNeutral && (currentEra === "WAR" || currentEra === "INVASION") && (() => {
+                            const intel = territoryIntel.find(i => i.territoryId === territory.id);
+                            if (intel?.source === "SPY" && intel.defensePower != null) {
                               return (
-                                <div className="flex items-center justify-center gap-0.5 sm:gap-1 text-purple-300">
-                                  <span className="text-[8px] sm:text-[10px]">👁 {dp}</span>
+                                <div className="flex items-center justify-center gap-0.5 sm:gap-1 text-purple-400">
+                                  <span className="text-[8px] sm:text-[10px]">👁 {intel.defensePower}</span>
+                                </div>
+                              );
+                            }
+                            if (intel?.source === "COMBAT" && intel.defensePower != null) {
+                              return (
+                                <div className="flex items-center justify-center gap-0.5 sm:gap-1 text-orange-400">
+                                  <span className="text-[8px] sm:text-[10px]">⚔ {intel.defensePower}</span>
                                 </div>
                               );
                             }
