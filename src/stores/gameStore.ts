@@ -278,10 +278,12 @@ export function calculateTotalProduction(
     }
   }
 
-  // Apply origin bonus (Verdaneos: +20% grain production)
+  // Apply origin bonus (Verdaneos: +15% all production)
   if (playerClan.origin === "VERDANEOS") {
-    const verdaneosBonus = Math.floor(grain * ORIGIN_BONUSES.VERDANEOS.value);
-    grain += verdaneosBonus;
+    const bonus = ORIGIN_BONUSES.VERDANEOS.value;
+    grain += Math.floor(grain * bonus);
+    wood += Math.floor(wood * bonus);
+    gold += Math.floor(gold * bonus);
   }
 
   return { grain, wood, gold, breakdown };

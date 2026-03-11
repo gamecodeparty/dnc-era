@@ -66,9 +66,12 @@ export class ResourceSystem {
         }
       }
 
-      // Apply origin bonus (Verdaneos: +20% grain)
+      // Apply origin bonus (Verdaneos: +15% all production)
       if (clan.origin === "VERDANEOS") {
-        grainProduction *= 1 + ORIGIN_BONUSES.VERDANEOS.value;
+        const bonus = 1 + ORIGIN_BONUSES.VERDANEOS.value;
+        grainProduction *= bonus;
+        woodProduction *= bonus;
+        goldProduction *= bonus;
       }
 
       // Apply harvest boost card effect

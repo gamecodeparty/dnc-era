@@ -167,8 +167,8 @@ export const ORIGIN_BONUSES = {
     value: 0.20, // +20% attack and defense
   },
   VERDANEOS: {
-    type: "grain_production" as const,
-    value: 0.20, // +20% grain from farms
+    type: "all_production" as const,
+    value: 0.15, // +15% all resource production (grain, wood, gold)
   },
   UMBRAL: {
     type: "spy_efficiency" as const,

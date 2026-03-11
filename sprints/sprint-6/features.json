@@ -80,7 +80,7 @@
     "id": "F-107",
     "name": "Buff Verdâneos produção generalizada",
     "description": "Em /src/game/constants/balance.ts, alterar bônus Verdâneos de { type: 'grain_production', value: 0.20 } para { type: 'all_production', value: 0.15 }. Em /src/game/engine/ResourceSystem.ts, alterar aplicação do bônus para multiplicar grainProduction, woodProduction e goldProduction pelo fator (1 + 0.15). Bônus aplica apenas em estruturas de produção (Fazenda, Serraria, Mina).",
-    "status": "pending",
+    "status": "passing",
     "priority": 5,
     "agent": "coder",
     "task": "vibe-code",
@@ -91,7 +91,8 @@
       "Bônus aplica apenas em estruturas de produção (Fazenda, Serraria, Mina) — não em bônus de território",
       "AI Verdâneos funciona corretamente com novos valores"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-035-faction-balance-diversity.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-035-faction-balance-diversity.md",
+    "completed_at": "2026-03-11T21:35:11.000Z"
   },
   {
     "id": "F-108",
