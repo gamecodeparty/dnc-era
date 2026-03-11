@@ -10,6 +10,11 @@ import {
   type PlayerCard,
 } from "@/stores/gameStore";
 
+interface AllianceBreakAlert {
+  clanId: string;
+  clanName: string;
+}
+
 const DISMISSED_TIPS_KEY = "dnc-dismissed-tips";
 
 export interface Tip {
@@ -127,6 +132,9 @@ export function useTips(): { currentTip: Tip | null; dismissTip: (id: string) =>
   const clans = useGameStore((s: { clans: Clan[] }) => s.clans);
   const expeditions = useGameStore((s: { expeditions: Expedition[] }) => s.expeditions);
   const playerCards = useGameStore((s: { playerCards: PlayerCard[] }) => s.playerCards);
+  const allianceBreakAlerts = useGameStore(
+    (s: { allianceBreakAlerts: AllianceBreakAlert[] }) => s.allianceBreakAlerts
+  );
 
   // Auto-dismiss tip-04 when player completes a REINFORCE expedition
   const prevHasReinforcement = useRef(false);
@@ -194,6 +202,17 @@ export function useTips(): { currentTip: Tip | null; dismissTip: (id: string) =>
   }, [currentTurn, currentEra, territories, clans, playerCards, hasActiveReinforcement]);
 
   const currentTip = useMemo<Tip | null>(() => {
+    // F-064: Alliance break alerts have highest priority
+    for (const alert of allianceBreakAlerts) {
+      const tipId = `tip-alliance-break-${alert.clanId}-${currentTurn}`;
+      if (!dismissed.has(tipId)) {
+        return {
+          id: tipId,
+          icon: "⚠️",
+          message: `Aliança rompida — seus territórios perto de **${alert.clanName}** estão vulneráveis`,
+        };
+      }
+    }
     for (const def of TIP_DEFINITIONS) {
       if (dismissed.has(def.id)) continue;
       if (def.trigger(triggerState)) {
@@ -201,7 +220,7 @@ export function useTips(): { currentTip: Tip | null; dismissTip: (id: string) =>
       }
     }
     return null;
-  }, [dismissed, triggerState]);
+  }, [dismissed, triggerState, allianceBreakAlerts, currentTurn]);
 
   const dismissTip = (id: string) => {
     setDismissed((prev) => {

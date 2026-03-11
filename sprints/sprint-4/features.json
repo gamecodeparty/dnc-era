@@ -261,7 +261,7 @@
     "id": "F-064",
     "name": "Notificação de quebra de aliança",
     "description": "Em GameEngine.ts, quando AI quebra aliança: evento no log 'O Clã X rompeu a aliança! Relação mudou para Neutro.', TipBanner alerta 'Aliança rompida — seus territórios perto de X estão vulneráveis'. Transição: TRUSTED → NEUTRAL (nunca direto a HOSTILE por quebra automática).",
-    "status": "pending",
+    "status": "passing",
     "priority": 14,
     "agent": "coder",
     "task": "vibe-code",
@@ -274,7 +274,8 @@
       "TipBanner alerta o jogador sobre a vulnerabilidade",
       "Transição de aliança respeita regra TRUSTED → NEUTRAL"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-019-diplomacy-concrete-effects.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-019-diplomacy-concrete-effects.md",
+    "completed_at": "2026-03-11T16:58:00Z"
   },
   {
     "id": "F-068",

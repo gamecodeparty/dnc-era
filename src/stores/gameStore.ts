@@ -579,6 +579,7 @@ interface GameState {
   marketTradesUsed: string[]; // territoryIds that have used their trade this turn
   allianceTurnFormed: Record<string, number>; // clanId -> turn when TRUSTED was formed
   allianceHealth: Record<string, number>; // clanId -> alliance health (0-100)
+  allianceBreakAlerts: Array<{ clanId: string; clanName: string }>; // F-064: clans that broke alliance this turn
 
   // Getters
   getPlayerClan: () => Clan;
@@ -644,6 +645,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   marketTradesUsed: [],
   allianceTurnFormed: {},
   allianceHealth: {},
+  allianceBreakAlerts: [],
   playerCards: [
     { id: "pc1", type: "REINFORCEMENTS", used: false },
     { id: "pc2", type: "INFORMANT", used: false },
@@ -2124,6 +2126,11 @@ export const useGameStore = create<GameState>((set, get) => ({
       ],
       // Reset market trades used at start of new turn (F-066)
       marketTradesUsed: [],
+      // F-064: Set alliance break alerts for TipBanner (cleared each turn)
+      allianceBreakAlerts: diplomacyBreaks.map(({ clanId }) => {
+        const clan = updatedClans.find((c) => c.id === clanId);
+        return { clanId, clanName: clan?.name ?? clanId };
+      }),
       // F-060: Apply diplomacy breaks from AI (TRUSTED → NEUTRAL)
       diplomacy: diplomacyBreaks.length > 0
         ? diplomacyBreaks.reduce(
@@ -2178,6 +2185,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       marketTradesUsed: [],
       allianceTurnFormed: {},
       allianceHealth: {},
+      allianceBreakAlerts: [],
     });
   },
 
