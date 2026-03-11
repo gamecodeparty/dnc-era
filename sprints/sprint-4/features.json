@@ -467,7 +467,7 @@
     "id": "F-080",
     "name": "Animação sequencial dos bullet points na transição",
     "description": "Em EraTransition.tsx, animar bullet points mecânicos: texto aparece 2s após título da era (delay). Fade-in com slide-up (Framer Motion opacity: 0→1, y: 20→0). Cada bullet com 300ms delay entre eles. Fonte text-sm text-slate-300. Fundo bg-black/40 rounded-lg px-4 py-3. Desaparece junto com resto da animação de transição.",
-    "status": "blocked",
+    "status": "passing",
     "priority": 25,
     "agent": "coder",
     "task": "vibe-code",
@@ -480,6 +480,7 @@
       "Estilo visual não compete com animação principal (fonte menor, fundo semi-transparente)",
       "Bullet points desaparecem junto com a animação de transição"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-025-era-transition-explanation.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-025-era-transition-explanation.md",
+    "completed_at": "2026-03-11T17:58:00Z"
   }
 ]
