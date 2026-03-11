@@ -33,8 +33,10 @@ function ResourceDisplay({
       </div>
       <div className="flex items-center gap-2">
         <span className={`font-bold ${colorClass}`}>{value.toLocaleString()}</span>
-        {production !== undefined && production > 0 && (
-          <span className="text-xs text-green-400">+{production}</span>
+        {production !== undefined && (
+          production > 0
+            ? <span className="text-xs text-green-400">+{production}</span>
+            : <span className="text-xs text-slate-500">±0</span>
         )}
       </div>
     </div>

@@ -98,7 +98,7 @@
     "id": "F-086",
     "name": "Exibir produção por turno no ResourcePanel",
     "description": "Em ResourcePanel.tsx, componente pai passa valores de produção calculados por F-085. Exibir '+X' em verde (text-green-400) quando produção > 0, e '±0' em cinza (text-slate-500) quando produção = 0. Valores refletem cálculo do gameStore.",
-    "status": "pending",
+    "status": "passing",
     "priority": 6,
     "agent": "coder",
     "task": "vibe-code",
@@ -110,13 +110,14 @@
       "Produção zero exibida como ±0 em cinza (não omitida)",
       "Valores refletem cálculo de produção do gameStore"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-027-production-hud-panel.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-027-production-hud-panel.md",
+    "completed_at": "2026-03-11T22:00:00Z"
   },
   {
     "id": "F-087",
     "name": "Tooltip com breakdown de produção por território",
     "description": "Em ResourcePanel.tsx, ao hover no valor de produção, tooltip mostra de onde vem cada recurso: território (posição), estrutura (tipo + nível), e bônus. Ex: '+18 Grão/turno: T0: Fazenda Nv2 (+15) + Bônus território (+3)'. Tooltip atualiza quando produção muda.",
-    "status": "blocked",
+    "status": "pending",
     "priority": 7,
     "agent": "coder",
     "task": "vibe-code",

@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGameStore, TOTAL_TURNS, SPY_SUCCESS_CHANCE_BASE, SPY_UMBRAL_BONUS, getDistance, type UnitType } from "@/stores/gameStore";
+import { ResourcePanel } from "@/components/game/sidebar/ResourcePanel";
 import { TURN_DURATION_MS } from "@/game/constants/balance";
 import { calculateTravelTime } from "@/game/engine";
 import {
@@ -189,6 +190,7 @@ export default function GamePage() {
     marketTrade,
     diplomacy,
     hordaPreview,
+    getPlayerProduction,
   } = useGameStore();
 
   const player = getPlayerClan();
@@ -257,15 +259,11 @@ export default function GamePage() {
       ? "text-yellow-400"
       : "text-medieval-primary";
 
-  // Calcula producao
-  let grainProd = 0, woodProd = 0, goldProd = 0;
-  playerTerritories.forEach((t) => {
-    t.structures.forEach((s) => {
-      if (s.type === "FARM") grainProd += 10 * s.level * (t.bonusResource === "GRAIN" ? 1.25 : 1);
-      if (s.type === "SAWMILL") woodProd += 8 * s.level * (t.bonusResource === "WOOD" ? 1.25 : 1);
-      if (s.type === "MINE") goldProd += 5 * s.level * (t.bonusResource === "GOLD" ? 1.25 : 1);
-    });
-  });
+  // Calcula producao via getPlayerProduction (fonte canônica: balance.ts)
+  const playerProduction = getPlayerProduction();
+  const grainProd = playerProduction.grain;
+  const woodProd = playerProduction.wood;
+  const goldProd = playerProduction.gold;
 
   // Open expedition modal
   const handleAttack = (toTerritoryId: string) => {
@@ -587,9 +585,11 @@ export default function GamePage() {
                     <span className="font-bold font-mono text-grain text-lg">
                       {Math.floor(player.grain)}
                     </span>
-                    <span className="text-xs text-era-peace ml-2">
-                      +{Math.floor(grainProd)}/turno
-                    </span>
+                    {Math.floor(grainProd) > 0 ? (
+                      <span className="text-xs text-green-400 ml-2">+{Math.floor(grainProd)}/turno</span>
+                    ) : (
+                      <span className="text-xs text-slate-500 ml-2">±0/turno</span>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
@@ -601,9 +601,11 @@ export default function GamePage() {
                     <span className="font-bold font-mono text-wood-light text-lg">
                       {Math.floor(player.wood)}
                     </span>
-                    <span className="text-xs text-era-peace ml-2">
-                      +{Math.floor(woodProd)}/turno
-                    </span>
+                    {Math.floor(woodProd) > 0 ? (
+                      <span className="text-xs text-green-400 ml-2">+{Math.floor(woodProd)}/turno</span>
+                    ) : (
+                      <span className="text-xs text-slate-500 ml-2">±0/turno</span>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
@@ -615,9 +617,11 @@ export default function GamePage() {
                     <span className="font-bold font-mono text-gold text-lg">
                       {Math.floor(player.gold)}
                     </span>
-                    <span className="text-xs text-era-peace ml-2">
-                      +{Math.floor(goldProd)}/turno
-                    </span>
+                    {Math.floor(goldProd) > 0 ? (
+                      <span className="text-xs text-green-400 ml-2">+{Math.floor(goldProd)}/turno</span>
+                    ) : (
+                      <span className="text-xs text-slate-500 ml-2">±0/turno</span>
+                    )}
                   </div>
                 </div>
               </PanelContent>
