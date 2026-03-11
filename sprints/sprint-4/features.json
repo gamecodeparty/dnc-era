@@ -338,7 +338,7 @@
     "id": "F-071",
     "name": "Tips de deadlock econômico",
     "description": "Em useTips.ts, adicionar 2 tips: tip-07-deadlock-warning (prioridade 10) — trigger: jogador construiu estrutura mas nenhuma produtiva, turnos 1-5; mensagem '⚠ Atenção: sem estruturas de produção!'. tip-08-zero-production (prioridade 15) — trigger: turno >= 3 E produção de grão, madeira E ouro = 0; mensagem '🚨 Produção zerada!'. Adicionar playerGrainProduction, playerWoodProduction, playerGoldProduction e playerStructureTypes ao estado do trigger.",
-    "status": "pending",
+    "status": "passing",
     "priority": 18,
     "agent": "coder",
     "task": "vibe-code",
@@ -349,7 +349,8 @@
       "Tips respeitam lógica de dismissal existente (localStorage, mostrar 1 vez)",
       "Tips respeitam prioridade e fila do sistema existente"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-022-onboarding-tips-expanded.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-022-onboarding-tips-expanded.md",
+    "completed_at": "2026-03-11T17:45:00Z"
   },
   {
     "id": "F-072",

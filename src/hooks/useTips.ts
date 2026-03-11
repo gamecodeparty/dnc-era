@@ -9,6 +9,7 @@ import {
   type Expedition,
   type PlayerCard,
 } from "@/stores/gameStore";
+import { PRODUCTION_PER_LEVEL } from "@/game/constants/balance";
 
 interface AllianceBreakAlert {
   clanId: string;
@@ -36,10 +37,37 @@ interface TipDefinition {
     playerTerritoriesWithUnits: number;
     playerCards: { used: boolean }[];
     hasActiveReinforcement: boolean;
+    playerGrainProduction: number;
+    playerWoodProduction: number;
+    playerGoldProduction: number;
   }) => boolean;
 }
 
 const TIP_DEFINITIONS: TipDefinition[] = [
+  {
+    id: "tip-08-zero-production",
+    icon: "🚨",
+    message:
+      "🚨 Produção zerada! Você não está gerando nenhum recurso. Construa Farm (grão), Sawmill (madeira) ou Mine (ouro) para sair do deadlock.",
+    trigger: ({ currentTurn, playerGrainProduction, playerWoodProduction, playerGoldProduction }) =>
+      currentTurn >= 3 &&
+      playerGrainProduction === 0 &&
+      playerWoodProduction === 0 &&
+      playerGoldProduction === 0,
+  },
+  {
+    id: "tip-07-deadlock-warning",
+    icon: "⚠",
+    message:
+      "⚠ Atenção: você não tem estruturas de produção! Sem Farm, Sawmill ou Mine, seus recursos não vão crescer. Construa uma estrutura produtiva o quanto antes.",
+    trigger: ({ currentTurn, playerStructureTypes }) =>
+      currentTurn >= 1 &&
+      currentTurn <= 5 &&
+      playerStructureTypes.size > 0 &&
+      !playerStructureTypes.has("FARM") &&
+      !playerStructureTypes.has("SAWMILL") &&
+      !playerStructureTypes.has("MINE"),
+  },
   {
     id: "tip-01-build-farm",
     icon: "🌾",
@@ -189,6 +217,22 @@ export function useTips(): { currentTip: Tip | null; dismissTip: (id: string) =>
       if (territoryTotal > 0) playerTerritoriesWithUnits++;
     }
 
+    let playerGrainProduction = 0;
+    let playerWoodProduction = 0;
+    let playerGoldProduction = 0;
+    for (const t of playerTerritories) {
+      for (const s of t.structures) {
+        const level = s.level - 1; // 0-indexed
+        if (s.type === "FARM") {
+          playerGrainProduction += PRODUCTION_PER_LEVEL.FARM[level] ?? 0;
+        } else if (s.type === "SAWMILL") {
+          playerWoodProduction += PRODUCTION_PER_LEVEL.SAWMILL[level] ?? 0;
+        } else if (s.type === "MINE") {
+          playerGoldProduction += PRODUCTION_PER_LEVEL.MINE[level] ?? 0;
+        }
+      }
+    }
+
     return {
       currentTurn,
       currentEra,
@@ -198,6 +242,9 @@ export function useTips(): { currentTip: Tip | null; dismissTip: (id: string) =>
       playerTerritoriesWithUnits,
       playerCards,
       hasActiveReinforcement,
+      playerGrainProduction,
+      playerWoodProduction,
+      playerGoldProduction,
     };
   }, [currentTurn, currentEra, territories, clans, playerCards, hasActiveReinforcement]);
 
