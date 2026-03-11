@@ -174,7 +174,7 @@
     "id": "F-090",
     "name": "Texto explicativo por outcome no CombatPreview",
     "description": "Em ExpeditionModal.tsx, abaixo do display de outcome e ratio, adicionar texto explicativo contextual para cada outcome: decisive_victory (conquistará território), victory (parcial, NÃO conquista), uncertain (perdas significativas), defeat (baixas pesadas). Texto em text-xs text-slate-400.",
-    "status": "pending",
+    "status": "passing",
     "priority": 10,
     "agent": "coder",
     "task": "vibe-code",
@@ -185,7 +185,8 @@
       "Decisive_victory explica que território SERÁ conquistado",
       "Textos usam text-xs para não poluir interface"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-028-expedition-combat-ux.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-028-expedition-combat-ux.md",
+    "completed_at": "2026-03-11T19:42:32Z"
   },
   {
     "id": "F-091",

@@ -75,6 +75,13 @@ const BANNER_CONTEXTS: Record<string, Set<string>> = {
   REINFORCE: new Set(),
 };
 
+const outcomeExplanation: Record<CombatPreviewOutcome, string> = {
+  decisive_victory: "Ratio > 1.5x: você conquistará o território.",
+  victory: "Vitória parcial: causa baixas mas NÃO conquista o território.",
+  uncertain: "Resultado incerto: espere perdas significativas dos dois lados.",
+  defeat: "Provável derrota: suas tropas sofrerão baixas pesadas.",
+};
+
 const outcomeConfig: Record<CombatPreviewOutcome, { label: string; colorClass: string; borderClass: string; bgClass: string }> = {
   decisive_victory: { label: "Vitória Decisiva", colorClass: "text-clan-verdaneos", borderClass: "border-clan-verdaneos/30", bgClass: "bg-clan-verdaneos/10" },
   victory: { label: "Vitória", colorClass: "text-era-peace", borderClass: "border-era-peace/30", bgClass: "bg-era-peace/10" },
@@ -706,6 +713,11 @@ export function ExpeditionModal({
                     ratio {combatPreview.ratio}x
                   </span>
                 </div>
+
+                {/* F-090: Explanatory text per outcome */}
+                <p className="text-xs text-slate-400">
+                  {outcomeExplanation[combatPreview.outcome]}
+                </p>
 
                 {/* Power bar */}
                 <div className="space-y-1">
