@@ -42,7 +42,7 @@
     "id": "F-101",
     "name": "Detectar risco construção sem economia",
     "description": "Em /src/stores/gameStore.ts, na função build(), após validações existentes e ANTES de executar a construção, verificar se jogador tem alguma estrutura produtiva (FARM, SAWMILL, MINE) em QUALQUER território. Se não tiver e tentar construir SHADOW_GUILD ou TAVERN, retornar { needsConfirmation: true, reason: 'no_production' }. Verificação global (todos territórios do clã).",
-    "status": "pending",
+    "status": "passing",
     "priority": 3,
     "agent": "coder",
     "task": "vibe-code",
@@ -53,7 +53,8 @@
       "Se jogador já tem Fazenda/Serraria/Mina em QUALQUER território, flag não é ativada",
       "Aviso aparece para TODAS as facções (não apenas Umbral)"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-032-shadow-guild-contextual-warning.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-032-shadow-guild-contextual-warning.md",
+    "completed_at": "2026-03-11T21:30:00.000Z"
   },
   {
     "id": "F-105",
@@ -151,7 +152,7 @@
     "id": "F-102",
     "name": "Dialog confirmação construção sem economia",
     "description": "Em /src/app/game/territory/[id]/page.tsx, adicionar dialog de confirmação quando build() retorna needsConfirmation: true. Dialog explica que a estrutura não produz recursos, que jogador não tem produção em nenhum território, e sugere construir Fazenda ou Mina primeiro. Botão 'Construir Mesmo Assim' executa construção. Botão 'Cancelar' fecha dialog.",
-    "status": "blocked",
+    "status": "pending",
     "priority": 9,
     "agent": "coder",
     "task": "vibe-code",

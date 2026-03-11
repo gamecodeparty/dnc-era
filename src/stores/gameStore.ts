@@ -690,7 +690,7 @@ interface GameState {
   getPlayerProduction: () => ProductionResult;
 
   // Acoes
-  build: (territoryId: string, structureType: StructureType) => boolean;
+  build: (territoryId: string, structureType: StructureType) => boolean | { needsConfirmation: true; reason: "no_production" };
   train: (territoryId: string, unitType: UnitType, quantity: number) => boolean;
   sendExpedition: (
     fromTerritoryId: string,
@@ -817,6 +817,17 @@ export const useGameStore = create<GameState>((set, get) => ({
     const currentLevel = territory.structures.find((s: Structure) => s.type === structureType)?.level ?? 0;
     const cost = STRUCTURE_COSTS[structureType as StructureType][currentLevel];
     if (!state.canAfford(cost)) return false;
+
+    const isSpecialStructure = (["SHADOW_GUILD", "TAVERN"] as StructureType[]).includes(structureType);
+    if (isSpecialStructure) {
+      const playerTerritories = state.territories.filter((t) => t.ownerId === "player");
+      const hasProductionStructure = playerTerritories.some((t) =>
+        t.structures.some((s) => (["FARM", "SAWMILL", "MINE"] as StructureType[]).includes(s.type))
+      );
+      if (!hasProductionStructure) {
+        return { needsConfirmation: true, reason: "no_production" as const };
+      }
+    }
 
     set((state) => ({
       clans: state.clans.map((c) =>

@@ -124,9 +124,9 @@ export default function TerritoryPage() {
   const handleBuild = (structureType: StructureType) => {
     const currentLevel = (territory.structures as Array<{ type: StructureType; level: number }>).find((s) => s.type === structureType)?.level ?? 0;
     const cost = STRUCTURE_COSTS[structureType][currentLevel];
-    const success = build(territoryId, structureType);
+    const result = build(territoryId, structureType);
 
-    if (success) {
+    if (result === true) {
       // Trigger build animation
       triggerBuildComplete(territoryId, structureType);
 
