@@ -157,7 +157,7 @@
     "id": "F-102",
     "name": "Dialog confirmação construção sem economia",
     "description": "Em /src/app/game/territory/[id]/page.tsx, adicionar dialog de confirmação quando build() retorna needsConfirmation: true. Dialog explica que a estrutura não produz recursos, que jogador não tem produção em nenhum território, e sugere construir Fazenda ou Mina primeiro. Botão 'Construir Mesmo Assim' executa construção. Botão 'Cancelar' fecha dialog.",
-    "status": "pending",
+    "status": "passing",
     "priority": 9,
     "agent": "coder",
     "task": "vibe-code",
@@ -171,7 +171,8 @@
       "Botão 'Cancelar' aborta a construção",
       "Dialog não é bloqueante — jogador pode ignorar e construir"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-032-shadow-guild-contextual-warning.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-032-shadow-guild-contextual-warning.md",
+    "completed_at": "2026-03-11T21:55:00.000Z"
   },
   {
     "id": "F-103",

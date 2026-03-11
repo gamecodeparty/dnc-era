@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -25,6 +26,16 @@ import {
 } from "@/stores/gameStore";
 import { STRUCTURES } from "@/game/constants/structures";
 import { STRUCTURE_COSTS } from "@/game/constants/balance";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 
 // Medieval components
 import { MedievalButton } from "@/components/ui/medieval";
@@ -61,6 +72,7 @@ const STRUCTURE_INFO: Record<
   STABLE: { name: "Estabulo", description: "Treina Cavaleiros", icon: Shield },
   WALL: { name: "Muralha", description: "+20% defesa por nivel", icon: Castle },
   SHADOW_GUILD: { name: "Guilda das Sombras", description: "Treina Espioes para revelar tropas inimigas", icon: Eye },
+  TAVERN: { name: "Taverna", description: "Atrai novos habitantes e gera cartas especiais", icon: Users },
 };
 
 const UNIT_INFO: Record<UnitType, { name: string; requires: StructureType }> = {
@@ -74,6 +86,8 @@ export default function TerritoryPage() {
   const params = useParams();
   const router = useRouter();
   const territoryId = params.id as string;
+
+  const [pendingBuildType, setPendingBuildType] = useState<StructureType | null>(null);
 
   const { triggerBuildComplete, triggerAchievement, triggerResourcePopup } =
     useGameAnimationContext();
@@ -121,24 +135,34 @@ export default function TerritoryPage() {
     );
   }
 
-  const handleBuild = (structureType: StructureType) => {
+  const executeBuild = (structureType: StructureType, confirmed = false) => {
     const currentLevel = (territory.structures as Array<{ type: StructureType; level: number }>).find((s) => s.type === structureType)?.level ?? 0;
     const cost = STRUCTURE_COSTS[structureType][currentLevel];
-    const result = build(territoryId, structureType);
+    const result = build(territoryId, structureType, confirmed);
 
     if (result === true) {
-      // Trigger build animation
       triggerBuildComplete(territoryId, structureType);
-
-      // Trigger resource deduction animations
       if (cost.wood) triggerResourcePopup("WOOD", -cost.wood);
       if (cost.gold) triggerResourcePopup("GOLD", -cost.gold);
-
-      // Achievement for first building
       if (territory.structures.length === 0) {
         triggerAchievement("Primeira Construcao!", `${STRUCTURE_INFO[structureType].name} erguida!`);
       }
     }
+
+    return result;
+  };
+
+  const handleBuild = (structureType: StructureType) => {
+    const result = executeBuild(structureType);
+    if (result && typeof result === "object" && result.needsConfirmation) {
+      setPendingBuildType(structureType);
+    }
+  };
+
+  const handleConfirmedBuild = () => {
+    if (!pendingBuildType) return;
+    executeBuild(pendingBuildType, true);
+    setPendingBuildType(null);
   };
 
   const handleTrain = (unitType: UnitType) => {
@@ -164,6 +188,7 @@ export default function TerritoryPage() {
   const isFull = territory.structures.length >= 4;
 
   return (
+    <>
     <div className="min-h-screen relative">
       {/* Background */}
       <div className="fixed inset-0 z-0">
@@ -533,5 +558,38 @@ export default function TerritoryPage() {
         </div>
       </motion.div>
     </div>
+
+    {/* Dialog de confirmação: construção sem economia */}
+    <AlertDialog open={pendingBuildType !== null} onOpenChange={(open) => { if (!open) setPendingBuildType(null); }}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>⚠️ Estrutura Especializada</AlertDialogTitle>
+          <AlertDialogDescription asChild>
+            <div className="space-y-3 text-medieval-text-secondary font-crimson">
+              <p>
+                <strong className="text-medieval-text-primary">
+                  {pendingBuildType ? STRUCTURE_INFO[pendingBuildType]?.name : ""}
+                </strong>{" "}
+                não produz recursos.
+              </p>
+              <p>
+                Você ainda não tem nenhuma estrutura de produção (Fazenda, Serraria ou Mina).
+                Construir sem renda pode criar um gargalo econômico difícil de recuperar.
+              </p>
+              <p className="text-amber-400">
+                💡 Sugestão: construa uma Fazenda ou Mina primeiro para garantir renda base.
+              </p>
+            </div>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction onClick={handleConfirmedBuild}>
+            Construir Mesmo Assim
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

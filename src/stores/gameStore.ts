@@ -692,7 +692,7 @@ interface GameState {
   getPlayerProduction: () => ProductionResult;
 
   // Acoes
-  build: (territoryId: string, structureType: StructureType) => boolean | { needsConfirmation: true; reason: "no_production" };
+  build: (territoryId: string, structureType: StructureType, confirmed?: boolean) => boolean | { needsConfirmation: true; reason: "no_production" };
   train: (territoryId: string, unitType: UnitType, quantity: number) => boolean;
   sendExpedition: (
     fromTerritoryId: string,
@@ -809,7 +809,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     return calculateTotalProduction(playerClan, playerTerritories);
   },
 
-  build: (territoryId, structureType) => {
+  build: (territoryId, structureType, confirmed = false) => {
     const state = get();
     const territory = state.territories.find((t) => t.id === territoryId);
 
@@ -821,14 +821,16 @@ export const useGameStore = create<GameState>((set, get) => ({
     const cost = STRUCTURE_COSTS[structureType as StructureType][currentLevel];
     if (!state.canAfford(cost)) return false;
 
-    const isSpecialStructure = (["SHADOW_GUILD", "TAVERN"] as StructureType[]).includes(structureType);
-    if (isSpecialStructure) {
-      const playerTerritories = state.territories.filter((t) => t.ownerId === "player");
-      const hasProductionStructure = playerTerritories.some((t) =>
-        t.structures.some((s) => (["FARM", "SAWMILL", "MINE"] as StructureType[]).includes(s.type))
-      );
-      if (!hasProductionStructure) {
-        return { needsConfirmation: true, reason: "no_production" as const };
+    if (!confirmed) {
+      const isSpecialStructure = (["SHADOW_GUILD", "TAVERN"] as StructureType[]).includes(structureType);
+      if (isSpecialStructure) {
+        const playerTerritories = state.territories.filter((t) => t.ownerId === "player");
+        const hasProductionStructure = playerTerritories.some((t) =>
+          t.structures.some((s) => (["FARM", "SAWMILL", "MINE"] as StructureType[]).includes(s.type))
+        );
+        if (!hasProductionStructure) {
+          return { needsConfirmation: true, reason: "no_production" as const };
+        }
       }
     }
 
