@@ -326,7 +326,7 @@
     "id": "F-050",
     "name": "Countdown de próximo ataque da Horda no HUD",
     "description": "Em EraIndicator.tsx ou componente novo, durante Era da Invasão, exibir countdown: '☠ Horda: 2 turnos | Força: 100'. Cálculo: turnos restantes = 3 - ((turno_atual - inicio_era3) % 3), força = HORDE_WAVES[wave_index]. Cor: branco (3 turnos), amarelo (2 turnos), vermelho com pulse (1 turno — iminente). Só aparece durante Era da Invasão.",
-    "status": "pending",
+    "status": "passing",
     "priority": 18,
     "agent": "coder",
     "task": "vibe-code",
@@ -337,7 +337,8 @@
       "Countdown com pulse quando falta 1 turno (iminente)",
       "Countdown só aparece durante Era da Invasão"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-016-horde-mechanics-explanation.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-016-horde-mechanics-explanation.md",
+    "completed_at": "2026-03-11T14:10:00Z"
   },
   {
     "id": "F-051",

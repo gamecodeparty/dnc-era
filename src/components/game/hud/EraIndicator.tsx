@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { Shield, Swords, Skull } from "lucide-react";
-import { ERA_DURATION } from "@/game/constants";
+import { ERA_DURATION, HORDA } from "@/game/constants";
 
 interface EraIndicatorProps {
   currentEra: string;
@@ -39,6 +39,20 @@ const ERA_CONFIG = {
   },
 };
 
+const INVASION_START_TURN = ERA_DURATION.PEACE + ERA_DURATION.WAR + 1;
+
+function calcHordeCountdown(currentTurn: number) {
+  const turnsSinceInvasion = currentTurn - INVASION_START_TURN;
+  const turnsRemaining =
+    HORDA.ATTACK_FREQUENCY - (turnsSinceInvasion % HORDA.ATTACK_FREQUENCY);
+  const waveIndex = Math.min(
+    Math.floor(turnsSinceInvasion / HORDA.ATTACK_FREQUENCY),
+    HORDA.STRENGTH.length - 1
+  );
+  const strength = HORDA.STRENGTH[waveIndex];
+  return { turnsRemaining, strength };
+}
+
 export function EraIndicator({ currentEra, currentTurn }: EraIndicatorProps) {
   const config = ERA_CONFIG[currentEra as keyof typeof ERA_CONFIG] || ERA_CONFIG.PEACE;
   const Icon = config.icon;
@@ -46,6 +60,16 @@ export function EraIndicator({ currentEra, currentTurn }: EraIndicatorProps) {
   // Calculate turn within era
   const turnInEra = currentTurn - config.startTurn + 1;
   const progress = (turnInEra / config.duration) * 100;
+
+  const isInvasion = currentEra === "INVASION";
+  const horde = isInvasion ? calcHordeCountdown(currentTurn) : null;
+
+  const hordeCountdownColor =
+    horde?.turnsRemaining === 1
+      ? "text-red-400"
+      : horde?.turnsRemaining === 2
+        ? "text-yellow-400"
+        : "text-white";
 
   return (
     <div
@@ -56,7 +80,7 @@ export function EraIndicator({ currentEra, currentTurn }: EraIndicatorProps) {
       )}
     >
       <Icon className={cn("w-5 h-5", config.color)} />
-      <div className="flex flex-col">
+      <div className="flex flex-col gap-0.5">
         <span className={cn("font-semibold text-sm", config.color)}>
           {config.name}
         </span>
@@ -71,6 +95,17 @@ export function EraIndicator({ currentEra, currentTurn }: EraIndicatorProps) {
             />
           </div>
         </div>
+        {isInvasion && horde && (
+          <span
+            className={cn(
+              "text-xs font-semibold",
+              hordeCountdownColor,
+              horde.turnsRemaining === 1 && "animate-pulse"
+            )}
+          >
+            ☠ Horda: {horde.turnsRemaining} {horde.turnsRemaining === 1 ? "turno" : "turnos"} | Força: {horde.strength}
+          </span>
+        )}
       </div>
     </div>
   );
