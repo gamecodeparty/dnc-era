@@ -344,7 +344,7 @@
     "id": "F-051",
     "name": "Indicador de clã-alvo da Horda no mapa",
     "description": "Em Territory.tsx, durante Era da Invasão, o clã com mais territórios (alvo da Horda) tem indicador visual: ícone ☠ pequeno no canto dos territórios do clã-alvo, tooltip 'Alvo da Horda — este clã tem mais territórios'. Se jogador for o alvo, highlight mais proeminente (borda vermelha com pulse). Indicador atualiza quando posse de territórios muda.",
-    "status": "pending",
+    "status": "passing",
     "priority": 19,
     "agent": "coder",
     "task": "vibe-code",
@@ -355,7 +355,8 @@
       "Indicador atualiza quando a posse de territórios muda",
       "Tooltip mostra 'Alvo da Horda — este clã tem mais territórios'"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-016-horde-mechanics-explanation.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-016-horde-mechanics-explanation.md",
+    "completed_at": "2026-03-11T14:12:02.627065+00:00"
   },
   {
     "id": "F-052",

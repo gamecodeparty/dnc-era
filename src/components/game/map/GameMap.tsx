@@ -103,6 +103,22 @@ export function GameMap({
     ? playerTerritories.reduce((sum, t) => sum + calcDefensePower(t.units), 0) / playerTerritories.length
     : 0;
 
+  // Compute Horda target (clan with most territories) — only relevant during INVASION era
+  let hordaTargetClanId: string | null = null;
+  if (currentEra === "INVASION") {
+    const clanCounts: Record<string, number> = {};
+    for (const t of sortedTerritories) {
+      if (t.ownerId) clanCounts[t.ownerId] = (clanCounts[t.ownerId] ?? 0) + 1;
+    }
+    let maxCount = 0;
+    for (const [clanId, count] of Object.entries(clanCounts)) {
+      if (count > maxCount) {
+        maxCount = count;
+        hordaTargetClanId = clanId;
+      }
+    }
+  }
+
   return (
     <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
       <div className="grid grid-cols-3 gap-3">
@@ -124,6 +140,7 @@ export function GameMap({
           const isRevealed = !!revealedData;
           const defensePower = isPlayerOwned ? calcDefensePower(territory.units) : undefined;
           const revealedDefensePower = isRevealed ? calcDefensePower(revealedData.units) : undefined;
+          const isHordaTarget = hordaTargetClanId !== null && territory.ownerId === hordaTargetClanId;
 
           return (
             <Territory
@@ -145,6 +162,7 @@ export function GameMap({
               avgDefensePower={avgDefensePower}
               revealedDefensePower={revealedDefensePower}
               currentEra={currentEra}
+              isHordaTarget={isHordaTarget}
               onClick={() => onTerritoryClick?.(territory.id)}
             />
           );
