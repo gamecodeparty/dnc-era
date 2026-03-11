@@ -131,6 +131,14 @@ export interface RevealedTerritory {
   expiresAt: number;   // revealedAt + 5
 }
 
+export interface TerritoryIntel {
+  territoryId: string;
+  source: 'SPY' | 'COMBAT' | 'NONE';
+  defensePower: number | null;
+  revealedAt: number;
+  expiresAt: number;
+}
+
 // Constantes
 export const SPY_SUCCESS_CHANCE_BASE = 0.7;   // 70% base
 export const SPY_UMBRAL_BONUS = 0.3;           // +30% para Umbral = 100%
@@ -556,6 +564,7 @@ interface GameState {
   timerPaused: boolean;
   timeRemaining: number;
   revealedTerritories: Record<string, RevealedTerritory>;
+  territoryIntel: TerritoryIntel[];
   playerCards: PlayerCard[];
   invasionModalShown: boolean;
 
@@ -615,6 +624,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   timerPaused: false,
   timeRemaining: TURN_DURATION_MS,
   revealedTerritories: {},
+  territoryIntel: [],
   invasionModalShown: false,
   playerCards: [
     { id: "pc1", type: "REINFORCEMENTS", used: false },
@@ -1212,6 +1222,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const sabotageTargets: string[] = []; // IDs de territórios onde estrutura deve ser destruída
     const exploredSites: { siteId: string; turn: number }[] = [];
     const spyReveals: { territoryId: string; units: Unit[]; structures: Structure[]; revealedAt: number; expiresAt: number }[] = [];
+    const combatIntelUpdates: TerritoryIntel[] = [];
 
     for (const exp of state.expeditions) {
       const newTurnsRemaining = exp.turnsRemaining - 1;
@@ -1242,6 +1253,15 @@ export const useGameStore = create<GameState>((set, get) => ({
 
             const wallLevel = targetTerritory.structures.find((s) => s.type === "WALL")?.level || 0;
             const defensePower = getDefensePower(targetTerritory.units, wallLevel);
+
+            // Registrar intel de combate do território atacado (source: COMBAT, expira em 3 turnos)
+            combatIntelUpdates.push({
+              territoryId: targetTerritory.id,
+              source: 'COMBAT',
+              defensePower,
+              revealedAt: newTurn,
+              expiresAt: newTurn + 3,
+            });
 
             const victory = attackPower > defensePower;
             const ratio = defensePower > 0 ? attackPower / defensePower : 10;
@@ -1553,6 +1573,16 @@ export const useGameStore = create<GameState>((set, get) => ({
                 expiresAt: newTurn + SPY_REVEAL_DURATION,
               });
 
+              // Integrar intel de espião na interface TerritoryIntel
+              const spyWallLevel = targetTerritory.structures.find((s) => s.type === "WALL")?.level || 0;
+              combatIntelUpdates.push({
+                territoryId: exp.toTerritoryId,
+                source: 'SPY',
+                defensePower: getDefensePower(targetTerritory.units, spyWallLevel),
+                revealedAt: newTurn,
+                expiresAt: newTurn + SPY_REVEAL_DURATION,
+              });
+
               // Criar expedição de retorno para o espião
               const returnTime = exp.totalTurns;
               updatedExpeditions.push({
@@ -1811,6 +1841,16 @@ export const useGameStore = create<GameState>((set, get) => ({
       };
     }
 
+    // Atualizar territoryIntel: remover expiradas e adicionar novas
+    const updatedTerritoryIntel: TerritoryIntel[] = [
+      // Manter entradas não expiradas (excluindo territórios com nova intel)
+      ...state.territoryIntel.filter(
+        (intel) => intel.expiresAt > newTurn && !combatIntelUpdates.some((u) => u.territoryId === intel.territoryId)
+      ),
+      // Adicionar/substituir com nova intel de combate e espião
+      ...combatIntelUpdates,
+    ];
+
     // Atualiza estado
     set((state) => ({
       currentTurn: newTurn,
@@ -1829,6 +1869,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       expeditions: updatedExpeditions,
       explorationSites: updatedExplorationSites,
       revealedTerritories: updatedRevealedTerritories,
+      territoryIntel: updatedTerritoryIntel,
       events: [...allEvents, ...state.events.slice(0, 10 - allEvents.length)],
     }));
 
@@ -1857,6 +1898,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       timerPaused: false,
       timeRemaining: TURN_DURATION_MS,
       revealedTerritories: {},
+      territoryIntel: [],
       invasionModalShown: false,
     });
   },

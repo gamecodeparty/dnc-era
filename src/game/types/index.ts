@@ -202,6 +202,18 @@ export interface AIDecisionContext {
 }
 
 // ==============================================================================
+// TERRITORY INTEL
+// ==============================================================================
+
+export interface TerritoryIntel {
+  territoryId: string;
+  source: 'SPY' | 'COMBAT' | 'NONE';
+  defensePower: number | null;
+  revealedAt: number;
+  expiresAt: number;
+}
+
+// ==============================================================================
 // GAME STATE
 // ==============================================================================
 
