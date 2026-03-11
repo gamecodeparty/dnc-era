@@ -392,7 +392,7 @@
     "id": "F-076",
     "name": "Breakdown de score por categoria na GameResultsScreen",
     "description": "Em GameResultsScreen.tsx, adicionar seção 'Como foi sua pontuação' abaixo do ranking. Decompor score em ScoreBreakdown: territórios (count × 100), população (count × 10), ouro (count × 1), unidades (count × 5). Cada linha aparece sequencialmente com fade-in (Framer Motion, delay 200ms). Números fazem count-up de 0 ao valor final (300ms). Total por último com destaque (text-2xl font-bold text-amber-400).",
-    "status": "pending",
+    "status": "passing",
     "priority": 21,
     "agent": "coder",
     "task": "vibe-code",
@@ -404,7 +404,8 @@
       "Animação de revelação sequencial com count-up nos números",
       "Total aparece por último com destaque visual"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-024-score-breakdown-results.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-024-score-breakdown-results.md",
+    "completed_at": "2026-03-11T17:45:00Z"
   },
   {
     "id": "F-077",

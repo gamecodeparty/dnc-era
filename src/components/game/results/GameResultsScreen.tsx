@@ -1,6 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, animate } from "framer-motion";
+import { useEffect, useRef } from "react";
 import { Trophy, Skull, Star, Swords, RefreshCw, ScrollText } from "lucide-react";
 import { Sparkles } from "@/components/game/fx";
 import { MedievalButton } from "@/components/ui/medieval";
@@ -13,10 +14,18 @@ import {
 
 // ─── Score ────────────────────────────────────────────────────────────────────
 
+interface ScoreBreakdown {
+  territories: { count: number; multiplier: number; subtotal: number };
+  population: { count: number; multiplier: number; subtotal: number };
+  gold: { count: number; multiplier: number; subtotal: number };
+  units: { count: number; multiplier: number; subtotal: number };
+  total: number;
+}
+
 function computeScore(
   clan: Clan,
   territories: Territory[]
-): { score: number; territoryCount: number; unitCount: number } {
+): { score: number; territoryCount: number; unitCount: number; breakdown: ScoreBreakdown } {
   const ownedTerritories = territories.filter((t) => t.ownerId === clan.id);
   const territoryCount = ownedTerritories.length;
   const unitCount = ownedTerritories.reduce(
@@ -26,7 +35,104 @@ function computeScore(
   const population = clan.grain; // grain as proxy for population
   const score =
     territoryCount * 100 + population * 10 + clan.gold * 1 + unitCount * 5;
-  return { score, territoryCount, unitCount };
+  const breakdown: ScoreBreakdown = {
+    territories: { count: territoryCount, multiplier: 100, subtotal: territoryCount * 100 },
+    population: { count: population, multiplier: 10, subtotal: population * 10 },
+    gold: { count: clan.gold, multiplier: 1, subtotal: clan.gold * 1 },
+    units: { count: unitCount, multiplier: 5, subtotal: unitCount * 5 },
+    total: score,
+  };
+  return { score, territoryCount, unitCount, breakdown };
+}
+
+// ─── Count-Up ────────────────────────────────────────────────────────────────
+
+function CountUp({ value, delay = 0 }: { value: number; delay?: number }) {
+  const nodeRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const node = nodeRef.current;
+    if (!node) return;
+    const controls = animate(0, value, {
+      duration: 0.3,
+      delay,
+      ease: "easeOut",
+      onUpdate: (v) => {
+        node.textContent = Math.round(v).toLocaleString("pt-BR");
+      },
+    });
+    return () => controls.stop();
+  }, [value, delay]);
+
+  return <span ref={nodeRef}>0</span>;
+}
+
+// ─── Score Breakdown Section ──────────────────────────────────────────────────
+
+function ScoreBreakdownSection({
+  breakdown,
+  baseDelay,
+}: {
+  breakdown: ScoreBreakdown;
+  baseDelay: number;
+}) {
+  const rows = [
+    { label: "Territórios", count: breakdown.territories.count, multiplier: breakdown.territories.multiplier, subtotal: breakdown.territories.subtotal },
+    { label: "População", count: breakdown.population.count, multiplier: breakdown.population.multiplier, subtotal: breakdown.population.subtotal },
+    { label: "Ouro", count: breakdown.gold.count, multiplier: breakdown.gold.multiplier, subtotal: breakdown.gold.subtotal },
+    { label: "Unidades", count: breakdown.units.count, multiplier: breakdown.units.multiplier, subtotal: breakdown.units.subtotal },
+  ];
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: baseDelay, duration: 0.4 }}
+      className="rounded-lg border border-medieval-border/30 bg-medieval-bg-deep/40 p-4"
+    >
+      <h2 className="text-sm font-cinzel font-bold text-medieval-text-muted uppercase tracking-widest mb-3">
+        Como foi sua pontuação
+      </h2>
+      <div className="space-y-2">
+        {rows.map((row, i) => {
+          const itemDelay = baseDelay + 0.1 + i * 0.2;
+          return (
+            <motion.div
+              key={row.label}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: itemDelay, duration: 0.3 }}
+              className="flex items-center justify-between text-sm"
+            >
+              <span className="text-medieval-text-secondary">
+                {row.label}{" "}
+                <span className="text-medieval-text-muted text-xs">
+                  (<CountUp value={row.count} delay={itemDelay} /> × {row.multiplier})
+                </span>
+              </span>
+              <span className="font-bold tabular-nums text-medieval-text-primary">
+                = <CountUp value={row.subtotal} delay={itemDelay} />
+              </span>
+            </motion.div>
+          );
+        })}
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: baseDelay + 0.1 + rows.length * 0.2, duration: 0.4 }}
+          className="border-t border-medieval-border/30 pt-2 mt-2 flex items-center justify-between"
+        >
+          <span className="font-cinzel font-bold text-medieval-text-secondary text-sm uppercase tracking-wide">
+            Total
+          </span>
+          <span className="text-2xl font-bold text-amber-400 tabular-nums">
+            = <CountUp value={breakdown.total} delay={baseDelay + 0.1 + rows.length * 0.2} />
+          </span>
+        </motion.div>
+      </div>
+    </motion.section>
+  );
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -37,6 +143,7 @@ interface RankedClan {
   score: number;
   territoryCount: number;
   unitCount: number;
+  breakdown: ScoreBreakdown;
   isEliminated: boolean;
   isPlayer: boolean;
 }
@@ -157,12 +264,13 @@ export function GameResultsScreen({
   // Build ranked list
   const ranked: RankedClan[] = clans
     .map((clan) => {
-      const { score, territoryCount, unitCount } = computeScore(clan, territories);
+      const { score, territoryCount, unitCount, breakdown } = computeScore(clan, territories);
       return {
         clan,
         score,
         territoryCount,
         unitCount,
+        breakdown,
         isEliminated: territoryCount === 0,
         isPlayer: clan.isPlayer,
         rank: 0,
@@ -237,11 +345,19 @@ export function GameResultsScreen({
           </div>
         </motion.section>
 
-        {/* ── Section 2: Stats ── */}
+        {/* ── Section 2: Score Breakdown ── */}
+        {playerRanked && (
+          <ScoreBreakdownSection
+            breakdown={playerRanked.breakdown}
+            baseDelay={ranked.length * 0.3 + 0.3}
+          />
+        )}
+
+        {/* ── Section 3: Stats ── */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: ranked.length * 0.3 + 0.3, duration: 0.4 }}
+          transition={{ delay: ranked.length * 0.3 + 1.5, duration: 0.4 }}
           className="rounded-lg border border-medieval-border/30 bg-medieval-bg-deep/40 p-4"
         >
           <h2 className="text-sm font-cinzel font-bold text-medieval-text-muted uppercase tracking-widest mb-3">
@@ -273,12 +389,12 @@ export function GameResultsScreen({
           </div>
         </motion.section>
 
-        {/* ── Section 3: Epic Moment ── */}
+        {/* ── Section 4: Epic Moment ── */}
         {stats.epicMoment && (
           <motion.section
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: ranked.length * 0.3 + 0.6, duration: 0.4 }}
+            transition={{ delay: ranked.length * 0.3 + 1.8, duration: 0.4 }}
             className="rounded-lg border border-medieval-accent/30 bg-medieval-accent/5 p-4"
           >
             <div className="flex items-center gap-2 mb-3">
@@ -315,7 +431,7 @@ export function GameResultsScreen({
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: ranked.length * 0.3 + 0.9, duration: 0.4 }}
+          transition={{ delay: ranked.length * 0.3 + 2.1, duration: 0.4 }}
           className="flex flex-col sm:flex-row gap-3 pt-2 pb-8"
         >
           <MedievalButton
