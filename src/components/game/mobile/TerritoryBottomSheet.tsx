@@ -9,6 +9,26 @@ import { UI } from "@/game/constants/balance";
 import { STRUCTURES, getStructureLabel } from "@/game/constants/structures";
 import { getProportionalCostWarnings, type CostWarning } from "@/stores/gameStore";
 
+type ResourceCost = { grain?: number; wood?: number; gold?: number };
+type Resources = { grain: number; wood: number; gold: number };
+
+function canAfford(cost: ResourceCost | undefined, resources: Resources | undefined): boolean {
+  if (!cost || !resources) return true;
+  if ((cost.grain ?? 0) > resources.grain) return false;
+  if ((cost.wood ?? 0) > resources.wood) return false;
+  if ((cost.gold ?? 0) > resources.gold) return false;
+  return true;
+}
+
+function getMissingLabel(cost: ResourceCost, resources: Resources): string {
+  const missing: string[] = [];
+  const diff = (a: number | undefined, b: number) => (a ?? 0) - b;
+  if (diff(cost.grain, resources.grain) > 0) missing.push(`${diff(cost.grain, resources.grain)} grão`);
+  if (diff(cost.wood, resources.wood) > 0) missing.push(`${diff(cost.wood, resources.wood)} madeira`);
+  if (diff(cost.gold, resources.gold) > 0) missing.push(`${diff(cost.gold, resources.gold)} ouro`);
+  return missing.length > 0 ? `Faltam: ${missing.join(", ")}` : "";
+}
+
 interface Territory {
   id: string;
   name: string;
@@ -91,6 +111,7 @@ export function TerritoryBottomSheet({
   };
 
   const handleBuild = () => {
+    if (buildDisabled) return;
     vibrate("medium");
     if (playerResources && buildCost) {
       const w = getProportionalCostWarnings(buildCost, playerResources);
@@ -139,8 +160,18 @@ export function TerritoryBottomSheet({
 
   const BonusIcon = territory?.bonusResource ? bonusIcons[territory.bonusResource] : null;
 
+  // F-033: canAfford checks and missing resource labels
+  const isTerritoryFull = structures.length >= UI.MAX_STRUCTURE_SLOTS;
+  const buildCanAfford = canAfford(buildCost, playerResources);
+  const buildDisabled = isTerritoryFull || !buildCanAfford;
+  const buildMissingMsg =
+    !isTerritoryFull && !buildCanAfford && buildCost && playerResources
+      ? getMissingLabel(buildCost, playerResources)
+      : "";
+
   // Compute inline warnings for build/train buttons (F-032)
-  const buildWarnings = playerResources && buildCost
+  // Only show proportional warning when the player CAN afford the action
+  const buildWarnings = !buildDisabled && playerResources && buildCost
     ? getProportionalCostWarnings(buildCost, playerResources)
     : [];
   const trainWarnings = playerResources && trainCost
@@ -272,41 +303,59 @@ export function TerritoryBottomSheet({
 
               {/* Actions */}
               {isOwned && (
-                <div className="flex gap-2">
-                  <MedievalButton
-                    variant="primary"
-                    size="sm"
-                    className="flex-1"
-                    onClick={handleBuild}
-                  >
-                    <Building2 className="w-4 h-4 mr-2" />
-                    Construir
-                    {buildWarnings.length > 0 && (
-                      <span
-                        title={makeCostTooltip(buildWarnings)}
-                        className="ml-1.5 inline-flex items-center"
+                <div className="flex flex-col gap-1.5">
+                  {/* Territory full message (F-033) */}
+                  {isTerritoryFull && (
+                    <p className="text-xs text-red-400 text-center font-medium">
+                      Território lotado (4/4 estruturas)
+                    </p>
+                  )}
+                  <div className="flex gap-2">
+                    {/* Build button */}
+                    <div className="flex-1 flex flex-col gap-1">
+                      <MedievalButton
+                        variant="primary"
+                        size="sm"
+                        className="w-full"
+                        onClick={handleBuild}
+                        disabled={buildDisabled}
                       >
-                        <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-                      </span>
-                    )}
-                  </MedievalButton>
-                  <MedievalButton
-                    variant="secondary"
-                    size="sm"
-                    className="flex-1"
-                    onClick={handleTrain}
-                  >
-                    <Users className="w-4 h-4 mr-2" />
-                    Treinar
-                    {trainWarnings.length > 0 && (
-                      <span
-                        title={makeCostTooltip(trainWarnings)}
-                        className="ml-1.5 inline-flex items-center"
-                      >
-                        <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-                      </span>
-                    )}
-                  </MedievalButton>
+                        <Building2 className="w-4 h-4 mr-2" />
+                        Construir
+                        {buildWarnings.length > 0 && (
+                          <span
+                            title={makeCostTooltip(buildWarnings)}
+                            className="ml-1.5 inline-flex items-center"
+                          >
+                            <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                          </span>
+                        )}
+                      </MedievalButton>
+                      {/* Missing resources label (F-033) */}
+                      {buildMissingMsg && (
+                        <p className="text-xs text-red-400 text-center leading-tight">
+                          {buildMissingMsg}
+                        </p>
+                      )}
+                    </div>
+                    <MedievalButton
+                      variant="secondary"
+                      size="sm"
+                      className="flex-1"
+                      onClick={handleTrain}
+                    >
+                      <Users className="w-4 h-4 mr-2" />
+                      Treinar
+                      {trainWarnings.length > 0 && (
+                        <span
+                          title={makeCostTooltip(trainWarnings)}
+                          className="ml-1.5 inline-flex items-center"
+                        >
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                        </span>
+                      )}
+                    </MedievalButton>
+                  </div>
                 </div>
               )}
 

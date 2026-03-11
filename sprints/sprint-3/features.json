@@ -3,7 +3,7 @@
     "id": "F-033",
     "name": "Desabilitar botões de construção sem recursos",
     "description": "Em TerritoryBottomSheet.tsx, implementar função canAfford(cost) que compara custo da estrutura com recursos atuais. Quando canAfford retorna false: botão disabled, cursor not-allowed, opacity-50, label 'Faltam: X madeira, Y ouro' em vermelho. Quando território tem 4/4 estruturas: desabilitar todos os botões com mensagem 'Território lotado (4/4 estruturas)'. Aviso proporcional (F-032) continua para ações possíveis mas caras.",
-    "status": "pending",
+    "status": "passing",
     "priority": 1,
     "agent": "coder",
     "task": "vibe-code",
@@ -15,7 +15,8 @@
       "Território com 4/4 estruturas mostra mensagem 'Território lotado' e desabilita toda construção",
       "Aviso proporcional (F-032) continua funcionando para ações possíveis mas que custam >80% do estoque"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-011-build-menu-clarity.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-011-build-menu-clarity.md",
+    "completed_at": "2026-03-11T05:01:14.228Z"
   },
   {
     "id": "F-034",
@@ -140,11 +141,13 @@
     "id": "F-041",
     "name": "Exibição de tempo de viagem no ExpeditionModal",
     "description": "Em ExpeditionModal.tsx, na seção de seleção de destino, exibir tempo de viagem ao lado do território alvo: 'Destino: Território 7 (Clã do Norte) — ⏱ 2 turnos'. Se tempo >= 3 turnos, exibir aviso adicional: '⚠ Viagem longa: tropas chegarão em 3 turnos. Seus territórios ficarão sem essas unidades durante a viagem.' Tempo recalcula em tempo real ao mudar território de origem.",
-    "status": "pending",
+    "status": "blocked",
     "priority": 9,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-040"],
+    "dependencies": [
+      "F-040"
+    ],
     "tests": [
       "Tempo de viagem aparece em turnos ao lado do destino selecionado",
       "Tempo recalcula em tempo real ao mudar território de origem",
@@ -157,11 +160,13 @@
     "id": "F-042",
     "name": "Badge de tempo de viagem no mapa durante seleção",
     "description": "Em Territory.tsx, quando ExpeditionModal está aberto (fluxo de expedição), exibir badge '⏱ Xt' sobre cada território alvo potencial. Cor baseada no tempo: verde (1 turno), amarelo (2 turnos), vermelho (3+ turnos). Badge posicionado no canto inferior esquerdo do tile. Desaparece quando ExpeditionModal é fechado.",
-    "status": "pending",
+    "status": "blocked",
     "priority": 10,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-040"],
+    "dependencies": [
+      "F-040"
+    ],
     "tests": [
       "Badge '⏱ Xt' aparece nos tiles do mapa durante seleção de expedição",
       "Badge usa cor verde/amarelo/vermelho conforme duração (1t/2t/3+t)",
@@ -174,11 +179,13 @@
     "id": "F-043",
     "name": "Componente GameResultsScreen com ranking animado",
     "description": "Criar /src/components/game/results/GameResultsScreen.tsx com 3 seções: (1) Ranking dos 6 clãs por score (territórios×100 + população×10 + ouro×1 + unidades×5), aparecendo de baixo pra cima com delay 300ms (Framer Motion), 1º lugar com efeito dourado + Sparkles, clã do jogador destacado, eliminados com caveira. (2) Estatísticas da partida (turnos, territórios conquistados, batalhas, estruturas, unidades, cartas, horda). (3) Momento épico (batalha com maior saque ou diferença de poder). Rodapé com botões 'Jogar Novamente' e 'Ver Detalhes'.",
-    "status": "pending",
+    "status": "blocked",
     "priority": 11,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-044"],
+    "dependencies": [
+      "F-044"
+    ],
     "tests": [
       "Ranking animado de baixo para cima com delay de 300ms por clã",
       "Primeiro lugar com efeito dourado e Sparkles",
@@ -210,11 +217,13 @@
     "id": "F-045",
     "name": "Integração do GameResultsScreen no fluxo de game over",
     "description": "Em /src/app/game/page.tsx, substituir o card atual de vitória/derrota pelo novo GameResultsScreen. Quando gameOver=true, renderizar <GameResultsScreen clans={clans} playerClanId={playerClanId} events={events} isVictory={isVictory} turn={currentTurn} />. Botão 'Jogar Novamente' reinicia o jogo corretamente.",
-    "status": "pending",
+    "status": "blocked",
     "priority": 13,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-043"],
+    "dependencies": [
+      "F-043"
+    ],
     "tests": [
       "Card antigo de game over substituído pelo GameResultsScreen",
       "Props corretas passadas para o componente (clans, playerClanId, events, isVictory, turn)",
@@ -245,11 +254,13 @@
     "id": "F-047",
     "name": "Indicador de território indefeso com alerta visual",
     "description": "Em Territory.tsx, territórios do jogador com 0 unidades militares durante Era da Guerra ou Invasão: borda com pulse vermelho suave (animate-pulse ring-red-500/40), badge '⚠ 0' em vermelho, tooltip 'Território sem defesa! Vulnerável a ataques.'. Durante Era da Paz: sem alerta.",
-    "status": "pending",
+    "status": "blocked",
     "priority": 15,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-046"],
+    "dependencies": [
+      "F-046"
+    ],
     "tests": [
       "Territórios com 0 unidades mostram '⚠ 0' em vermelho com pulse durante Era da Guerra",
       "Territórios com 0 unidades mostram '⚠ 0' em vermelho com pulse durante Era da Invasão",
@@ -262,11 +273,13 @@
     "id": "F-048",
     "name": "Toggle de visibilidade dos badges de tropas no HUD",
     "description": "Em page.tsx ou componente de HUD, adicionar toggle '⚔ Tropas: ON/OFF' para mostrar/esconder badges de tropas no mapa. Default: ON durante Era da Guerra/Invasão, OFF durante Era da Paz. Estado persistido durante a partida (não entre partidas).",
-    "status": "pending",
+    "status": "blocked",
     "priority": 16,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-046"],
+    "dependencies": [
+      "F-046"
+    ],
     "tests": [
       "Toggle no HUD permite mostrar/esconder badges de tropas",
       "Default ON durante Era da Guerra e Invasão",
@@ -382,11 +395,14 @@
     "id": "F-055",
     "name": "Integração do sistema de dicas no layout do jogo",
     "description": "Em /src/app/game/page.tsx, adicionar useTips() hook e renderizar TipBanner no layout: const { currentTip, dismissTip } = useTips(); renderizar <TipBanner tip={currentTip} onDismiss={() => dismissTip(currentTip.id)} /> acima do conteúdo do jogo. Dicas não bloqueiam interação com o jogo (banner é overlay). Fluxo de jogo normal não é afetado.",
-    "status": "pending",
+    "status": "blocked",
     "priority": 23,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-053", "F-054"],
+    "dependencies": [
+      "F-053",
+      "F-054"
+    ],
     "tests": [
       "TipBanner integrado no layout sem afetar outros componentes",
       "Dicas não bloqueiam interação com o jogo (banner é overlay clicável-através)",
