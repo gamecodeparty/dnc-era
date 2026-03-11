@@ -109,7 +109,17 @@ export interface Expedition {
   type: ExpeditionType;
 }
 
+export interface RevealedTerritory {
+  units: Unit[];
+  structures: Structure[];
+  revealedAt: number;  // turno em que foi revelado
+  expiresAt: number;   // revealedAt + 5
+}
+
 // Constantes
+export const SPY_SUCCESS_CHANCE_BASE = 0.7;   // 70% base
+export const SPY_UMBRAL_BONUS = 0.3;           // +30% para Umbral = 100%
+export const SPY_REVEAL_DURATION = 5;          // expira após 5 turnos
 export const TURN_INTERVAL_MS = 10 * 1000; // 10 segundos para teste
 export const TOTAL_TURNS = 50;
 
@@ -492,6 +502,7 @@ interface GameState {
   explorationSites: ExplorationSite[];
   timerPaused: boolean;
   timeRemaining: number;
+  revealedTerritories: Record<string, RevealedTerritory>;
 
   // Getters
   getPlayerClan: () => Clan;
@@ -546,6 +557,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   explorationSites: createRandomExplorationSites(),
   timerPaused: false,
   timeRemaining: TURN_INTERVAL_MS,
+  revealedTerritories: {},
 
   getPlayerClan: () => {
     return get().clans.find((c) => c.isPlayer)!;
@@ -1121,6 +1133,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const returnedTroops: { territoryId: string; units: Unit[]; resources: { grain: number; wood: number; gold: number } }[] = [];
     const lootedClans: { clanId: string; grain: number; wood: number; gold: number }[] = [];
     const exploredSites: { siteId: string; turn: number }[] = [];
+    const spyReveals: { territoryId: string; units: Unit[]; structures: Structure[]; revealedAt: number; expiresAt: number }[] = [];
 
     for (const exp of state.expeditions) {
       const newTurnsRemaining = exp.turnsRemaining - 1;
@@ -1367,6 +1380,74 @@ export const useGameStore = create<GameState>((set, get) => ({
               type: "info",
             });
           }
+        } else if (exp.type === "SPY") {
+          // Espião chegou ao território alvo — resolver espionagem
+          const targetTerritory = state.territories.find((t) => t.id === exp.toTerritoryId);
+          if (targetTerritory) {
+            // Calcular chance de sucesso
+            const spyOwnerClan = state.clans.find((c) => c.id === exp.ownerId);
+            const isUmbral = spyOwnerClan?.origin === "UMBRAL";
+            const successChance = isUmbral
+              ? SPY_SUCCESS_CHANCE_BASE + SPY_UMBRAL_BONUS  // 100%
+              : SPY_SUCCESS_CHANCE_BASE;                     // 70%
+
+            const roll = Math.random();
+            const spySuccess = roll < successChance;
+
+            if (spySuccess) {
+              // Sucesso: revelar território
+              spyReveals.push({
+                territoryId: exp.toTerritoryId,
+                units: [...targetTerritory.units],
+                structures: [...targetTerritory.structures],
+                revealedAt: newTurn,
+                expiresAt: newTurn + SPY_REVEAL_DURATION,
+              });
+
+              // Criar expedição de retorno para o espião
+              const returnTime = exp.totalTurns;
+              updatedExpeditions.push({
+                id: `spy-ret-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                ownerId: exp.ownerId,
+                ownerName: exp.ownerName,
+                fromTerritoryId: exp.toTerritoryId,
+                toTerritoryId: exp.fromTerritoryId,
+                fromPosition: exp.toPosition,
+                toPosition: exp.fromPosition,
+                units: [{ type: "SPY", quantity: 1 }],
+                carriedResources: { grain: 0, wood: 0, gold: 0 },
+                turnsRemaining: returnTime,
+                totalTurns: returnTime,
+                departedTurn: newTurn,
+                type: "RETURN_SPY",
+              });
+
+              expeditionEvents.push({
+                turn: newTurn,
+                message: `Espiao infiltrado com sucesso! Territorio ${targetTerritory.position + 1} revelado por ${SPY_REVEAL_DURATION} turnos.`,
+                type: "success",
+              });
+            } else {
+              // Falha: espião capturado
+              expeditionEvents.push({
+                turn: newTurn,
+                message: `Espiao capturado no territorio ${targetTerritory.position + 1}! Missao fracassou.`,
+                type: "danger",
+              });
+            }
+          }
+        } else if (exp.type === "RETURN_SPY") {
+          // Espião retornando para casa
+          returnedTroops.push({
+            territoryId: exp.toTerritoryId,
+            units: exp.units,
+            resources: exp.carriedResources,
+          });
+          expeditionEvents.push({
+            turn: newTurn,
+            message: `Espiao retornou com informacoes do territorio inimigo.`,
+            type: "info",
+          });
         }
       } else {
         // Expedição ainda em trânsito
@@ -1497,6 +1578,24 @@ export const useGameStore = create<GameState>((set, get) => ({
       );
     }
 
+    // Atualizar revealedTerritories: aplicar novas revelações e remover expiradas
+    let updatedRevealedTerritories: Record<string, RevealedTerritory> = {};
+    // Manter entradas não expiradas
+    for (const [territoryId, revealed] of Object.entries(state.revealedTerritories) as [string, RevealedTerritory][]) {
+      if (revealed.expiresAt > newTurn) {
+        updatedRevealedTerritories[territoryId] = revealed;
+      }
+    }
+    // Adicionar novas revelações
+    for (const reveal of spyReveals) {
+      updatedRevealedTerritories[reveal.territoryId] = {
+        units: reveal.units,
+        structures: reveal.structures,
+        revealedAt: reveal.revealedAt,
+        expiresAt: reveal.expiresAt,
+      };
+    }
+
     // Atualiza estado
     set((state) => ({
       currentTurn: newTurn,
@@ -1514,6 +1613,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       ),
       expeditions: updatedExpeditions,
       explorationSites: updatedExplorationSites,
+      revealedTerritories: updatedRevealedTerritories,
       events: [...allEvents, ...state.events.slice(0, 10 - allEvents.length)],
     }));
 
@@ -1541,6 +1641,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       explorationSites: createRandomExplorationSites(),
       timerPaused: false,
       timeRemaining: TURN_INTERVAL_MS,
+      revealedTerritories: {},
     });
   },
 
