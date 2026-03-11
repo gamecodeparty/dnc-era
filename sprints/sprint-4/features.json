@@ -374,7 +374,7 @@
     "id": "F-073",
     "name": "Tips de cartas no early game",
     "description": "Em useTips.ts, adicionar 2 tips: tip-09-cards-intro — trigger: turno 3-5, tem cartas, nunca usou nenhuma; mensagem '🃏 Você tem cartas na mão! Use ao enviar expedições de ataque.' tip-10-cards-reminder — trigger: turno 10+, 3+ cartas acumuladas, nunca usou; mensagem '🃏 Cartas acumuladas sem uso!'. Adicionar playerCards e hasUsedCard ao estado do trigger. Cada tip máximo 1 vez (localStorage). Não aparecem se jogador já usou carta.",
-    "status": "pending",
+    "status": "passing",
     "priority": 20,
     "agent": "coder",
     "task": "vibe-code",
@@ -385,7 +385,8 @@
       "Cada tip aparece no máximo 1 vez (persistido em localStorage)",
       "Tips não aparecem se jogador já usou ao menos 1 carta"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-022-onboarding-tips-expanded.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-022-onboarding-tips-expanded.md",
+    "completed_at": "2026-03-11T17:37:58Z"
   },
   {
     "id": "F-076",

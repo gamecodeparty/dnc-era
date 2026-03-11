@@ -36,6 +36,7 @@ interface TipDefinition {
     playerTotalUnits: number;
     playerTerritoriesWithUnits: number;
     playerCards: { used: boolean }[];
+    hasUsedCard: boolean;
     hasActiveReinforcement: boolean;
     playerGrainProduction: number;
     playerWoodProduction: number;
@@ -115,6 +116,25 @@ const TIP_DEFINITIONS: TipDefinition[] = [
       currentTurn >= 13 && currentTurn <= 14 && currentEra === "PEACE",
   },
   {
+    id: "tip-09-cards-intro",
+    icon: "🃏",
+    message:
+      "🃏 Você tem cartas na mão! Cartas dão vantagem em batalha — use ao enviar expedições de ataque. Toque no ícone de cartas para ver suas opções.",
+    trigger: ({ currentTurn, playerCards, hasUsedCard }) =>
+      currentTurn >= 3 &&
+      currentTurn <= 5 &&
+      playerCards.length > 0 &&
+      !hasUsedCard,
+  },
+  {
+    id: "tip-10-cards-reminder",
+    icon: "🃏",
+    message:
+      "🃏 Você tem cartas acumuladas sem uso! Use-as em expedições para vantagem estratégica.",
+    trigger: ({ currentTurn, playerCards, hasUsedCard }) =>
+      currentTurn >= 10 && playerCards.length >= 3 && !hasUsedCard,
+  },
+  {
     id: "tip-06-cards",
     icon: "🃏",
     message:
@@ -184,14 +204,17 @@ export function useTips(): { currentTip: Tip | null; dismissTip: (id: string) =>
     prevHasReinforcement.current = hasActiveReinforcement;
   }, [hasActiveReinforcement]);
 
-  // Auto-dismiss tip-06 when any card is used
+  // Auto-dismiss card tips when any card is used
   const anyCardUsed = useMemo(() => playerCards.some((c: PlayerCard) => c.used), [playerCards]);
   useEffect(() => {
     if (anyCardUsed) {
       setDismissed((prev) => {
-        if (prev.has("tip-06-cards")) return prev;
+        const toAdd = ["tip-06-cards", "tip-09-cards-intro", "tip-10-cards-reminder"].filter(
+          (id) => !prev.has(id)
+        );
+        if (toAdd.length === 0) return prev;
         const next = new Set(prev);
-        next.add("tip-06-cards");
+        for (const id of toAdd) next.add(id);
         saveDismissed(next);
         return next;
       });
@@ -233,6 +256,8 @@ export function useTips(): { currentTip: Tip | null; dismissTip: (id: string) =>
       }
     }
 
+    const hasUsedCard = playerCards.some((c: PlayerCard) => c.used);
+
     return {
       currentTurn,
       currentEra,
@@ -241,6 +266,7 @@ export function useTips(): { currentTip: Tip | null; dismissTip: (id: string) =>
       playerTotalUnits,
       playerTerritoriesWithUnits,
       playerCards,
+      hasUsedCard,
       hasActiveReinforcement,
       playerGrainProduction,
       playerWoodProduction,
