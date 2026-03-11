@@ -362,7 +362,7 @@
     "id": "F-052",
     "name": "Evento de Horda detalhado no log",
     "description": "Em gameStore.ts (evento HORDA_ATTACK), melhorar mensagem para incluir contexto: '☠ A Horda atacou! Força: 100 / Alvo: Seu clã (4 territórios — o maior) / Defesa total: 45 — DERROTADO / Perdeu: Território 7 / Próximo ataque: Turno 42 | Força: 150'. Distingue visualmente quando jogador é o alvo vs outro clã.",
-    "status": "pending",
+    "status": "passing",
     "priority": 20,
     "agent": "coder",
     "task": "vibe-code",
@@ -373,7 +373,8 @@
       "Inclui informação sobre próximo ataque (turno e força)",
       "Mostra resultado: REPELIDO ou DERROTADO + território perdido"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-016-horde-mechanics-explanation.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-016-horde-mechanics-explanation.md",
+    "completed_at": "2026-03-11T14:20:00Z"
   },
   {
     "id": "F-053",

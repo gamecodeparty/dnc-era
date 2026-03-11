@@ -1677,10 +1677,55 @@ export const useGameStore = create<GameState>((set, get) => ({
     // Horda na Era 3
     if (newEra === "INVASION" && newTurn % 3 === 0) {
       const hordaStrength = 50 + (newTurn - 36) * 20;
+
+      // Encontra o clã-alvo: o com mais territórios
+      const clanTerritoryCount: Record<string, { count: number; name: string }> = {};
+      for (const t of updatedTerritories) {
+        if (t.ownerId !== null) {
+          if (!clanTerritoryCount[t.ownerId]) {
+            clanTerritoryCount[t.ownerId] = { count: 0, name: t.ownerName };
+          }
+          clanTerritoryCount[t.ownerId].count++;
+        }
+      }
+      let primaryTargetId: string | null = null;
+      let primaryTargetName = "";
+      let primaryTargetCount = 0;
+      for (const [clanId, info] of Object.entries(clanTerritoryCount)) {
+        if (info.count > primaryTargetCount) {
+          primaryTargetCount = info.count;
+          primaryTargetId = clanId;
+          primaryTargetName = info.name;
+        }
+      }
+
+      // Calcula defesa total do clã-alvo (todos os territórios)
+      const primaryTerritories = updatedTerritories.filter((t) => t.ownerId === primaryTargetId);
+      let primaryTotalDefense = 0;
+      for (const t of primaryTerritories) {
+        for (const u of t.units) {
+          primaryTotalDefense += u.quantity * UNIT_STATS[u.type].def;
+        }
+      }
+
+      const isPlayerTarget = primaryTargetId === "player";
+      const hordaWins = hordaStrength > primaryTotalDefense;
+      const resultLabel = hordaWins ? "DERROTADO" : "REPELIDO";
+      const territoryLost = hordaWins ? primaryTerritories[0] : null;
+      const lossLabel = territoryLost ? ` / Perdeu: Território ${territoryLost.position + 1}` : "";
+      const nextAttackTurn = newTurn + 3;
+      const nextStrength = 50 + (nextAttackTurn - 36) * 20;
+      const nextLabel = nextAttackTurn <= 50 ? ` / Próximo ataque: Turno ${nextAttackTurn} | Força: ${nextStrength}` : "";
+      const targetLabel = isPlayerTarget ? "Seu clã" : primaryTargetName;
+
+      const hordaMessage = primaryTargetId
+        ? `☠ A Horda atacou! Força: ${hordaStrength} / Alvo: ${targetLabel} (${primaryTargetCount} territórios — o maior) / Defesa total: ${primaryTotalDefense} — ${resultLabel}${lossLabel}${nextLabel}`
+        : `☠ A Horda atacou com força ${hordaStrength}!`;
+
       newEvents.push({
         turn: newTurn,
-        message: `A HORDA ATACA com forca ${hordaStrength}!`,
-        type: "danger",
+        message: hordaMessage,
+        type: isPlayerTarget ? "danger" : "warning",
       });
 
       // Ataca todos os territorios
@@ -1696,7 +1741,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           // Territorio perdido para a horda
           newEvents.push({
             turn: newTurn,
-            message: `Territorio ${t.position + 1} (${t.ownerName}) foi destruido pela Horda!`,
+            message: `Território ${t.position + 1} (${t.ownerName}) foi destruído pela Horda!`,
             type: "danger",
           });
           return { ...t, ownerId: null, ownerName: "Destruido", units: [], structures: [] };
@@ -1978,8 +2023,8 @@ export function getGameStats(events: GameEvent[]): GameStats {
       unitsTrained += parseInt(trainMatch[1], 10);
     }
 
-    // Horda: cada evento "A HORDA ATACA" = 1 ataque repelido (pelo jogador se sobreviveu)
-    if (ev.message.includes("A HORDA ATACA")) {
+    // Horda: cada evento de ataque da Horda = 1 ataque (repelido ou derrotado)
+    if (ev.message.includes("A Horda atacou")) {
       hordeRepelled += 1;
     }
 
