@@ -125,7 +125,7 @@
     "id": "F-067",
     "name": "Constantes de balanceamento do mercado",
     "description": "Em /src/game/constants/balance.ts, definir objeto MARKET com: GRAIN_TO_WOOD_COST: 30, GRAIN_TO_WOOD_YIELD: 10, GRAIN_TO_GOLD_COST: 40, GRAIN_TO_GOLD_YIELD: 10, TRADES_PER_TURN_PER_TAVERN: 1. Taxas intencionalmente desfavoráveis (3:1 e 4:1) para que mercado seja válvula de escape, não estratégia principal. Nenhum valor hardcoded na UI ou engine.",
-    "status": "pending",
+    "status": "passing",
     "priority": 7,
     "agent": "coder",
     "task": "vibe-code",
@@ -135,7 +135,8 @@
       "Taxas de conversão: 30 grão → 10 madeira, 40 grão → 10 ouro",
       "Limite de 1 troca por turno por Tavern definido na constante"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-020-grain-market.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-020-grain-market.md",
+    "completed_at": "2026-03-11T16:12:18.757Z"
   },
   {
     "id": "F-066",
