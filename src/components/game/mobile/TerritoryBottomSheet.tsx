@@ -159,6 +159,8 @@ interface TerritoryBottomSheetProps {
   marketTradesUsed?: string[];
   /** Called when market trade is triggered */
   onMarketTrade?: (trade: "GRAIN_TO_WOOD" | "GRAIN_TO_GOLD") => void;
+  /** Whether player has at least 1 productive structure (Farm/Sawmill/Mine) in any territory */
+  playerHasProductiveStructures?: boolean;
   /** Additional class names */
   className?: string;
 }
@@ -198,6 +200,7 @@ export function TerritoryBottomSheet({
   onAttack,
   marketTradesUsed = [],
   onMarketTrade,
+  playerHasProductiveStructures = true,
   className = "",
 }: TerritoryBottomSheetProps) {
   const { vibrate } = useHaptic();
@@ -463,6 +466,12 @@ export function TerritoryBottomSheet({
                     <p className="text-xs text-red-400 text-center font-medium">
                       Território lotado (4/4 estruturas)
                     </p>
+                  )}
+                  {/* F-072: Inline alert when player has no productive structures */}
+                  {!playerHasProductiveStructures && (
+                    <div className="px-3 py-2 rounded-lg bg-amber-900/60 border border-amber-500/40 text-amber-200 text-xs leading-snug">
+                      ⚠ Sem estruturas produtivas! Considere construir Farm, Sawmill ou Mine primeiro.
+                    </div>
                   )}
                   <div className="flex gap-2">
                     {/* Build button */}

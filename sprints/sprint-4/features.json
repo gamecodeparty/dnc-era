@@ -356,7 +356,7 @@
     "id": "F-072",
     "name": "Alerta inline no menu de construção",
     "description": "Em TerritoryBottomSheet.tsx, quando jogador seleciona estrutura não-produtiva (Wall, Barracks, Stable, Tavern, Shadow Guild) e não tem NENHUMA estrutura produtiva em nenhum território: exibir alerta inline acima do botão Construir '⚠ Sem estruturas produtivas! Considere construir Farm, Sawmill ou Mine primeiro.' (bg-amber-900/60 border-amber-500/40 text-amber-200). Alerta NÃO bloqueia construção. Desaparece se jogador já tem ao menos 1 produtiva.",
-    "status": "pending",
+    "status": "passing",
     "priority": 19,
     "agent": "coder",
     "task": "vibe-code",
@@ -367,7 +367,8 @@
       "Alerta desaparece se jogador já tem ao menos 1 Farm, Sawmill ou Mine",
       "Estilo visual correto (bg-amber-900/60 border-amber-500/40 text-amber-200)"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-022-onboarding-tips-expanded.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-022-onboarding-tips-expanded.md",
+    "completed_at": "2026-03-11T17:40:00Z"
   },
   {
     "id": "F-073",

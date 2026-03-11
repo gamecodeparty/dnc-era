@@ -201,6 +201,12 @@ export default function GamePage() {
     t.units.some((u) => MILITARY_UNITS.includes(u.type as typeof MILITARY_UNITS[number]) && u.quantity > 0)
   );
 
+  // F-072: Productive structure check (Farm, Sawmill, Mine)
+  const PRODUCTIVE_STRUCTURES = ["FARM", "SAWMILL", "MINE"] as const;
+  const playerHasProductiveStructures = playerTerritories.some((t) =>
+    t.structures.some((s) => PRODUCTIVE_STRUCTURES.includes(s.type as typeof PRODUCTIVE_STRUCTURES[number]))
+  );
+
   // SPY helpers
   const playerHasSpy = playerTerritories.some((t) =>
     t.units.some((u) => u.type === "SPY" && u.quantity > 0)
@@ -1177,6 +1183,7 @@ export default function GamePage() {
           setSelectedTerritoryId(null);
           handleAttack(territory.id);
         }}
+        playerHasProductiveStructures={playerHasProductiveStructures}
         marketTradesUsed={marketTradesUsed}
         onMarketTrade={(trade) => {
           if (selectedTerritory?.ownerId === "player") {
