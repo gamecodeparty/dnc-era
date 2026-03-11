@@ -189,7 +189,7 @@
     "id": "F-043",
     "name": "Componente GameResultsScreen com ranking animado",
     "description": "Criar /src/components/game/results/GameResultsScreen.tsx com 3 seções: (1) Ranking dos 6 clãs por score (territórios×100 + população×10 + ouro×1 + unidades×5), aparecendo de baixo pra cima com delay 300ms (Framer Motion), 1º lugar com efeito dourado + Sparkles, clã do jogador destacado, eliminados com caveira. (2) Estatísticas da partida (turnos, territórios conquistados, batalhas, estruturas, unidades, cartas, horda). (3) Momento épico (batalha com maior saque ou diferença de poder). Rodapé com botões 'Jogar Novamente' e 'Ver Detalhes'.",
-    "status": "blocked",
+    "status": "passing",
     "priority": 11,
     "agent": "coder",
     "task": "vibe-code",
@@ -204,7 +204,8 @@
       "Tela funciona tanto para vitória quanto para derrota",
       "Botão 'Jogar Novamente' presente e funcional"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-014-endgame-results-screen.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-014-endgame-results-screen.md",
+    "completed_at": "2026-03-11T13:40:00Z"
   },
   {
     "id": "F-044",
