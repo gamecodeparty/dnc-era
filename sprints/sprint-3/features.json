@@ -130,7 +130,7 @@
     "id": "F-040",
     "name": "Função de cálculo de tempo de viagem",
     "description": "Criar função calculateTravelTime(fromPosition, toPosition) em gameStore.ts ou utilitário em /src/game/engine/. Baseada em distância Manhattan na grid 4x3: converte posição 1-12 para (row, col), calcula |fromRow-toRow| + |fromCol-toCol|, retorna Math.max(1, distance). Mínimo 1 turno para qualquer expedição.",
-    "status": "pending",
+    "status": "passing",
     "priority": 8,
     "agent": "coder",
     "task": "vibe-code",
@@ -142,13 +142,14 @@
       "Posições na mesma linha/coluna adjacentes retornam 1 turno",
       "Posições nos extremos opostos (1 e 12) retornam valor correto (distância máxima)"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-013-expedition-travel-time-preview.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-013-expedition-travel-time-preview.md",
+    "completed_at": "2026-03-11T12:37:00Z"
   },
   {
     "id": "F-041",
     "name": "Exibição de tempo de viagem no ExpeditionModal",
     "description": "Em ExpeditionModal.tsx, na seção de seleção de destino, exibir tempo de viagem ao lado do território alvo: 'Destino: Território 7 (Clã do Norte) — ⏱ 2 turnos'. Se tempo >= 3 turnos, exibir aviso adicional: '⚠ Viagem longa: tropas chegarão em 3 turnos. Seus territórios ficarão sem essas unidades durante a viagem.' Tempo recalcula em tempo real ao mudar território de origem.",
-    "status": "blocked",
+    "status": "pending",
     "priority": 9,
     "agent": "coder",
     "task": "vibe-code",
@@ -167,7 +168,7 @@
     "id": "F-042",
     "name": "Badge de tempo de viagem no mapa durante seleção",
     "description": "Em Territory.tsx, quando ExpeditionModal está aberto (fluxo de expedição), exibir badge '⏱ Xt' sobre cada território alvo potencial. Cor baseada no tempo: verde (1 turno), amarelo (2 turnos), vermelho (3+ turnos). Badge posicionado no canto inferior esquerdo do tile. Desaparece quando ExpeditionModal é fechado.",
-    "status": "blocked",
+    "status": "pending",
     "priority": 10,
     "agent": "coder",
     "task": "vibe-code",
