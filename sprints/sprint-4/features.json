@@ -449,7 +449,7 @@
     "id": "F-079",
     "name": "Texto mecânico na transição de era",
     "description": "Em EraTransition.tsx, adicionar bloco de texto abaixo da descrição existente com bullet points de mudanças mecânicas. Era da Guerra: 'Clãs podem atacar territórios', 'AI mais agressiva', 'Novas cartas de combate'. Era da Invasão: 'Horda ataca a cada 3 turnos (50→300)', 'Alvo: clã com mais territórios', 'Alianças para sobreviver'. Definir textos como constante ERA_MECHANICS. Transição para Era da Paz NÃO exibe texto. Animação existente preservada.",
-    "status": "pending",
+    "status": "passing",
     "priority": 24,
     "agent": "coder",
     "task": "vibe-code",
@@ -460,7 +460,8 @@
       "Transição de Era da Paz (início do jogo) NÃO exibe texto mecânico",
       "Animação de transição existente não é alterada"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-025-era-transition-explanation.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-025-era-transition-explanation.md",
+    "completed_at": "2026-03-11T17:55:00Z"
   },
   {
     "id": "F-080",
