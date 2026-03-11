@@ -94,7 +94,7 @@
     "id": "F-038",
     "name": "Indicador de cartas não usadas no botão de confirmar",
     "description": "Em ExpeditionModal.tsx, se jogador tem cartas disponíveis mas NÃO selecionou nenhuma, o botão de confirmar expedição exibe sub-texto '(sem cartas selecionadas)' em cor neutra (não vermelho — é lembrete, não erro). Sub-texto desaparece quando pelo menos uma carta é selecionada. Não aparece quando não há cartas disponíveis.",
-    "status": "pending",
+    "status": "passing",
     "priority": 6,
     "agent": "coder",
     "task": "vibe-code",
@@ -105,7 +105,8 @@
       "Sub-texto NÃO aparece quando não há cartas disponíveis",
       "Cor do sub-texto é neutra (não vermelha)"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-012-cards-contextual-highlight.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-012-cards-contextual-highlight.md",
+    "completed_at": "2026-03-11T05:26:00Z"
   },
   {
     "id": "F-039",

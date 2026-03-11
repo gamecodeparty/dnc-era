@@ -162,6 +162,9 @@ export function ExpeditionModal({
 
   const showBanner = !bannerDismissed && bannerCards.length > 0;
 
+  // F-038: show hint when cards are available but none selected
+  const showNoCardHint = availableCombatCards.length > 0 && selectedCard === null;
+
   // Available units from selected territory
   const availableUnits = useMemo(() => {
     const available: Record<UnitType, number> = {
@@ -729,8 +732,17 @@ export function ExpeditionModal({
               onClick={handleSend}
               disabled={currentEra === "PEACE" || expeditionStats.totalUnits === 0}
             >
-              <Swords className="w-4 h-4 mr-2" />
-              Enviar ({expeditionStats.totalUnits} tropas)
+              <div className="flex flex-col items-center gap-0.5">
+                <div className="flex items-center gap-2">
+                  <Swords className="w-4 h-4" />
+                  Enviar ({expeditionStats.totalUnits} tropas)
+                </div>
+                {showNoCardHint && (
+                  <span className="text-xs font-normal normal-case tracking-normal text-white/50">
+                    (sem cartas selecionadas)
+                  </span>
+                )}
+              </div>
             </MedievalButton>
           </div>
         </motion.div>
