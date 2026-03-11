@@ -66,6 +66,9 @@ import { ExpeditionModal, ExplorationModal, ExpeditionsPanel } from "@/component
 // Tutorial components
 import { TutorialOverlay } from "@/components/game/tutorial";
 
+// Timer hook
+import { useTurnTimer } from "@/hooks/useTurnTimer";
+
 // Animations
 import {
   staggerContainer,
@@ -155,19 +158,14 @@ export default function GamePage() {
     expeditions,
     explorationSites,
     sendExploration,
-    tickTimer,
   } = useGameStore();
 
   const player = getPlayerClan();
   const playerTerritories = getPlayerTerritories();
   const eraInfo = getEraInfo(currentEra as EraType);
 
-  // Timer para proximo turno — driven by store
-  useEffect(() => {
-    if (gameOver) return;
-    const interval = setInterval(() => tickTimer(), 1000);
-    return () => clearInterval(interval);
-  }, [gameOver, tickTimer]);
+  // Timer de turno — gerenciado pelo hook (resume no mount, pausa no unmount)
+  useTurnTimer();
 
   const selectedTerritory = territories.find((t) => t.id === selectedTerritoryId);
   const timerProgress = ((TURN_INTERVAL_MS - timeRemaining) / TURN_INTERVAL_MS) * 100;
