@@ -40,7 +40,7 @@
     "id": "F-083",
     "name": "Atualizar UI do território para custos por nível",
     "description": "Em /src/app/game/territory/[id]/page.tsx, alterar importação de STRUCTURE_COSTS de gameStore.ts para @/game/constants/balance. Usar nível atual da estrutura para indexar custo correto (currentLevel = territory.structures[type]?.level ?? 0). UI deve exibir custos idênticos aos usados pela AI e engine.",
-    "status": "pending",
+    "status": "passing",
     "priority": 3,
     "agent": "coder",
     "task": "vibe-code",
@@ -53,13 +53,14 @@
       "Nenhum campo grain aparece em custos de construção",
       "Projeto compila sem erros"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-026-structure-costs-consolidation.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-026-structure-costs-consolidation.md",
+    "completed_at": "2026-03-11T20:00:00.000Z"
   },
   {
     "id": "F-084",
     "name": "Validar custo Muralha Nv1 = 25 madeira",
     "description": "Em /src/game/constants/balance.ts, confirmar que Muralha Nv1 custa {wood: 25, gold: 10}. Se valor for diferente, ajustar. Com recursos iniciais (50 madeira, 50 ouro), jogador deve poder construir Muralha no turno 1-2. Bônus de defesa (+20% por nível) não deve ser alterado.",
-    "status": "blocked",
+    "status": "pending",
     "priority": 4,
     "agent": "coder",
     "task": "vibe-code",
