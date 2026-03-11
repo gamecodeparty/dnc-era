@@ -1,6 +1,6 @@
 "use client";
 
-import { X, MapPin, Building2, Users, Wheat, Trees, Coins } from "lucide-react";
+import { X, MapPin, Building2, Users, Wheat, Trees, Coins, Sword } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MedievalButton } from "@/components/ui/medieval";
 import { useHaptic } from "@/hooks/useHaptic";
@@ -20,6 +20,8 @@ interface Structure {
   level: number;
 }
 
+type Era = "PEACE" | "WAR" | "INVASION";
+
 interface TerritoryBottomSheetProps {
   /** Selected territory */
   territory: Territory | null;
@@ -27,12 +29,18 @@ interface TerritoryBottomSheetProps {
   structures?: Structure[];
   /** Whether player owns this territory */
   isOwned?: boolean;
+  /** Current game era */
+  currentEra?: Era;
+  /** Whether player has ≥1 territory with military units */
+  playerHasTroops?: boolean;
   /** Called when sheet should close */
   onClose: () => void;
   /** Called when build action is selected */
   onBuild?: () => void;
   /** Called when train action is selected */
   onTrain?: () => void;
+  /** Called when attack action is selected (enemy territory only) */
+  onAttack?: (territory: Territory) => void;
   /** Additional class names */
   className?: string;
 }
@@ -53,9 +61,12 @@ export function TerritoryBottomSheet({
   territory,
   structures = [],
   isOwned = false,
+  currentEra = "PEACE",
+  playerHasTroops = false,
   onClose,
   onBuild,
   onTrain,
+  onAttack,
   className = "",
 }: TerritoryBottomSheetProps) {
   const { vibrate } = useHaptic();
@@ -73,6 +84,12 @@ export function TerritoryBottomSheet({
   const handleTrain = () => {
     vibrate("medium");
     onTrain?.();
+  };
+
+  const handleAttack = () => {
+    if (!territory) return;
+    vibrate("heavy");
+    onAttack?.(territory);
   };
 
   const BonusIcon = territory?.bonusResource ? bonusIcons[territory.bonusResource] : null;
@@ -208,13 +225,40 @@ export function TerritoryBottomSheet({
                 </div>
               )}
 
-              {!isOwned && territory.ownerId && (
-                <div className="p-3 rounded-lg bg-era-war/10 border border-era-war/30">
-                  <p className="text-sm text-era-war">
-                    Territorio inimigo
-                  </p>
-                </div>
-              )}
+              {!isOwned && territory.ownerId && (() => {
+                const isWarEra = currentEra === "WAR" || currentEra === "INVASION";
+                const attackDisabled = !isWarEra || !playerHasTroops;
+                const tooltip = !isWarEra
+                  ? "Ataques disponíveis na Era da Guerra"
+                  : !playerHasTroops
+                  ? "Recrute unidades para atacar"
+                  : undefined;
+
+                return (
+                  <div className="space-y-2">
+                    <div className="p-2 rounded-lg bg-era-war/10 border border-era-war/30">
+                      <p className="text-xs text-era-war">Território inimigo</p>
+                    </div>
+                    <div className="relative">
+                      <MedievalButton
+                        variant="primary"
+                        size="sm"
+                        className={`w-full ${attackDisabled ? "opacity-50 cursor-not-allowed bg-gray-600 border-gray-500 hover:bg-gray-600" : "bg-red-700 border-red-600 hover:bg-red-600"}`}
+                        onClick={attackDisabled ? undefined : handleAttack}
+                        title={tooltip}
+                      >
+                        <Sword className="w-4 h-4 mr-2" />
+                        Atacar
+                      </MedievalButton>
+                      {tooltip && (
+                        <p className="text-xs text-medieval-text-muted mt-1 text-center">
+                          {tooltip}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {!isOwned && !territory.ownerId && (
                 <MedievalButton

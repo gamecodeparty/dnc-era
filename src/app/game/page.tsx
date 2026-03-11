@@ -170,6 +170,12 @@ export default function GamePage() {
   const playerTerritories = getPlayerTerritories();
   const eraInfo = getEraInfo(currentEra as EraType);
 
+  // Military troop helpers
+  const MILITARY_UNITS = ["SOLDIER", "ARCHER", "KNIGHT"] as const;
+  const playerHasTroops = playerTerritories.some((t) =>
+    t.units.some((u) => MILITARY_UNITS.includes(u.type as typeof MILITARY_UNITS[number]) && u.quantity > 0)
+  );
+
   // SPY helpers
   const playerHasSpy = playerTerritories.some((t) =>
     t.units.some((u) => u.type === "SPY" && u.quantity > 0)
@@ -975,6 +981,8 @@ export default function GamePage() {
           level: s.level,
         })) || []}
         isOwned={selectedTerritory?.ownerId === "player"}
+        currentEra={currentEra as "PEACE" | "WAR" | "INVASION"}
+        playerHasTroops={playerHasTroops}
         onClose={() => setSelectedTerritoryId(null)}
         onBuild={() => {
           if (selectedTerritory?.ownerId === "player") {
@@ -985,6 +993,10 @@ export default function GamePage() {
           if (selectedTerritory?.ownerId === "player") {
             window.location.href = `/game/territory/${selectedTerritory.id}`;
           }
+        }}
+        onAttack={(territory) => {
+          setSelectedTerritoryId(null);
+          handleAttack(territory.id);
         }}
         className="lg:hidden"
       />

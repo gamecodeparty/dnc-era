@@ -3,7 +3,8 @@
     "id": "F-020",
     "name": "Botão Atacar no TerritoryBottomSheet",
     "description": "Adicionar botão 'Atacar' (vermelho, ícone espada) no TerritoryBottomSheet quando território selecionado pertence a inimigo. Condições: Era == WAR ou INVASION, território de outro clã, jogador tem ≥1 território com unidades militares. Desabilitado (cinza + tooltip) na Era da Paz ('Ataques disponíveis na Era da Guerra') ou sem tropas ('Recrute unidades para atacar'). Ao clicar, emitir callback onAttack(territory) ao componente pai. Arquivo: src/components/game/mobile/TerritoryBottomSheet.tsx",
-    "status": "pending",
+    "status": "passing",
+    "completed_at": "2026-03-11T03:00:00Z",
     "priority": 1,
     "agent": "coder",
     "task": "vibe-code",
@@ -24,7 +25,9 @@
     "priority": 2,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-020"],
+    "dependencies": [
+      "F-020"
+    ],
     "tests": [
       "Clicar 'Atacar' no bottom sheet abre ExpeditionModal pré-configurado",
       "Território de origem pré-selecionado automaticamente (mais próximo com unidades)",
@@ -53,11 +56,13 @@
     "id": "F-023",
     "name": "Feedback pós-ataque no log de eventos",
     "description": "Em gameStore.ts: quando expedição ATTACK é resolvida em processTurn(), adicionar evento detalhado no log. Vitória: 'Você atacou [território] de [clã]. VITÓRIA! Conquistou o território. Saqueou: +X grão, +Y madeira, +Z ouro. Perdas: N unidades.' Derrota: 'Você atacou [território] de [clã]. DERROTA. Perdeu N soldados, M arqueiros.' Incluir campos de CombatResult no evento. Estilo visual: vitória (verde), derrota (vermelho). Arquivo: src/stores/gameStore.ts",
-    "status": "pending",
+    "status": "blocked",
     "priority": 4,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-021"],
+    "dependencies": [
+      "F-021"
+    ],
     "tests": [
       "Resultado de ataque aparece como evento detalhado no log",
       "Evento inclui resultado (vitória/derrota), recursos saqueados (se vitória), e perdas",
@@ -69,11 +74,13 @@
     "id": "F-024",
     "name": "Painel de cartas no ExpeditionModal",
     "description": "Em ExpeditionModal.tsx: adicionar seção 'Cartas Disponíveis' entre seleção de unidades e preview. Listar apenas cartas na mão com contexto de ataque: combat (Reforços), espionage (Informante), aggression (Sabotagem). Cada carta: nome, efeito resumido, botão 'Ativar'. Ativar marca selectedCard no estado local. Apenas 1 carta por ataque. Preview recalcula bônus: Reforços attackPower*1.5, Informante remove '~' da defesa. Sem cartas: 'Sem cartas de combate disponíveis'. Cartas economia/defesa NÃO listadas. Arquivo: src/components/game/expedition/ExpeditionModal.tsx",
-    "status": "pending",
+    "status": "blocked",
     "priority": 5,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-021"],
+    "dependencies": [
+      "F-021"
+    ],
     "tests": [
       "Seção lista cartas relevantes do jogador ao abrir modal de ataque",
       "Ativar Reforços aumenta attackPower em 50% no preview",
@@ -87,11 +94,13 @@
     "id": "F-025",
     "name": "Consumo de carta ao confirmar ataque",
     "description": "Em gameStore.ts: modificar sendExpedition() para aceitar cardType: CardType | null opcional. Se carta fornecida: remover da mão (decrementar quantidade), armazenar cardBonus na expedição. Reforços: attackerCardBonus = 0.5 (passado a executeCombat). Informante: revelar unidades do território alvo. Sabotagem: flag para destruir estrutura após vitória. Em types/index.ts: adicionar campo opcional cardType ao tipo Expedition. Ataque sem carta funciona normalmente (retrocompatível). Arquivos: src/stores/gameStore.ts, src/game/types/index.ts",
-    "status": "pending",
+    "status": "blocked",
     "priority": 6,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-024"],
+    "dependencies": [
+      "F-024"
+    ],
     "tests": [
       "Confirmar ataque com carta ativa remove carta da mão",
       "Bônus da carta aplicado no cálculo de combate real (não só preview)",
@@ -188,11 +197,13 @@
     "id": "F-034",
     "name": "Formatação adaptativa e urgência visual no HUD timer",
     "description": "No componente de HUD que exibe o timer: formatação adaptativa — ≤60s exibir segundos ('0:45'), >60s minutos:segundos ('9:45'), >60min horas:minutos ('1:30:00'). Urgência visual percentual: últimos 20% texto amarelo, últimos 10% texto vermelho com pulse. Funciona proporcionalmente a qualquer valor de TURN_DURATION_MS. Arquivo: componente de timer no HUD (EraIndicator ou similar)",
-    "status": "pending",
+    "status": "blocked",
     "priority": 12,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-033"],
+    "dependencies": [
+      "F-033"
+    ],
     "tests": [
       "Timer exibe formato mm:ss quando duração > 60s",
       "Urgência amarela nos últimos 20% do tempo",
@@ -256,11 +267,13 @@
     "id": "F-032",
     "name": "Indicador ⚠ inline no botão de construção",
     "description": "Em TerritoryBottomSheet.tsx: antes de abrir o modal, indicar visualmente no botão — se custo > 80% de algum recurso, exibir ícone ⚠ ao lado do botão 'Construir'/'Treinar'. Tooltip: 'Custo elevado — usa X% do seu estoque de [recurso]'. Funciona para construção e treino. Arquivo: src/components/game/mobile/TerritoryBottomSheet.tsx",
-    "status": "pending",
+    "status": "blocked",
     "priority": 16,
     "agent": "coder",
     "task": "vibe-code",
-    "dependencies": ["F-031"],
+    "dependencies": [
+      "F-031"
+    ],
     "tests": [
       "Ícone ⚠ visível no botão quando custo > 80% de algum recurso",
       "Tooltip indica qual recurso e percentual",
