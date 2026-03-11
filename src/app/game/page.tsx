@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useGameStore, TOTAL_TURNS, SPY_SUCCESS_CHANCE_BASE, SPY_UMBRAL_BONUS, getDistance, type UnitType } from "@/stores/gameStore";
 import { ResourcePanel } from "@/components/game/sidebar/ResourcePanel";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
-import { TURN_DURATION_MS } from "@/game/constants/balance";
+import { TURN_DURATION_MS, TERRITORY_ADJACENCY } from "@/game/constants/balance";
 import { calculateTravelTime } from "@/game/engine";
 import {
   LogOut,
@@ -733,6 +733,17 @@ export default function GamePage() {
                   (currentEra === "WAR" || currentEra === "INVASION") &&
                   playerHasTroops;
 
+                // F-094: When expedition modal is open, dim territories out of reach from origin
+                const expeditionOriginTerritory = expeditionOrigin
+                  ? territories.find((t) => t.id === expeditionOrigin)
+                  : null;
+                const isExpeditionModalOpen = !!(expeditionTarget && expeditionOrigin);
+                const isOriginTerritory = territory.id === expeditionOrigin;
+                const isReachable = expeditionOriginTerritory
+                  ? (TERRITORY_ADJACENCY[expeditionOriginTerritory.position] ?? []).includes(territory.position)
+                  : false;
+                const isOutOfReach = isExpeditionModalOpen && !isOriginTerritory && !isReachable;
+
                 return (
                   <motion.div
                     key={territory.id}
@@ -751,6 +762,7 @@ export default function GamePage() {
                       ${isSelected ? "ring-2 ring-medieval-primary-bright scale-105 shadow-golden-glow" : ""}
                       ${hasExplorationSite ? "ring-1 ring-era-peace/50" : ""}
                       ${isAttackable && !isSelected ? "ring-2 ring-red-500/30 animate-pulse" : ""}
+                      ${isOutOfReach ? "opacity-40" : ""}
                     `}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.98 }}

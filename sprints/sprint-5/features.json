@@ -250,7 +250,7 @@
     "id": "F-094",
     "name": "Highlight de alcance durante ExpeditionModal",
     "description": "Em ExpeditionModal.tsx e GameMap.tsx, quando ExpeditionModal está aberto e jogador seleciona território de origem, territórios alcançáveis (adjacentes) ficam com highlight normal e territórios fora de alcance ficam com opacidade reduzida. Highlight reseta ao fechar modal.",
-    "status": "blocked",
+    "status": "passing",
     "priority": 14,
     "agent": "coder",
     "task": "vibe-code",
@@ -262,7 +262,8 @@
       "Apenas territórios adjacentes ao de origem são destacados como alcançáveis",
       "Highlight reseta ao fechar ExpeditionModal"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-029-territory-adjacency-visualization.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-029-territory-adjacency-visualization.md",
+    "completed_at": "2026-03-11T19:57:47Z"
   },
   {
     "id": "F-095",
