@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Wheat, Trees, Coins, Swords, Home } from "lucide-react";
+import { Wheat, Trees, Coins, Swords, Home, Eye } from "lucide-react";
 
 interface TerritoryProps {
   id: string;
@@ -14,6 +14,9 @@ interface TerritoryProps {
   unitsCount: number;
   isPlayerOwned: boolean;
   isSelected?: boolean;
+  isRevealed?: boolean;
+  revealedUnitsCount?: number;
+  revealedStructuresCount?: number;
   onClick?: () => void;
 }
 
@@ -52,6 +55,9 @@ export function Territory({
   unitsCount,
   isPlayerOwned,
   isSelected = false,
+  isRevealed = false,
+  revealedUnitsCount,
+  revealedStructuresCount,
   onClick,
 }: TerritoryProps) {
   const ResourceIcon = RESOURCE_ICONS[bonusResource as keyof typeof RESOURCE_ICONS] || Wheat;
@@ -82,6 +88,22 @@ export function Territory({
       <span className="absolute top-1 left-1 text-xs text-slate-500">
         {position + 1}
       </span>
+
+      {/* Revealed indicator */}
+      {isRevealed && (
+        <div className="absolute top-1 right-1 group/spy z-10">
+          <div className="w-5 h-5 rounded-full bg-purple-500/80 flex items-center justify-center">
+            <Eye className="w-3 h-3 text-white" />
+          </div>
+          <div className="absolute right-0 top-6 invisible group-hover/spy:visible z-20
+            bg-slate-900 border border-purple-500/50 rounded p-2 text-xs text-slate-200
+            whitespace-nowrap shadow-lg min-w-[140px]">
+            <p className="font-bold text-purple-300 mb-1">Informações reveladas</p>
+            <p>Tropas: {revealedUnitsCount ?? 0}</p>
+            <p>Estruturas: {revealedStructuresCount ?? 0}</p>
+          </div>
+        </div>
+      )}
 
       {/* Resource bonus icon */}
       <ResourceIcon className={cn("w-6 h-6", resourceColor)} />
