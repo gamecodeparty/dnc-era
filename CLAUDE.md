@@ -18,28 +18,28 @@ The game follows a three-era structure: **Build → Expand → Survive** (Peace 
 - **State**: Zustand
 - **UI**: Tailwind CSS + shadcn/ui + Framer Motion
 - **Deploy**: Docker Compose + Coolify + Traefik
-- **Package Manager**: pnpm
+- **Package Manager**: npm
 
 ## Development Commands
 
 ```bash
 # Start everything (recommended)
-pnpm dev:all
+npm run dev:all
 
 # Or step by step:
-pnpm dev:infra      # Start PostgreSQL + Redis
-pnpm db:migrate     # Apply migrations
-pnpm dev            # Start Next.js app
+npm run dev:infra      # Start PostgreSQL + Redis
+npm run db:migrate     # Apply migrations
+npm run dev            # Start Next.js app
 
 # Database commands
-pnpm db:generate    # Generate Prisma client
-pnpm db:migrate:dev # Create new migration
-pnpm db:seed        # Seed database
-pnpm db:reset       # Reset and reseed
-pnpm db:studio      # Open Prisma Studio
+npm run db:generate    # Generate Prisma client
+npm run db:migrate:dev # Create new migration
+npm run db:seed        # Seed database
+npm run db:reset       # Reset and reseed
+npm run db:studio      # Open Prisma Studio
 
 # Stop infrastructure
-pnpm dev:infra:down
+npm run dev:infra:down
 ```
 
 ## Default Credentials
