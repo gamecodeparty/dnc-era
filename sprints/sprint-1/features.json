@@ -320,7 +320,7 @@
     "id": "F-018",
     "name": "Barra de slots na página de território",
     "description": "Em territory/[id]/page.tsx, exibir barra visual de slots de construção (4 quadrados: preenchidos=existentes, vazios=disponíveis). Quando 4/4: desabilitar botão de construir com mensagem 'Sem slots disponíveis'. Tooltip em cada slot preenchido mostra nome da estrutura.",
-    "status": "pending",
+    "status": "passing",
     "priority": 18,
     "agent": "coder",
     "task": "vibe-code",
@@ -330,7 +330,8 @@
       "Botão de construir desabilitado quando 4/4 com mensagem 'Sem slots disponíveis'",
       "Tooltip em cada slot preenchido mostra nome da estrutura"
     ],
-    "prp_path": "sprints/sprint-1/3-prps/PRP-005-information-transparency.md"
+    "prp_path": "sprints/sprint-1/3-prps/PRP-005-information-transparency.md",
+    "completed_at": "2026-03-10T00:00:00.000Z"
   },
   {
     "id": "F-019",

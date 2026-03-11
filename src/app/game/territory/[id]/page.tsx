@@ -247,6 +247,30 @@ export default function TerritoryPage() {
                 }
               />
               <PanelContent>
+                {/* Slot bar: 4 squares, filled = structure, empty = available */}
+                <div className="flex gap-2 mb-4">
+                  {Array.from({ length: 4 }).map((_, i) => {
+                    const structure = territory.structures[i];
+                    if (structure) {
+                      const info = STRUCTURE_INFO[structure.type];
+                      return (
+                        <div key={i} className="relative group flex-1">
+                          <div className="h-10 rounded border-2 border-medieval-primary/60 bg-medieval-primary/20 flex items-center justify-center cursor-default">
+                            <info.icon className="w-4 h-4 text-medieval-primary" />
+                          </div>
+                          {/* Tooltip */}
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-medieval-bg-deep border border-medieval-primary/40 rounded text-xs text-medieval-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                            {info.name}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div key={i} className="flex-1 h-10 rounded border-2 border-dashed border-medieval-text-muted/30 bg-medieval-bg-deep/20" />
+                    );
+                  })}
+                </div>
+
                 {territory.structures.length > 0 ? (
                   <AnimatedList className="space-y-2">
                     {territory.structures.map((s, i) => {
@@ -354,6 +378,14 @@ export default function TerritoryPage() {
                           <span className="text-xs text-era-peace flex items-center gap-1">
                             <Check className="w-3 h-3" /> Construido
                           </span>
+                        ) : isFull ? (
+                          <MedievalButton
+                            size="sm"
+                            variant="ghost"
+                            disabled
+                          >
+                            Sem slots disponíveis
+                          </MedievalButton>
                         ) : (
                           <MedievalButton
                             size="sm"
@@ -403,13 +435,6 @@ export default function TerritoryPage() {
                   );
                 })}
 
-                {isFull && (
-                  <div className="text-center py-2">
-                    <p className="text-medieval-primary text-sm font-cinzel">
-                      Territorio cheio! (4/4)
-                    </p>
-                  </div>
-                )}
               </PanelContent>
             </ParchmentPanel>
           </motion.div>
