@@ -203,7 +203,7 @@
     "id": "F-062",
     "name": "Prioridade de ataque HOSTILE na AI",
     "description": "Em AIController.ts, quando relação é HOSTILE: AI prioriza atacar territórios do jogador sobre outros alvos neutros. Multiplicador de agressividade: +50% chance de escolher jogador como alvo. Comportamento deve ser perceptível (não apenas marginal).",
-    "status": "pending",
+    "status": "passing",
     "priority": 11,
     "agent": "coder",
     "task": "vibe-code",
@@ -213,7 +213,8 @@
       "Multiplicador de +50% aplicado na seleção de alvo",
       "Comportamento é perceptível no jogo (não apenas marginal)"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-019-diplomacy-concrete-effects.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-019-diplomacy-concrete-effects.md",
+    "completed_at": "2026-03-11T16:45:00Z"
   },
   {
     "id": "F-061",

@@ -2217,8 +2217,11 @@ function processAI(
       }
     }
 
-    // IA ataca na era de guerra
-    if (era === "WAR" && Math.random() > 0.6) {
+    // F-062: Calcular relação com jogador antes dos blocos de ataque
+    const relationWithPlayer = diplomacy[aiId] ?? "NEUTRAL";
+
+    // IA ataca na era de guerra — F-062: HOSTILE pula neutros para focar no jogador
+    if (era === "WAR" && Math.random() > 0.6 && relationWithPlayer !== "HOSTILE") {
       const neutralTerritories = updatedTerritories.filter((t) => t.ownerId === null);
       if (neutralTerritories.length > 0) {
         const target = neutralTerritories[Math.floor(Math.random() * neutralTerritories.length)];
@@ -2246,7 +2249,6 @@ function processAI(
     }
 
     // F-060: Pacto de não-agressão — verificar relação com jogador
-    const relationWithPlayer = diplomacy[aiId] ?? "NEUTRAL";
     const allianceTurn = allianceTurnFormed[aiId] ?? 0;
     const turnsSinceAlliance = currentTurn - allianceTurn;
 
@@ -2272,10 +2274,18 @@ function processAI(
     const updatedRelation = diplomacyBreaks.some((b) => b.clanId === aiId) ? "NEUTRAL" : relationWithPlayer;
 
     // IA telegrafar ataque contra território do jogador (F-058)
-    // 25% chance na Era de Guerra, 35% na Era de Invasão
+    // Normal: WAR=25%, INVASION=35%. F-062 HOSTILE: +50% relativo → WAR=37.5%, INVASION=52.5%
+    // F-062: HOSTILE também ataca na era de Paz (20%) — comportamento perceptível
     // F-060: Não ataca jogador se aliança ativa (TRUSTED e sem quebra)
-    const attackChance = era === "INVASION" ? 0.65 : era === "WAR" ? 0.75 : 1;
-    if ((era === "WAR" || era === "INVASION") && Math.random() > attackChance && updatedRelation !== "TRUSTED") {
+    const isHostile = updatedRelation === "HOSTILE";
+    const basePlayerAttackProb = era === "INVASION" ? 0.35 : era === "WAR" ? 0.25 : 0;
+    const playerAttackProb = isHostile
+      ? (era === "PEACE" ? 0.20 : basePlayerAttackProb * 1.5)
+      : basePlayerAttackProb;
+    const canAttackPlayer = isHostile
+      ? (era === "WAR" || era === "INVASION" || era === "PEACE")
+      : (era === "WAR" || era === "INVASION");
+    if (canAttackPlayer && Math.random() < playerAttackProb && updatedRelation !== "TRUSTED") {
       const playerTerritories = updatedTerritories.filter((t) => t.ownerId === "player");
       // Só atacar se AI tem soldados suficientes
       const aiSoldiers = aiTerritories.reduce((sum, t) => sum + t.units.reduce((s, u) => u.type === "SOLDIER" ? s + u.quantity : s, 0), 0);
