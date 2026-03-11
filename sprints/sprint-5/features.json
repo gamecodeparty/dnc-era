@@ -269,7 +269,7 @@
     "id": "F-095",
     "name": "Classificação de escala de ameaça com fog of war",
     "description": "Criar função classifyThreat que calcula ThreatScale (LOW/MEDIUM/HIGH/CRITICAL) baseado em ratio ataque/defesa. Aplicar fog of war ±20% na estimativa. Espião ativo no território revela valor exato sem fog of war. Definir tipo ThreatScale em types.",
-    "status": "pending",
+    "status": "passing",
     "priority": 15,
     "agent": "coder",
     "task": "vibe-code",
@@ -280,13 +280,14 @@
       "Espião ativo revela valor exato sem fog of war",
       "Tipo ThreatScale definido em types"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-030-attack-threat-scale.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-030-attack-threat-scale.md",
+    "completed_at": "2026-03-11T20:05:00.000Z"
   },
   {
     "id": "F-096",
     "name": "Indicação visual de escala de ameaça no mapa",
     "description": "Em Territory.tsx, no alerta de ataque existente, aplicar ícone e cor por escala: LOW (amarelo), MEDIUM (laranja), HIGH (vermelho), CRITICAL (vermelho pulsante). Cada escala tem texto descritivo distinto (ex: 'Expedição pequena detectada' até 'Força esmagadora detectada!').",
-    "status": "blocked",
+    "status": "pending",
     "priority": 16,
     "agent": "coder",
     "task": "vibe-code",
@@ -304,7 +305,7 @@
     "id": "F-097",
     "name": "Tooltip com estimativa numérica no alerta de ataque",
     "description": "Em Territory.tsx, ao hover no alerta de ataque, tooltip mostra poder estimado vs defesa do jogador, com nota '±20% (envie Espião para valor exato)'. Com espião ativo, mostra valor exato sem ressalva. Tooltip aparece ao hover no badge de alerta.",
-    "status": "blocked",
+    "status": "pending",
     "priority": 17,
     "agent": "coder",
     "task": "vibe-code",

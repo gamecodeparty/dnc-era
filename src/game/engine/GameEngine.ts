@@ -10,7 +10,7 @@ import { ResourceSystem } from "./ResourceSystem";
 import { CombatSystem } from "./CombatSystem";
 import { EraSystem } from "./EraSystem";
 import { AIController } from "../ai/AIController";
-import type { TurnResult, GameState, HordaPreview } from "../types";
+import type { TurnResult, GameState, HordaPreview, ThreatScale } from "../types";
 import { Era } from "@prisma/client";
 import { ERA_DURATION, HORDA } from "../constants";
 
@@ -447,6 +447,57 @@ export class GameEngine {
       },
     });
   }
+}
+
+// ==============================================================================
+// F-095 — THREAT SCALE CLASSIFICATION
+// ==============================================================================
+
+/**
+ * Classifica a escala de ameaça com base no ratio de ataque vs defesa.
+ * ratio < 0.8  → LOW      (ataque fraco)
+ * ratio < 1.2  → MEDIUM   (combate equilibrado)
+ * ratio < 1.5  → HIGH     (provável derrota)
+ * ratio >= 1.5 → CRITICAL (provável conquista)
+ */
+export function classifyThreat(attackPower: number, defensePower: number): ThreatScale {
+  const ratio = attackPower / Math.max(defensePower, 1);
+  if (ratio < 0.8) return 'LOW';
+  if (ratio < 1.2) return 'MEDIUM';
+  if (ratio < 1.5) return 'HIGH';
+  return 'CRITICAL';
+}
+
+/**
+ * Calcula a escala de ameaça para exibição ao jogador, aplicando fog of war (±20%).
+ * Se o jogador tiver espião ativo no território de origem (hasActiveSpy = true),
+ * retorna o valor exato sem fog of war.
+ *
+ * @param actualAttackPower - poder de ataque real da expedição inimiga
+ * @param defensePower      - poder de defesa do território alvo
+ * @param hasActiveSpy      - true se há espião ativo revelando o valor exato
+ * @returns { scale, estimatedPower, isExact }
+ */
+export function estimateThreatForDisplay(
+  actualAttackPower: number,
+  defensePower: number,
+  hasActiveSpy: boolean,
+): { scale: ThreatScale; estimatedPower: number; isExact: boolean } {
+  if (hasActiveSpy) {
+    return {
+      scale: classifyThreat(actualAttackPower, defensePower),
+      estimatedPower: actualAttackPower,
+      isExact: true,
+    };
+  }
+  // Fog of war: ±20% de erro na estimativa
+  const fogFactor = 1 + (Math.random() * 0.4 - 0.2);
+  const estimatedPower = Math.round(actualAttackPower * fogFactor);
+  return {
+    scale: classifyThreat(estimatedPower, defensePower),
+    estimatedPower,
+    isExact: false,
+  };
 }
 
 export default GameEngine;

@@ -105,6 +105,13 @@ export interface UnitGroup {
 // COMBAT
 // ==============================================================================
 
+// ==============================================================================
+// THREAT SCALE
+// ==============================================================================
+
+/** Escala de ameaça de um ataque iminente (F-095) */
+export type ThreatScale = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
 export type CombatOutcome =
   | "DECISIVE_VICTORY"
   | "VICTORY"

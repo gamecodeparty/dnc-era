@@ -143,6 +143,8 @@ export interface IncomingAttack {
   targetTerritoryId: string;
   sourceClanId: string;
   arrivesTurn: number;
+  /** Poder de ataque real da expedição inimiga (usado para classifyThreat + fog of war) */
+  attackPower: number;
 }
 
 export interface HordaPreview {
@@ -2514,10 +2516,14 @@ function processAI(
         // Não telegrafar se já há ataque pendente para este território
         const alreadyPending = newIncomingAttacks.some((a) => a.targetTerritoryId === target.id);
         if (!alreadyPending) {
+          // Calcular poder de ataque real para fog of war / classifyThreat (F-095)
+          const allAiUnits = aiTerritories.flatMap((t) => t.units);
+          const aiAttackPower = getAttackPower(allAiUnits);
           newIncomingAttacks.push({
             targetTerritoryId: target.id,
             sourceClanId: aiId,
             arrivesTurn: currentTurn + 1,
+            attackPower: aiAttackPower,
           });
         }
       }
