@@ -20,6 +20,16 @@ interface TerritoryProps {
   revealedStructuresCount?: number;
   isAttackable?: boolean;
   isExpeditionAvailable?: boolean;
+  /** Computed defense power for player-owned territory */
+  defensePower?: number;
+  /** Average defense power across all player territories (for color threshold) */
+  avgDefensePower?: number;
+  /** Computed defense power for enemy territory revealed by SPY */
+  revealedDefensePower?: number;
+  /** Current game era — used for undefended territory alert */
+  currentEra?: string;
+  /** This territory's owner is the Horda target (clan with most territories) */
+  isHordaTarget?: boolean;
   onClick?: () => void;
 }
 
@@ -63,6 +73,11 @@ export function Territory({
   revealedStructuresCount,
   isAttackable = false,
   isExpeditionAvailable = false,
+  defensePower,
+  avgDefensePower = 0,
+  revealedDefensePower,
+  currentEra,
+  isHordaTarget = false,
   onClick,
 }: TerritoryProps) {
   const ResourceIcon = RESOURCE_ICONS[bonusResource as keyof typeof RESOURCE_ICONS] || Wheat;
@@ -76,6 +91,14 @@ export function Territory({
     ? "bg-slate-800/30"
     : ORIGIN_BG_COLORS[ownerOrigin as keyof typeof ORIGIN_BG_COLORS] || "bg-slate-800/30";
 
+  const isUndefendedAlert =
+    isPlayerOwned &&
+    defensePower === 0 &&
+    (currentEra === "WAR" || currentEra === "INVASION");
+
+  // Horda target: player owns this territory and is the Horda target → prominent indicator
+  const isPlayerHordaTarget = isHordaTarget && isPlayerOwned;
+
   return (
     <button
       onClick={onClick}
@@ -87,6 +110,8 @@ export function Territory({
         bgColor,
         isSelected && "ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900",
         isAttackable && !isSelected && "ring-2 ring-red-500/30 animate-pulse",
+        isUndefendedAlert && !isSelected && "ring-2 ring-red-500/40 animate-pulse",
+        isPlayerHordaTarget && !isSelected && "ring-2 ring-red-600 ring-offset-1 ring-offset-slate-900 animate-pulse border-red-600",
         isPlayerOwned && "shadow-md"
       )}
     >
@@ -94,6 +119,28 @@ export function Territory({
       <span className="absolute top-1 left-1 text-xs text-slate-500">
         {position + 1}
       </span>
+
+      {/* Horda target indicator — shown during INVASION era */}
+      {isHordaTarget && (
+        <div className="absolute bottom-1 left-1 group/horda z-10">
+          <div className={cn(
+            "w-5 h-5 rounded-full flex items-center justify-center text-xs leading-none",
+            isPlayerHordaTarget
+              ? "bg-red-600/90 text-white"
+              : "bg-slate-800/90 text-red-400 border border-red-500/60"
+          )}>
+            ☠
+          </div>
+          <div className="absolute left-0 bottom-6 invisible group-hover/horda:visible z-20
+            bg-slate-900 border border-red-500/50 rounded p-2 text-xs text-slate-200
+            whitespace-nowrap shadow-lg min-w-[220px]">
+            <p className={cn("font-bold mb-0.5", isPlayerHordaTarget ? "text-red-300" : "text-red-400")}>
+              Alvo da Horda
+            </p>
+            <p className="text-slate-300">Alvo da Horda — este clã tem mais territórios</p>
+          </div>
+        </div>
+      )}
 
       {/* Revealed indicator */}
       {isRevealed && (
@@ -151,11 +198,39 @@ export function Territory({
             </div>
           )}
         </div>
-        {unitsCount > 0 && (
-          <div className="flex items-center gap-0.5 text-red-400">
-            <Swords className="w-3 h-3" />
-            <span>{unitsCount}</span>
-          </div>
+        {isPlayerOwned && defensePower !== undefined && (
+          isUndefendedAlert ? (
+            <div className="flex items-center gap-0.5 text-red-400 relative group/undefended">
+              <span>⚠ 0</span>
+              <div className="absolute bottom-5 left-1/2 -translate-x-1/2 invisible group-hover/undefended:visible z-20
+                bg-slate-900 border border-red-500/50 rounded p-1.5 text-xs text-red-300
+                whitespace-nowrap shadow-lg">
+                Território sem defesa! Vulnerável a ataques.
+              </div>
+            </div>
+          ) : (
+            <div className={cn(
+              "flex items-center gap-0.5",
+              defensePower === 0 ? "text-red-400" :
+              defensePower >= avgDefensePower ? "text-green-400" :
+              "text-yellow-400"
+            )}>
+              <Swords className="w-3 h-3" />
+              <span>⚔ {defensePower}</span>
+            </div>
+          )
+        )}
+        {!isPlayerOwned && ownerId !== null && (
+          isRevealed && revealedDefensePower !== undefined ? (
+            <div className="flex items-center gap-0.5 text-purple-300">
+              <span className="text-[10px]">👁 {revealedDefensePower}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-0.5 text-slate-400">
+              <Swords className="w-3 h-3" />
+              <span>?</span>
+            </div>
+          )
         )}
       </div>
     </button>

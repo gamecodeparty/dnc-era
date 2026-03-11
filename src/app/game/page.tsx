@@ -7,6 +7,7 @@ import { useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGameStore, TOTAL_TURNS, SPY_SUCCESS_CHANCE_BASE, SPY_UMBRAL_BONUS, getDistance, type UnitType } from "@/stores/gameStore";
 import { TURN_DURATION_MS } from "@/game/constants/balance";
+import { calculateTravelTime } from "@/game/engine";
 import {
   LogOut,
   Scroll,
@@ -20,9 +21,6 @@ import {
   TreePine,
   Coins,
   AlertTriangle,
-  RefreshCw,
-  Trophy,
-  Skull,
   ChevronRight,
   Compass,
   Eye,
@@ -70,6 +68,12 @@ import { TutorialOverlay } from "@/components/game/tutorial";
 
 // Map components
 import { ExpeditionHint } from "@/components/game/map/GameMap";
+
+// Results screen
+import { GameResultsScreen } from "@/components/game/results/GameResultsScreen";
+
+// Tips
+import { TipBanner } from "@/components/game/hud/TipBanner";
 
 // Timer hook
 import { useTurnTimer } from "@/hooks/useTurnTimer";
@@ -136,6 +140,10 @@ export default function GamePage() {
   const { data: session } = useSession();
   const [selectedTerritoryId, setSelectedTerritoryId] = useState<string | null>(null);
 
+  // Troop badge toggle (F-048) — default ON during WAR/INVASION, OFF during PEACE
+  const [showTroopBadges, setShowTroopBadges] = useState<boolean>(() => currentEra !== "PEACE");
+  const [troopBadgesManuallySet, setTroopBadgesManuallySet] = useState(false);
+
   // Mobile state
   const [activeTab, setActiveTab] = useState<TabId | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -173,6 +181,7 @@ export default function GamePage() {
     sendSpy,
     revealedTerritories,
     playerCards,
+    train,
   } = useGameStore();
 
   const player = getPlayerClan();
@@ -193,11 +202,26 @@ export default function GamePage() {
     t.units.some((u) => u.type === "SPY" && u.quantity > 0)
   );
   const isUmbral = player?.origin === "UMBRAL";
+
+  // Defense power helpers (F-046)
+  const DEF_VALUES: Record<string, number> = { SOLDIER: 2, ARCHER: 1, KNIGHT: 3, SPY: 0 };
+  const calcDefensePower = (units: { type: string; quantity: number }[]) =>
+    units.reduce((sum, u) => sum + u.quantity * (DEF_VALUES[u.type] ?? 0), 0);
+  const avgPlayerDefensePower = playerTerritories.length > 0
+    ? playerTerritories.reduce((sum, t) => sum + calcDefensePower(t.units), 0) / playerTerritories.length
+    : 0;
   const spySuccessChance = Math.min(
     1,
     SPY_SUCCESS_CHANCE_BASE + (isUmbral ? SPY_UMBRAL_BONUS : 0)
   );
   const spySuccessPercent = Math.round(spySuccessChance * 100);
+
+  // Auto-update troop badge visibility when era changes (unless manually set)
+  useEffect(() => {
+    if (!troopBadgesManuallySet) {
+      setShowTroopBadges(currentEra !== "PEACE");
+    }
+  }, [currentEra, troopBadgesManuallySet]);
 
   // Timer de turno — gerenciado pelo hook (resume no mount, pausa no unmount)
   useTurnTimer();
@@ -356,9 +380,9 @@ export default function GamePage() {
   // Game Over / Victory Screen
   if (gameOver) {
     return (
-      <div className="min-h-screen flex items-center justify-center relative">
+      <div className="min-h-screen relative">
         {/* Background */}
-        <div className="absolute inset-0 z-0">
+        <div className="fixed inset-0 z-0">
           <Image
             src={eraBackgrounds[currentEra as EraType]}
             alt="Game background"
@@ -369,61 +393,16 @@ export default function GamePage() {
           <div className="absolute inset-0 bg-medieval-bg-deep/90" />
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={transitions.springSmooth}
-          className="relative z-10 mx-4"
-        >
-          <MedievalCard
-            variant="elevated"
-            className={`max-w-lg w-full ${
-              winner ? "border-era-peace/50" : "border-medieval-accent/50"
-            }`}
-          >
-            <MedievalCardContent className="pt-8 text-center space-y-6">
-              {winner ? (
-                <>
-                  <div className="relative inline-block">
-                    <Trophy className="w-16 h-16 sm:w-24 sm:h-24 text-gold mx-auto" />
-                    <Sparkles color="#ffd700" count={12} />
-                  </div>
-                  <h1 className="text-3xl sm:text-5xl font-cinzel-decorative font-bold text-gold">
-                    VITORIA!
-                  </h1>
-                  <p className="text-medieval-text-secondary font-crimson text-base sm:text-lg">
-                    Voce sobreviveu ate o turno {currentTurn}!
-                  </p>
-                  <p className="text-medieval-text-muted text-sm sm:text-base">
-                    Territorios: {playerTerritories.length} | Recursos finais:{" "}
-                    {player.grain} graos, {player.wood} madeira, {player.gold} ouro
-                  </p>
-                </>
-              ) : (
-                <>
-                  <Skull className="w-16 h-16 sm:w-24 sm:h-24 text-medieval-accent mx-auto" />
-                  <h1 className="text-3xl sm:text-5xl font-cinzel-decorative font-bold text-medieval-accent">
-                    GAME OVER
-                  </h1>
-                  <p className="text-medieval-text-secondary font-crimson text-base sm:text-lg">
-                    Voce foi derrotado no turno {currentTurn}.
-                  </p>
-                  <p className="text-medieval-text-muted text-sm">
-                    Todos os seus territorios foram perdidos!
-                  </p>
-                </>
-              )}
-              <MedievalButton
-                variant="primary"
-                size="lg"
-                onClick={resetGame}
-                icon={<RefreshCw className="w-5 h-5" />}
-              >
-                Jogar Novamente
-              </MedievalButton>
-            </MedievalCardContent>
-          </MedievalCard>
-        </motion.div>
+        <div className="relative z-10">
+          <GameResultsScreen
+            clans={clans}
+            territories={territories}
+            events={events}
+            isVictory={!!winner}
+            turn={currentTurn}
+            onRestart={resetGame}
+          />
+        </div>
       </div>
     );
   }
@@ -457,6 +436,9 @@ export default function GamePage() {
       </div>
 
       {/* FX Layers are now handled by GameAnimationProvider in layout */}
+
+      {/* Tips overlay — fixed positioning, does not affect game layout */}
+      <TipBanner />
 
       {/* Mobile Header - only visible on mobile */}
       <MobileGameHeader
@@ -663,10 +645,25 @@ export default function GamePage() {
 
           {/* Main map area - Full width on mobile, center column on desktop */}
           <motion.div className="lg:col-span-6" variants={staggerItem}>
-            <div className="mb-2 sm:mb-4 text-center">
+            <div className="mb-2 sm:mb-4 flex items-center justify-between px-1">
               <p className="text-xs sm:text-sm text-medieval-text-muted font-crimson">
                 Toque em um territorio para ver detalhes
               </p>
+              <button
+                onClick={() => {
+                  setShowTroopBadges((prev) => !prev);
+                  setTroopBadgesManuallySet(true);
+                }}
+                className={`flex items-center gap-1 px-2 py-1 rounded border text-[10px] sm:text-xs font-semibold transition-colors ${
+                  showTroopBadges
+                    ? "bg-era-war/20 border-era-war/50 text-era-war"
+                    : "bg-medieval-bg-card/50 border-medieval-primary/20 text-medieval-text-muted"
+                }`}
+                title="Mostrar/esconder badges de tropas no mapa"
+              >
+                <Swords className="w-3 h-3" />
+                Tropas: {showTroopBadges ? "ON" : "OFF"}
+              </button>
             </div>
 
             {/* Mapa 4x3 - Touch friendly on mobile */}
@@ -766,6 +763,22 @@ export default function GamePage() {
                       </div>
                     )}
 
+                    {/* Travel time badge — visible during expedition modal */}
+                    {expeditionTarget && expeditionOrigin && (() => {
+                      const originTerritory = territories.find((t) => t.id === expeditionOrigin);
+                      if (!originTerritory) return null;
+                      const travelTime = calculateTravelTime(originTerritory.position, territory.position);
+                      const colorClass =
+                        travelTime === 1 ? "text-green-400" :
+                        travelTime === 2 ? "text-yellow-400" :
+                        "text-red-400";
+                      return (
+                        <div className={`absolute bottom-1 left-1 z-20 text-[9px] sm:text-[10px] font-bold leading-none ${colorClass}`}>
+                          ⏱{travelTime}t
+                        </div>
+                      );
+                    })()}
+
                     <div className="text-center h-full flex flex-col justify-between">
                       {hasExplorationSite ? (
                         <>
@@ -798,14 +811,33 @@ export default function GamePage() {
                               <Coins className="w-3 h-3 sm:w-4 sm:h-4 text-gold" />
                             )}
                           </div>
-                          {territory.units.length > 0 && (
-                            <div className="flex items-center justify-center gap-0.5 sm:gap-1">
-                              <Swords className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-medieval-accent" />
-                              <span className="text-[8px] sm:text-[10px] text-medieval-text-primary">
-                                {territory.units.reduce((sum, u) => sum + u.quantity, 0)}
-                              </span>
-                            </div>
-                          )}
+                          {/* Defense power badge (F-046) — controlled by troop badge toggle (F-048) */}
+                          {showTroopBadges && isPlayer && (() => {
+                            const dp = calcDefensePower(territory.units);
+                            const color = dp === 0 ? "text-red-400" : dp >= avgPlayerDefensePower ? "text-green-400" : "text-yellow-400";
+                            return (
+                              <div className={`flex items-center justify-center gap-0.5 sm:gap-1 ${color}`}>
+                                <Swords className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                                <span className="text-[8px] sm:text-[10px] font-semibold">⚔ {dp}</span>
+                              </div>
+                            );
+                          })()}
+                          {showTroopBadges && !isPlayer && !isNeutral && (() => {
+                            if (isRevealed && revealedData) {
+                              const dp = calcDefensePower(revealedData.units);
+                              return (
+                                <div className="flex items-center justify-center gap-0.5 sm:gap-1 text-purple-300">
+                                  <span className="text-[8px] sm:text-[10px]">👁 {dp}</span>
+                                </div>
+                              );
+                            }
+                            return (
+                              <div className="flex items-center justify-center gap-0.5 sm:gap-1 text-slate-400">
+                                <Swords className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                                <span className="text-[8px] sm:text-[10px]">?</span>
+                              </div>
+                            );
+                          })()}
                         </>
                       )}
                     </div>
@@ -1053,6 +1085,11 @@ export default function GamePage() {
         onTrain={() => {
           if (selectedTerritory?.ownerId === "player") {
             window.location.href = `/game/territory/${selectedTerritory.id}`;
+          }
+        }}
+        onTrainUnit={(unitType) => {
+          if (selectedTerritory?.ownerId === "player") {
+            train(selectedTerritory.id, unitType as UnitType, 1);
           }
         }}
         onAttack={(territory) => {

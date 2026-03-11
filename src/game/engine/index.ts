@@ -7,3 +7,4 @@ export { TurnSystem } from "./TurnSystem";
 export { ResourceSystem } from "./ResourceSystem";
 export { CombatSystem } from "./CombatSystem";
 export { EraSystem } from "./EraSystem";
+export { calculateTravelTime } from "./TravelSystem";

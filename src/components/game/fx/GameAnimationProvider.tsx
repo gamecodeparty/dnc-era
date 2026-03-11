@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, ReactNode } from "react";
+import React, { createContext, useContext, ReactNode, useState, useCallback, useEffect, useRef } from "react";
 import { AnimatePresence } from "framer-motion";
 import useGameAnimations from "@/hooks/useGameAnimations";
 import { ResourcePopup } from "./ResourcePopup";
@@ -9,6 +9,8 @@ import { EraTransition } from "./EraTransition";
 import { CombatFeedback } from "./CombatFeedback";
 import { AchievementToast } from "./AchievementToast";
 import { Sparkles } from "./Sparkles";
+import { InvasionInfoModal } from "./InvasionInfoModal";
+import { useGameStore } from "@/stores/gameStore";
 import type { Era, ResourceType } from "@/stores/gameStore";
 
 // Context type
@@ -63,6 +65,20 @@ interface GameAnimationProviderProps {
 }
 
 export function GameAnimationProvider({ children }: GameAnimationProviderProps) {
+  const [showInvasionModal, setShowInvasionModal] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const invasionModalShown = useGameStore((state: any) => state.invasionModalShown as boolean);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const markInvasionModalShown = useGameStore((state: any) => state.markInvasionModalShown as () => void);
+
+  // Track when an INVASION era transition was in progress so we show
+  // the modal after the overlay disappears (not during the animation)
+  const pendingInvasionModal = useRef(false);
+
+  const handleCloseInvasionModal = useCallback(() => {
+    setShowInvasionModal(false);
+  }, []);
+
   const {
     // State
     resourceChanges,
@@ -83,6 +99,22 @@ export function GameAnimationProvider({ children }: GameAnimationProviderProps) 
     triggerAchievement,
     dismissAchievement,
   } = useGameAnimations();
+
+  // When INVASION era transition starts, mark it as pending
+  useEffect(() => {
+    if (showEraTransition && newEra === "INVASION" && !invasionModalShown) {
+      pendingInvasionModal.current = true;
+    }
+  }, [showEraTransition, newEra, invasionModalShown]);
+
+  // When the era transition overlay is gone and we have a pending INVASION modal, show it
+  useEffect(() => {
+    if (!showEraTransition && pendingInvasionModal.current) {
+      pendingInvasionModal.current = false;
+      setShowInvasionModal(true);
+      markInvasionModalShown();
+    }
+  }, [showEraTransition, markInvasionModalShown]);
 
   // Context value
   const contextValue: GameAnimationContextType = {
@@ -119,6 +151,9 @@ export function GameAnimationProvider({ children }: GameAnimationProviderProps) 
       {newEra && (
         <EraTransition era={newEra} isVisible={showEraTransition} />
       )}
+
+      {/* Invasion Info Modal (F-049) */}
+      <InvasionInfoModal isVisible={showInvasionModal} onClose={handleCloseInvasionModal} />
 
       {/* Combat Feedback */}
       <CombatFeedback

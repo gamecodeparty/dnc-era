@@ -18,12 +18,15 @@ import {
 } from "@/stores/gameStore";
 import type { CombatPreviewOutcome } from "@/game/types";
 import { CARDS } from "@/game/constants/cards";
+import { calculateTravelTime } from "@/game/engine/TravelSystem";
 
 /** Minimal card shape needed by the modal */
 export type CombatCardEntry = { id: string; type: string; used: boolean };
 type CardType = string;
 
 interface ExpeditionModalProps {
+  /** Expedition type — determines which card banner is shown */
+  expeditionType?: "ATTACK" | "SPY" | "EXPLORE" | "REINFORCE";
   /** Origin territory */
   fromTerritory: Territory;
   /** Target territory */
@@ -54,6 +57,14 @@ interface ExpeditionModalProps {
 /** Card contexts relevant to attack */
 const COMBAT_CARD_CONTEXTS = new Set(["combat", "espionage", "aggression"]);
 
+/** Card contexts shown in banner per expedition type */
+const BANNER_CONTEXTS: Record<string, Set<string>> = {
+  ATTACK: new Set(["combat", "aggression"]),
+  SPY: new Set(["espionage"]),
+  EXPLORE: new Set(),
+  REINFORCE: new Set(),
+};
+
 const outcomeConfig: Record<CombatPreviewOutcome, { label: string; colorClass: string; borderClass: string; bgClass: string }> = {
   decisive_victory: { label: "Vitória Decisiva", colorClass: "text-clan-verdaneos", borderClass: "border-clan-verdaneos/30", bgClass: "bg-clan-verdaneos/10" },
   victory: { label: "Vitória", colorClass: "text-era-peace", borderClass: "border-era-peace/30", bgClass: "bg-era-peace/10" },
@@ -76,6 +87,7 @@ const unitIcons: Record<UnitType, string> = {
 };
 
 export function ExpeditionModal({
+  expeditionType = "ATTACK",
   fromTerritory: initialFromTerritory,
   toTerritory,
   playerTerritories,
@@ -102,6 +114,9 @@ export function ExpeditionModal({
   // Selected combat card
   const [selectedCard, setSelectedCard] = useState<CardType | null>(null);
 
+  // Banner dismissed state (per modal session)
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+
   // UI state
   const [showOriginSelect, setShowOriginSelect] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -126,6 +141,44 @@ export function ExpeditionModal({
     }
     return result;
   }, [playerCards]);
+
+  // Cards to show in the proactive banner (filtered by expedition type)
+  const bannerCards = useMemo(() => {
+    const allowedContexts = BANNER_CONTEXTS[expeditionType] ?? new Set();
+    const seen = new Set<CardType>();
+    const result: Array<{ type: CardType; name: string; description: string }> = [];
+    for (const card of playerCards) {
+      if (!card.used) {
+        const def = CARDS[card.type];
+        if (def && allowedContexts.has(def.context) && !seen.has(card.type)) {
+          seen.add(card.type);
+          result.push({ type: card.type, name: def.name, description: def.description });
+        }
+      }
+    }
+    // Priority order for ATTACK: REINFORCEMENTS > SABOTAGE
+    const priority: Record<string, number> = { REINFORCEMENTS: 0, SABOTAGE: 1 };
+    return result.sort((a, b) => (priority[a.type] ?? 99) - (priority[b.type] ?? 99));
+  }, [playerCards, expeditionType]);
+
+  const showBanner = !bannerDismissed && bannerCards.length > 0;
+
+  // F-038: show hint when cards are available but none selected
+  const showNoCardHint = availableCombatCards.length > 0 && selectedCard === null;
+
+  // F-041: travel time preview — recalculates in real time as origin changes
+  const travelTimePreview = useMemo(
+    () => calculateTravelTime(fromTerritory.position + 1, toTerritory.position + 1),
+    [fromTerritory.position, toTerritory.position]
+  );
+  const showLongTravelWarning = travelTimePreview >= 3;
+
+  // F-039: card modifier label shown in combat preview with 🃏 icon
+  const cardModifierLabel: string | null =
+    selectedCard === "REINFORCEMENTS" ? "Reforços +50% atk" :
+    selectedCard === "INFORMANT" ? "Informante: revela defesa" :
+    selectedCard !== null ? `${selectedCard} (ativo)` :
+    null;
 
   // Available units from selected territory
   const availableUnits = useMemo(() => {
@@ -191,7 +244,7 @@ export function ExpeditionModal({
         attackPower: boostedAttack,
         ratio,
         outcome,
-        attackerModifiers: [...preview.attackerModifiers, "Reforcos: +50% atk"],
+        attackerModifiers: preview.attackerModifiers,
       };
     }
     return preview;
@@ -378,8 +431,82 @@ export function ExpeditionModal({
                 <div className="text-xs text-medieval-text-muted mt-1">
                   {toTerritory.ownerName}
                 </div>
+                <div className="text-xs mt-1 flex items-center gap-1 text-medieval-text-secondary">
+                  <span>⏱</span>
+                  <span>{travelTimePreview} {travelTimePreview === 1 ? "turno" : "turnos"}</span>
+                </div>
               </div>
             </div>
+
+            {/* F-041: Long travel warning */}
+            {showLongTravelWarning && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-900/20 border border-amber-600/40">
+                <span className="text-base leading-none mt-0.5">⚠</span>
+                <p className="text-xs text-amber-300">
+                  Viagem longa: tropas chegarão em {travelTimePreview} turnos. Seus territórios ficarão sem essas unidades durante a viagem.
+                </p>
+              </div>
+            )}
+
+            {/* F-037: Proactive card suggestion banner */}
+            <AnimatePresence>
+              {showBanner && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                  className="rounded-lg border border-amber-500 bg-amber-900/30 p-3 space-y-2 shadow-[0_0_14px_rgba(245,158,11,0.25)]"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">🃏</span>
+                    <span className="font-cinzel text-sm font-bold text-amber-300">
+                      Você tem {bannerCards.length} {bannerCards.length === 1 ? "carta de combate" : "cartas de combate"}!
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    {bannerCards.map((card) => {
+                      const isSelected = selectedCard === card.type;
+                      return (
+                        <div
+                          key={card.type}
+                          className={`flex items-center gap-2 p-2 rounded-md border transition-colors ${
+                            isSelected
+                              ? "bg-amber-700/40 border-amber-400/60"
+                              : "bg-amber-900/20 border-amber-600/30"
+                          }`}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="font-cinzel text-sm font-medium text-amber-200">{card.name}</div>
+                            <div className="text-xs text-amber-300/70 truncate">{card.description}</div>
+                          </div>
+                          <button
+                            onClick={() => setSelectedCard(isSelected ? null : card.type)}
+                            className={`shrink-0 px-2.5 py-1 rounded text-xs font-bold transition-colors ${
+                              isSelected
+                                ? "bg-amber-500/30 text-amber-200 hover:bg-amber-500/40"
+                                : "bg-amber-500/20 text-amber-300 hover:bg-amber-500/30"
+                            }`}
+                          >
+                            {isSelected ? "Ativo ✓" : "Usar"}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex justify-center pt-0.5">
+                    <button
+                      onClick={() => setBannerDismissed(true)}
+                      className="text-xs text-amber-400/60 hover:text-amber-400/90 transition-colors underline underline-offset-2"
+                    >
+                      Ignorar cartas
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Unit selection */}
             <div className="space-y-2">
@@ -428,7 +555,7 @@ export function ExpeditionModal({
                       <button
                         onClick={() => handleUnitChange(type, -1)}
                         disabled={selected === 0}
-                        className="w-8 h-8 rounded bg-medieval-bg-deep flex items-center justify-center text-medieval-text-primary disabled:opacity-30"
+                        className="w-8 h-8 rounded bg-medieval-bg-deep flex items-center justify-center text-medieval-text-primary disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         -
                       </button>
@@ -438,7 +565,7 @@ export function ExpeditionModal({
                       <button
                         onClick={() => handleUnitChange(type, 1)}
                         disabled={selected >= available}
-                        className="w-8 h-8 rounded bg-medieval-bg-deep flex items-center justify-center text-medieval-text-primary disabled:opacity-30"
+                        className="w-8 h-8 rounded bg-medieval-bg-deep flex items-center justify-center text-medieval-text-primary disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         +
                       </button>
@@ -559,12 +686,15 @@ export function ExpeditionModal({
                   </div>
                 </div>
 
-                {/* Active modifiers */}
-                {(combatPreview.attackerModifiers.length > 0 || combatPreview.defenderModifiers.length > 0) && (
+                {/* Active modifiers (including F-039 card label) */}
+                {(combatPreview.attackerModifiers.length > 0 || combatPreview.defenderModifiers.length > 0 || cardModifierLabel) && (
                   <div className="text-xs space-y-0.5 pt-0.5 border-t border-white/5">
                     {combatPreview.attackerModifiers.map((m, i) => (
                       <div key={i} className="text-era-war/80">⚔ {m}</div>
                     ))}
+                    {cardModifierLabel && (
+                      <div className="text-amber-400">🃏 {cardModifierLabel}</div>
+                    )}
                     {combatPreview.defenderModifiers.map((m, i) => (
                       <div key={i} className="text-era-peace/80">🛡 {m}</div>
                     ))}
@@ -634,8 +764,17 @@ export function ExpeditionModal({
               onClick={handleSend}
               disabled={currentEra === "PEACE" || expeditionStats.totalUnits === 0}
             >
-              <Swords className="w-4 h-4 mr-2" />
-              Enviar ({expeditionStats.totalUnits} tropas)
+              <div className="flex flex-col items-center gap-0.5">
+                <div className="flex items-center gap-2">
+                  <Swords className="w-4 h-4" />
+                  Enviar ({expeditionStats.totalUnits} tropas)
+                </div>
+                {showNoCardHint && (
+                  <span className="text-xs font-normal normal-case tracking-normal text-white/50">
+                    (sem cartas selecionadas)
+                  </span>
+                )}
+              </div>
             </MedievalButton>
           </div>
         </motion.div>

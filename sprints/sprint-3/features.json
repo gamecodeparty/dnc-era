@@ -1,0 +1,437 @@
+[
+  {
+    "id": "F-033",
+    "name": "Desabilitar botões de construção sem recursos",
+    "description": "Em TerritoryBottomSheet.tsx, implementar função canAfford(cost) que compara custo da estrutura com recursos atuais. Quando canAfford retorna false: botão disabled, cursor not-allowed, opacity-50, label 'Faltam: X madeira, Y ouro' em vermelho. Quando território tem 4/4 estruturas: desabilitar todos os botões com mensagem 'Território lotado (4/4 estruturas)'. Aviso proporcional (F-032) continua para ações possíveis mas caras.",
+    "status": "passing",
+    "priority": 1,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Botão 'Construir' aparece desabilitado (cinza, cursor not-allowed) quando jogador não tem recursos suficientes",
+      "Label abaixo do botão mostra exatamente quais recursos faltam e quanto (ex: 'Faltam: 30 madeira, 10 ouro')",
+      "Texto do custo insuficiente aparece em vermelho (text-red-400)",
+      "Território com 4/4 estruturas mostra mensagem 'Território lotado' e desabilita toda construção",
+      "Aviso proporcional (F-032) continua funcionando para ações possíveis mas que custam >80% do estoque"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-011-build-menu-clarity.md",
+    "completed_at": "2026-03-11T05:01:14.228Z"
+  },
+  {
+    "id": "F-034",
+    "name": "Desabilitar botões de treinamento sem recursos ou pré-requisito",
+    "description": "Em TerritoryBottomSheet.tsx (seção de treinamento), aplicar mesma lógica canAfford para botões de treinar unidades (Soldado, Arqueiro, Cavaleiro, Espião). Desabilitar botão + tooltip 'Faltam: X ouro, Y grão' quando sem recursos. Verificar pré-requisito de estrutura (ex: Barracks para Soldado) — se ausente: tooltip 'Requer: Quartel'. Consistência visual com botões '+' no ExpeditionModal.",
+    "status": "passing",
+    "priority": 2,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Botão 'Treinar' desabilitado (cinza, cursor not-allowed) quando jogador não tem recursos suficientes",
+      "Tooltip diferencia 'recursos insuficientes' de 'estrutura ausente' (ex: 'Requer: Quartel')",
+      "Botões '+' no ExpeditionModal seguem mesmo padrão visual de desabilitação",
+      "Botão volta a funcionar quando jogador obtém recursos suficientes"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-011-build-menu-clarity.md",
+    "completed_at": "2026-03-11T05:30:00Z"
+  },
+  {
+    "id": "F-035",
+    "name": "Labels de produção visíveis no card de estrutura",
+    "description": "Em TerritoryBottomSheet.tsx (seção de construção), adicionar linha de produção abaixo do nome de cada estrutura usando dados de structures.ts. Estruturas de produção: Farm '+10 grão/turno', Sawmill '+8 madeira/turno', Mine '+5 ouro/turno'. Militares: Quartel 'Desbloqueia: Soldado, Arqueiro'. Especiais: Muralha 'Defesa: +20% por nível'. Se upgrade, mostrar produção atual e do próximo nível. Cores por recurso: amber=grão, emerald=madeira, yellow=ouro.",
+    "status": "passing",
+    "priority": 3,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Cada estrutura no menu exibe o que produz/desbloqueia em texto visível (não apenas tooltip)",
+      "Estruturas de produção mostram valor numérico: '+X recurso/turno'",
+      "Upgrade mostra produção do próximo nível E produção atual (ex: '+15 grão/turno (atual: +10)')",
+      "Cores dos recursos consistentes: amber=grão, emerald=madeira, yellow=ouro"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-011-build-menu-clarity.md",
+    "completed_at": "2026-03-11T05:14:22Z"
+  },
+  {
+    "id": "F-036",
+    "name": "Resumo de produção atual do território",
+    "description": "Em TerritoryBottomSheet.tsx, abaixo da lista de estruturas disponíveis, adicionar resumo de produção atual do território: 'Produção atual: 🌾10/t 🪵8/t 💰0/t'. Dá contexto para o jogador decidir qual estrutura construir a seguir. Deve atualizar ao construir uma estrutura nova.",
+    "status": "passing",
+    "priority": 4,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Resumo de produção atual do território aparece na seção de construção",
+      "Mostra produção de grão, madeira e ouro por turno com ícones",
+      "Atualiza se o jogador construir uma estrutura (reflete nova produção imediatamente)"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-011-build-menu-clarity.md",
+    "completed_at": "2026-03-11T05:20:00Z"
+  },
+  {
+    "id": "F-037",
+    "name": "Banner proeminente de sugestão de cartas no ExpeditionModal",
+    "description": "Em ExpeditionModal.tsx, quando jogador tem cartas de combate disponíveis E está criando expedição de ATTACK, exibir banner proeminente ACIMA da seção de seleção de unidades. Banner mostra cada carta compatível com nome, efeito resumido e botão 'Usar'. Botão 'Ignorar cartas' colapsa o banner. Borda dourada com pulse sutil (bg-amber-900/30 border-amber-500). Filtro: ATTACK mostra cartas combat/aggression, SPY mostra espionage, EXPLORE/REINFORCE não mostra banner.",
+    "status": "passing",
+    "priority": 5,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Banner aparece automaticamente ao abrir ExpeditionModal para ATTACK com cartas compatíveis",
+      "Banner mostra nome, efeito resumido e botão 'Usar' para cada carta",
+      "Botão 'Ignorar cartas' colapsa o banner sem selecionar nenhuma carta",
+      "Banner NÃO aparece para expedições de EXPLORE ou REINFORCE",
+      "Banner filtra cartas corretamente por tipo de expedição (ATTACK vs SPY)"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-012-cards-contextual-highlight.md",
+    "completed_at": "2026-03-11T05:45:00Z"
+  },
+  {
+    "id": "F-038",
+    "name": "Indicador de cartas não usadas no botão de confirmar",
+    "description": "Em ExpeditionModal.tsx, se jogador tem cartas disponíveis mas NÃO selecionou nenhuma, o botão de confirmar expedição exibe sub-texto '(sem cartas selecionadas)' em cor neutra (não vermelho — é lembrete, não erro). Sub-texto desaparece quando pelo menos uma carta é selecionada. Não aparece quando não há cartas disponíveis.",
+    "status": "passing",
+    "priority": 6,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Botão de confirmar mostra '(sem cartas selecionadas)' quando há cartas disponíveis não usadas",
+      "Sub-texto desaparece quando pelo menos uma carta é selecionada",
+      "Sub-texto NÃO aparece quando não há cartas disponíveis",
+      "Cor do sub-texto é neutra (não vermelha)"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-012-cards-contextual-highlight.md",
+    "completed_at": "2026-03-11T05:26:00Z"
+  },
+  {
+    "id": "F-039",
+    "name": "Label de carta selecionada no preview de combate",
+    "description": "Em ExpeditionModal.tsx, no preview de combate que já aplica efeitos de REINFORCEMENTS (+50%) e INFORMANT (revela defesa), adicionar label visual quando carta está selecionada: 'Seu Poder: ~127 └ Ferronatos +20% └ 🃏 Reforços +50%'. Label aparece/desaparece em tempo real ao selecionar/deselecionar carta. Seção existente de 'Cartas Disponíveis' (F-024) continua funcionando.",
+    "status": "passing",
+    "priority": 7,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Preview de combate lista cartas selecionadas como modificadores com ícone 🃏",
+      "Label aparece/desaparece em tempo real ao selecionar/deselecionar carta",
+      "Seção existente de 'Cartas Disponíveis' (F-024) continua funcionando sem regressão"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-012-cards-contextual-highlight.md",
+    "retries": 1,
+    "completed_at": "2026-03-11T06:00:00Z"
+  },
+  {
+    "id": "F-040",
+    "name": "Função de cálculo de tempo de viagem",
+    "description": "Criar função calculateTravelTime(fromPosition, toPosition) em gameStore.ts ou utilitário em /src/game/engine/. Baseada em distância Manhattan na grid 4x3: converte posição 1-12 para (row, col), calcula |fromRow-toRow| + |fromCol-toCol|, retorna Math.max(1, distance). Mínimo 1 turno para qualquer expedição.",
+    "status": "passing",
+    "priority": 8,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Função retorna tempo em turnos baseado em distância Manhattan",
+      "Mínimo de 1 turno para qualquer expedição (incluindo territórios adjacentes)",
+      "Posições 1-12 mapeadas corretamente para grid 4x3 (4 colunas, 3 linhas)",
+      "Posições na mesma linha/coluna adjacentes retornam 1 turno",
+      "Posições nos extremos opostos (1 e 12) retornam valor correto (distância máxima)"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-013-expedition-travel-time-preview.md",
+    "completed_at": "2026-03-11T12:37:00Z"
+  },
+  {
+    "id": "F-041",
+    "name": "Exibição de tempo de viagem no ExpeditionModal",
+    "description": "Em ExpeditionModal.tsx, na seção de seleção de destino, exibir tempo de viagem ao lado do território alvo: 'Destino: Território 7 (Clã do Norte) — ⏱ 2 turnos'. Se tempo >= 3 turnos, exibir aviso adicional: '⚠ Viagem longa: tropas chegarão em 3 turnos. Seus territórios ficarão sem essas unidades durante a viagem.' Tempo recalcula em tempo real ao mudar território de origem.",
+    "status": "passing",
+    "priority": 9,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [
+      "F-040"
+    ],
+    "tests": [
+      "Tempo de viagem aparece em turnos ao lado do destino selecionado",
+      "Tempo recalcula em tempo real ao mudar território de origem",
+      "Aviso de viagem longa aparece para expedições de 3+ turnos",
+      "Aviso inclui mensagem sobre tropas ficarem ausentes durante a viagem"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-013-expedition-travel-time-preview.md",
+    "completed_at": "2026-03-11T12:41:00Z"
+  },
+  {
+    "id": "F-042",
+    "name": "Badge de tempo de viagem no mapa durante seleção",
+    "description": "Em Territory.tsx, quando ExpeditionModal está aberto (fluxo de expedição), exibir badge '⏱ Xt' sobre cada território alvo potencial. Cor baseada no tempo: verde (1 turno), amarelo (2 turnos), vermelho (3+ turnos). Badge posicionado no canto inferior esquerdo do tile. Desaparece quando ExpeditionModal é fechado.",
+    "status": "passing",
+    "priority": 10,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [
+      "F-040"
+    ],
+    "tests": [
+      "Badge '⏱ Xt' aparece nos tiles do mapa durante seleção de expedição",
+      "Badge usa cor verde/amarelo/vermelho conforme duração (1t/2t/3+t)",
+      "Badge desaparece quando ExpeditionModal é fechado",
+      "Badge posicionado no canto inferior esquerdo do tile"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-013-expedition-travel-time-preview.md",
+    "completed_at": "2026-03-11T12:44:00Z"
+  },
+  {
+    "id": "F-043",
+    "name": "Componente GameResultsScreen com ranking animado",
+    "description": "Criar /src/components/game/results/GameResultsScreen.tsx com 3 seções: (1) Ranking dos 6 clãs por score (territórios×100 + população×10 + ouro×1 + unidades×5), aparecendo de baixo pra cima com delay 300ms (Framer Motion), 1º lugar com efeito dourado + Sparkles, clã do jogador destacado, eliminados com caveira. (2) Estatísticas da partida (turnos, territórios conquistados, batalhas, estruturas, unidades, cartas, horda). (3) Momento épico (batalha com maior saque ou diferença de poder). Rodapé com botões 'Jogar Novamente' e 'Ver Detalhes'.",
+    "status": "passing",
+    "priority": 11,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [
+      "F-044"
+    ],
+    "tests": [
+      "Ranking animado de baixo para cima com delay de 300ms por clã",
+      "Primeiro lugar com efeito dourado e Sparkles",
+      "Clã do jogador destacado no ranking (cor diferenciada, estrela)",
+      "Clãs eliminados marcados com caveira e texto 'ELIMINADO'",
+      "Tela funciona tanto para vitória quanto para derrota",
+      "Botão 'Jogar Novamente' presente e funcional"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-014-endgame-results-screen.md",
+    "completed_at": "2026-03-11T13:40:00Z"
+  },
+  {
+    "id": "F-044",
+    "name": "Função de agregação de estatísticas do jogo",
+    "description": "Em gameStore.ts, adicionar função getGameStats(events) que agrega estatísticas da partida: turnsPlayed, territoriesCaptured, battlesWon, battlesTotal, structuresBuilt, unitsTrained, cardsUsed, hordeRepelled, epicMoment. Momento épico: filtrar eventos de combate onde jogador venceu, selecionar com maior saque total ou maior ratio de poder. Se nenhuma vitória, selecionar defesa mais dramática (menor margem). Retorna zeros/null para campos sem dados.",
+    "status": "passing",
+    "priority": 12,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Função agrega corretamente todos os tipos de evento do log",
+      "Momento épico seleciona a batalha mais impactante (maior saque ou ratio de poder)",
+      "Retorna zeros/null para campos sem dados (partida sem combate)",
+      "Contagem de battlesWon e battlesTotal são consistentes (won <= total)"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-014-endgame-results-screen.md",
+    "completed_at": "2026-03-11T12:52:00Z"
+  },
+  {
+    "id": "F-045",
+    "name": "Integração do GameResultsScreen no fluxo de game over",
+    "description": "Em /src/app/game/page.tsx, substituir o card atual de vitória/derrota pelo novo GameResultsScreen. Quando gameOver=true, renderizar <GameResultsScreen clans={clans} playerClanId={playerClanId} events={events} isVictory={isVictory} turn={currentTurn} />. Botão 'Jogar Novamente' reinicia o jogo corretamente.",
+    "status": "passing",
+    "priority": 13,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [
+      "F-043"
+    ],
+    "tests": [
+      "Card antigo de game over substituído pelo GameResultsScreen",
+      "Props corretas passadas para o componente (clans, playerClanId, events, isVictory, turn)",
+      "Botão 'Jogar Novamente' reinicia o jogo corretamente",
+      "Tela de resultados aparece tanto em vitória quanto derrota"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-014-endgame-results-screen.md",
+    "completed_at": "2026-03-11T14:00:00Z"
+  },
+  {
+    "id": "F-046",
+    "name": "Badge de poder de defesa nos territórios do mapa",
+    "description": "Em Territory.tsx, substituir indicador atual de unidades (apenas contagem) por badge de poder de defesa calculado: defensePower = sum(quantity × defValues[type]) onde Soldier:2, Archer:1, Knight:3, Spy:0. Para territórios do jogador: badge '⚔ X' com cor verde (>= média), amarelo (> 0 mas < média), vermelho (== 0). Para territórios inimigos: '?' (não revelados) ou poder real com ícone 👁 (revelados por SPY).",
+    "status": "passing",
+    "priority": 14,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Cada território do jogador exibe badge com poder de defesa total (número)",
+      "Badge usa cor verde/amarelo/vermelho conforme força relativa à média dos territórios do jogador",
+      "Territórios inimigos mostram '?' quando não revelados",
+      "Territórios inimigos revelados por SPY mostram poder real com ícone 👁",
+      "Cálculo de poder usa valores corretos: Soldier:2, Archer:1, Knight:3, Spy:0"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-015-troop-overview-map-badges.md",
+    "completed_at": "2026-03-11T13:50:00.000Z"
+  },
+  {
+    "id": "F-047",
+    "name": "Indicador de território indefeso com alerta visual",
+    "description": "Em Territory.tsx, territórios do jogador com 0 unidades militares durante Era da Guerra ou Invasão: borda com pulse vermelho suave (animate-pulse ring-red-500/40), badge '⚠ 0' em vermelho, tooltip 'Território sem defesa! Vulnerável a ataques.'. Durante Era da Paz: sem alerta.",
+    "status": "passing",
+    "priority": 15,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [
+      "F-046"
+    ],
+    "tests": [
+      "Territórios com 0 unidades mostram '⚠ 0' em vermelho com pulse durante Era da Guerra",
+      "Territórios com 0 unidades mostram '⚠ 0' em vermelho com pulse durante Era da Invasão",
+      "Alerta NÃO aparece na Era da Paz",
+      "Tooltip explica a vulnerabilidade: 'Território sem defesa! Vulnerável a ataques.'"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-015-troop-overview-map-badges.md",
+    "completed_at": "2026-03-11T13:55:00Z"
+  },
+  {
+    "id": "F-048",
+    "name": "Toggle de visibilidade dos badges de tropas no HUD",
+    "description": "Em page.tsx ou componente de HUD, adicionar toggle '⚔ Tropas: ON/OFF' para mostrar/esconder badges de tropas no mapa. Default: ON durante Era da Guerra/Invasão, OFF durante Era da Paz. Estado persistido durante a partida (não entre partidas).",
+    "status": "passing",
+    "priority": 16,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [
+      "F-046"
+    ],
+    "tests": [
+      "Toggle no HUD permite mostrar/esconder badges de tropas",
+      "Default ON durante Era da Guerra e Invasão",
+      "Default OFF durante Era da Paz",
+      "Toggle muda imediatamente a visibilidade de todos os badges no mapa"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-015-troop-overview-map-badges.md",
+    "completed_at": "2026-03-11T14:00:00Z"
+  },
+  {
+    "id": "F-049",
+    "name": "Modal informativo ao iniciar Era da Invasão",
+    "description": "Em page.tsx ou componente de transição de era, quando era muda para INVASION, exibir modal informativo APÓS animação de transição. Modal explica: Horda ataca a cada 3 turnos, alvo é clã com mais territórios, força crescente 50→100→300. Aparece uma única vez por partida (flag no state). Botão 'Entendi' fecha. Estilo medieval dark (bg escuro, borda vermelha, ícone de caveira).",
+    "status": "passing",
+    "priority": 17,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Modal aparece ao iniciar Era da Invasão com regras da Horda",
+      "Modal aparece apenas uma vez por partida (não reaparece em turnos seguintes)",
+      "Botão 'Entendi' fecha o modal",
+      "Modal aparece APÓS a animação de transição de era, não durante"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-016-horde-mechanics-explanation.md",
+    "completed_at": "2026-03-11T14:05:00Z"
+  },
+  {
+    "id": "F-050",
+    "name": "Countdown de próximo ataque da Horda no HUD",
+    "description": "Em EraIndicator.tsx ou componente novo, durante Era da Invasão, exibir countdown: '☠ Horda: 2 turnos | Força: 100'. Cálculo: turnos restantes = 3 - ((turno_atual - inicio_era3) % 3), força = HORDE_WAVES[wave_index]. Cor: branco (3 turnos), amarelo (2 turnos), vermelho com pulse (1 turno — iminente). Só aparece durante Era da Invasão.",
+    "status": "passing",
+    "priority": 18,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "HUD mostra countdown de turnos até próximo ataque + força estimada",
+      "Countdown muda de cor conforme se aproxima: branco→amarelo→vermelho",
+      "Countdown com pulse quando falta 1 turno (iminente)",
+      "Countdown só aparece durante Era da Invasão"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-016-horde-mechanics-explanation.md",
+    "completed_at": "2026-03-11T14:10:00Z"
+  },
+  {
+    "id": "F-051",
+    "name": "Indicador de clã-alvo da Horda no mapa",
+    "description": "Em Territory.tsx, durante Era da Invasão, o clã com mais territórios (alvo da Horda) tem indicador visual: ícone ☠ pequeno no canto dos territórios do clã-alvo, tooltip 'Alvo da Horda — este clã tem mais territórios'. Se jogador for o alvo, highlight mais proeminente (borda vermelha com pulse). Indicador atualiza quando posse de territórios muda.",
+    "status": "passing",
+    "priority": 19,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Clã-alvo da Horda tem indicador visual ☠ nos territórios no mapa durante Era da Invasão",
+      "Se jogador é o alvo, indicador é mais proeminente (borda vermelha com pulse)",
+      "Indicador atualiza quando a posse de territórios muda",
+      "Tooltip mostra 'Alvo da Horda — este clã tem mais territórios'"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-016-horde-mechanics-explanation.md",
+    "completed_at": "2026-03-11T14:12:02.627065+00:00"
+  },
+  {
+    "id": "F-052",
+    "name": "Evento de Horda detalhado no log",
+    "description": "Em gameStore.ts (evento HORDA_ATTACK), melhorar mensagem para incluir contexto: '☠ A Horda atacou! Força: 100 / Alvo: Seu clã (4 territórios — o maior) / Defesa total: 45 — DERROTADO / Perdeu: Território 7 / Próximo ataque: Turno 42 | Força: 150'. Distingue visualmente quando jogador é o alvo vs outro clã.",
+    "status": "passing",
+    "priority": 20,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Evento de Horda no log mostra alvo, motivo (mais territórios), resultado e próximo ataque",
+      "Distingue visualmente quando jogador é o alvo vs outro clã",
+      "Inclui informação sobre próximo ataque (turno e força)",
+      "Mostra resultado: REPELIDO ou DERROTADO + território perdido"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-016-horde-mechanics-explanation.md",
+    "completed_at": "2026-03-11T14:20:00Z"
+  },
+  {
+    "id": "F-053",
+    "name": "Hook useTips com sistema de triggers",
+    "description": "Criar /src/hooks/useTips.ts: hook que gerencia estado de dicas exibidas. 6 dicas definidas: tip-01-build-farm (turno 1, sem estruturas), tip-02-build-mine (turno 2-3, sem Mine, ouro<20), tip-03-train-units (turno 3-4, tem Barracks, 0 unidades), tip-04-reinforce (2+ territórios com unidades, nunca fez REINFORCE), tip-05-war-coming (turno 13-14, Era da Paz), tip-06-cards (tem cartas, nunca usou). Estado persistido em localStorage (key: dnc-dismissed-tips). Máximo 1 dica ativa por vez, prioridade pela ordem.",
+    "status": "passing",
+    "priority": 21,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Cada dica aparece no máximo 1 vez por partida",
+      "Triggers avaliam corretamente o estado do jogo para cada dica",
+      "Estado persistido em localStorage entre partidas (key: dnc-dismissed-tips)",
+      "Máximo 1 dica ativa por vez (prioridade pela ordem da lista)",
+      "Hook retorna currentTip e função dismissTip"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-017-contextual-tips-system.md",
+    "completed_at": "2026-03-11T14:25:13Z"
+  },
+  {
+    "id": "F-054",
+    "name": "Componente TipBanner",
+    "description": "Criar /src/components/game/hud/TipBanner.tsx: banner flutuante no topo da tela de jogo. Fundo semi-transparente dourado (bg-amber-900/80 border-amber-500/50), ícone à esquerda, texto curto, botão X para fechar. Posição fixa no topo acima do mapa. Animação slide-in de cima para baixo (Framer Motion). Auto-dismiss após 10 segundos se jogador não interagir. Máximo 1 dica visível por vez. Estilo medieval consistente.",
+    "status": "passing",
+    "priority": 22,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Banner aparece com animação slide-in de cima para baixo",
+      "Botão X fecha a dica e marca como vista",
+      "Auto-fechamento após 10 segundos sem interação",
+      "Estilo medieval consistente com o resto da UI (bg-amber-900/80 border-amber-500/50)"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-017-contextual-tips-system.md",
+    "completed_at": "2026-03-11T14:30:00Z"
+  },
+  {
+    "id": "F-055",
+    "name": "Integração do sistema de dicas no layout do jogo",
+    "description": "Em /src/app/game/page.tsx, adicionar useTips() hook e renderizar TipBanner no layout: const { currentTip, dismissTip } = useTips(); renderizar <TipBanner tip={currentTip} onDismiss={() => dismissTip(currentTip.id)} /> acima do conteúdo do jogo. Dicas não bloqueiam interação com o jogo (banner é overlay). Fluxo de jogo normal não é afetado.",
+    "status": "passing",
+    "priority": 23,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [
+      "F-053",
+      "F-054"
+    ],
+    "tests": [
+      "TipBanner integrado no layout sem afetar outros componentes",
+      "Dicas não bloqueiam interação com o jogo (banner é overlay clicável-através)",
+      "Fluxo de jogo normal não é afetado pela presença de dicas",
+      "Dicas corretas aparecem nos momentos certos conforme triggers do useTips"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-017-contextual-tips-system.md",
+    "completed_at": "2026-03-11T14:30:00Z"
+  }
+]
