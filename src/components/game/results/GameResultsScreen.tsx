@@ -1,8 +1,8 @@
 "use client";
 
-import { motion, animate } from "framer-motion";
-import { useEffect, useRef } from "react";
-import { Trophy, Skull, Star, Swords, RefreshCw, ScrollText } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
+import { Trophy, Skull, Star, Swords, RefreshCw, ScrollText, ChevronDown } from "lucide-react";
 import { Sparkles } from "@/components/game/fx";
 import { MedievalButton } from "@/components/ui/medieval";
 import {
@@ -46,37 +46,9 @@ function computeScore(
   return { score, territoryCount, unitCount, breakdown };
 }
 
-// ─── Count-Up ────────────────────────────────────────────────────────────────
+// ─── Inline Score Breakdown ───────────────────────────────────────────────────
 
-function CountUp({ value, delay = 0 }: { value: number; delay?: number }) {
-  const nodeRef = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    const node = nodeRef.current;
-    if (!node) return;
-    const controls = animate(0, value, {
-      duration: 0.3,
-      delay,
-      ease: "easeOut",
-      onUpdate: (v) => {
-        node.textContent = Math.round(v).toLocaleString("pt-BR");
-      },
-    });
-    return () => controls.stop();
-  }, [value, delay]);
-
-  return <span ref={nodeRef}>0</span>;
-}
-
-// ─── Score Breakdown Section ──────────────────────────────────────────────────
-
-function ScoreBreakdownSection({
-  breakdown,
-  baseDelay,
-}: {
-  breakdown: ScoreBreakdown;
-  baseDelay: number;
-}) {
+function InlineBreakdown({ breakdown }: { breakdown: ScoreBreakdown }) {
   const rows = [
     { label: "Territórios", count: breakdown.territories.count, multiplier: breakdown.territories.multiplier, subtotal: breakdown.territories.subtotal },
     { label: "População", count: breakdown.population.count, multiplier: breakdown.population.multiplier, subtotal: breakdown.population.subtotal },
@@ -85,54 +57,29 @@ function ScoreBreakdownSection({
   ];
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: baseDelay, duration: 0.4 }}
-      className="rounded-lg border border-medieval-border/30 bg-medieval-bg-deep/40 p-4"
-    >
-      <h2 className="text-sm font-cinzel font-bold text-medieval-text-muted uppercase tracking-widest mb-3">
-        Como foi sua pontuação
-      </h2>
-      <div className="space-y-2">
-        {rows.map((row, i) => {
-          const itemDelay = baseDelay + 0.1 + i * 0.2;
-          return (
-            <motion.div
-              key={row.label}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: itemDelay, duration: 0.3 }}
-              className="flex items-center justify-between text-sm"
-            >
-              <span className="text-medieval-text-secondary">
-                {row.label}{" "}
-                <span className="text-medieval-text-muted text-xs">
-                  (<CountUp value={row.count} delay={itemDelay} /> × {row.multiplier})
-                </span>
-              </span>
-              <span className="font-bold tabular-nums text-medieval-text-primary">
-                = <CountUp value={row.subtotal} delay={itemDelay} />
-              </span>
-            </motion.div>
-          );
-        })}
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: baseDelay + 0.1 + rows.length * 0.2, duration: 0.4 }}
-          className="border-t border-medieval-border/30 pt-2 mt-2 flex items-center justify-between"
-        >
-          <span className="font-cinzel font-bold text-medieval-text-secondary text-sm uppercase tracking-wide">
-            Total
+    <div className="mt-3 pt-3 border-t border-medieval-border/20 space-y-1.5">
+      {rows.map((row) => (
+        <div key={row.label} className="flex items-center justify-between text-xs">
+          <span className="text-medieval-text-secondary">
+            {row.label}{" "}
+            <span className="text-medieval-text-muted">
+              ({row.count.toLocaleString("pt-BR")} × {row.multiplier})
+            </span>
           </span>
-          <span className="text-2xl font-bold text-amber-400 tabular-nums">
-            = <CountUp value={breakdown.total} delay={baseDelay + 0.1 + rows.length * 0.2} />
+          <span className="font-bold tabular-nums text-medieval-text-primary">
+            = {row.subtotal.toLocaleString("pt-BR")}
           </span>
-        </motion.div>
+        </div>
+      ))}
+      <div className="border-t border-medieval-border/20 pt-1.5 mt-1 flex items-center justify-between">
+        <span className="font-cinzel font-bold text-medieval-text-muted text-xs uppercase tracking-wide">
+          Total
+        </span>
+        <span className="text-base font-bold text-amber-400 tabular-nums">
+          = {breakdown.total.toLocaleString("pt-BR")}
+        </span>
       </div>
-    </motion.section>
+    </div>
   );
 }
 
@@ -190,9 +137,13 @@ interface Props {
 function RankRow({
   ranked,
   index,
+  isExpanded,
+  onToggle,
 }: {
   ranked: RankedClan;
   index: number;
+  isExpanded: boolean;
+  onToggle: () => void;
 }) {
   const isFirst = ranked.rank === 1;
 
@@ -206,7 +157,7 @@ function RankRow({
         duration: 0.45,
         ease: [0.22, 1, 0.36, 1],
       }}
-      className={`relative flex items-center gap-3 rounded-lg px-4 py-3 border transition-colors
+      className={`relative rounded-lg border transition-colors
         ${isFirst ? "border-yellow-500/60 bg-yellow-900/20" : "border-medieval-border/30 bg-medieval-bg-deep/40"}
         ${ranked.isPlayer && !isFirst ? "border-era-peace/50 bg-era-peace/10" : ""}
         ${ranked.isEliminated ? "opacity-50 grayscale" : ""}
@@ -219,58 +170,93 @@ function RankRow({
         </div>
       )}
 
-      {/* Rank badge */}
-      <div
-        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0
-          ${isFirst ? "bg-yellow-500 text-black" : "bg-medieval-bg-mid/60 text-medieval-text-secondary"}
-        `}
-      >
-        {ranked.isEliminated ? (
-          <Skull className="w-4 h-4 text-red-500" />
-        ) : (
-          ranked.rank
-        )}
-      </div>
+      {/* Main row */}
+      <div className="flex items-center gap-3 px-4 py-3">
+        {/* Rank badge */}
+        <div
+          className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0
+            ${isFirst ? "bg-yellow-500 text-black" : "bg-medieval-bg-mid/60 text-medieval-text-secondary"}
+          `}
+        >
+          {ranked.isEliminated ? (
+            <Skull className="w-4 h-4 text-red-500" />
+          ) : (
+            ranked.rank
+          )}
+        </div>
 
-      {/* Name + player indicator */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          {ranked.isPlayer && (
-            <Star className="w-3.5 h-3.5 text-era-peace shrink-0" />
-          )}
-          {isFirst && !ranked.isEliminated && (
-            <Trophy className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
-          )}
-          <span
-            className={`font-cinzel font-semibold text-sm truncate
-              ${isFirst ? "text-yellow-300" : ""}
-              ${ranked.isPlayer && !isFirst ? "text-era-peace" : ""}
-              ${!isFirst && !ranked.isPlayer ? "text-medieval-text-primary" : ""}
-            `}
-          >
-            {ranked.clan.name}
-          </span>
-          {ranked.isEliminated && (
-            <span className="text-xs text-red-400 font-bold shrink-0">
-              ELIMINADO
+        {/* Name + player indicator */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            {ranked.isPlayer && (
+              <Star className="w-3.5 h-3.5 text-era-peace shrink-0" />
+            )}
+            {isFirst && !ranked.isEliminated && (
+              <Trophy className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+            )}
+            <span
+              className={`font-cinzel font-semibold text-sm truncate
+                ${isFirst ? "text-yellow-300" : ""}
+                ${ranked.isPlayer && !isFirst ? "text-era-peace" : ""}
+                ${!isFirst && !ranked.isPlayer ? "text-medieval-text-primary" : ""}
+              `}
+            >
+              {ranked.clan.name}
             </span>
-          )}
+            {ranked.isEliminated && (
+              <span className="text-xs text-red-400 font-bold shrink-0">
+                ELIMINADO
+              </span>
+            )}
+          </div>
+          <div className="text-xs text-medieval-text-muted">
+            {ranked.territoryCount} terr. · {ranked.unitCount} unidades ·{" "}
+            {ranked.clan.gold} ouro
+          </div>
         </div>
-        <div className="text-xs text-medieval-text-muted">
-          {ranked.territoryCount} terr. · {ranked.unitCount} unidades ·{" "}
-          {ranked.clan.gold} ouro
+
+        {/* Score */}
+        <div
+          className={`text-right shrink-0 font-bold tabular-nums
+            ${isFirst ? "text-yellow-300 text-lg" : "text-medieval-text-secondary text-sm"}
+          `}
+        >
+          {ranked.score.toLocaleString()}
+          <div className="text-xs font-normal text-medieval-text-muted">pts</div>
         </div>
+
+        {/* Toggle button */}
+        <button
+          onClick={onToggle}
+          aria-label={isExpanded ? "Colapsar detalhes" : "Ver detalhes"}
+          className="shrink-0 flex items-center gap-1 text-xs text-medieval-text-muted hover:text-medieval-text-secondary transition-colors px-1 py-1"
+        >
+          <motion.div
+            animate={{ rotate: isExpanded ? 180 : 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            <ChevronDown className="w-4 h-4" />
+          </motion.div>
+        </button>
       </div>
 
-      {/* Score */}
-      <div
-        className={`text-right shrink-0 font-bold tabular-nums
-          ${isFirst ? "text-yellow-300 text-lg" : "text-medieval-text-secondary text-sm"}
-        `}
-      >
-        {ranked.score.toLocaleString()}
-        <div className="text-xs font-normal text-medieval-text-muted">pts</div>
-      </div>
+      {/* Inline breakdown */}
+      <AnimatePresence initial={false}>
+        {isExpanded && (
+          <motion.div
+            key="breakdown"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-3">
+              <InlineBreakdown breakdown={ranked.breakdown} />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
@@ -309,6 +295,23 @@ export function GameResultsScreen({
     .map((r, i) => ({ ...r, rank: i + 1 }));
 
   const playerRanked = ranked.find((r) => r.isPlayer);
+
+  // Expanded state: player expanded by default
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(
+    () => new Set(playerRanked ? [playerRanked.clan.id] : [])
+  );
+
+  function toggleExpanded(clanId: string) {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(clanId)) {
+        next.delete(clanId);
+      } else {
+        next.add(clanId);
+      }
+      return next;
+    });
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-start px-4 py-8 overflow-y-auto">
@@ -369,18 +372,16 @@ export function GameResultsScreen({
           </h2>
           <div className="space-y-2">
             {ranked.map((r, i) => (
-              <RankRow key={r.clan.id} ranked={r} index={i} />
+              <RankRow
+                key={r.clan.id}
+                ranked={r}
+                index={i}
+                isExpanded={expandedIds.has(r.clan.id)}
+                onToggle={() => toggleExpanded(r.clan.id)}
+              />
             ))}
           </div>
         </motion.section>
-
-        {/* ── Section 2: Score Breakdown ── */}
-        {playerRanked && (
-          <ScoreBreakdownSection
-            breakdown={playerRanked.breakdown}
-            baseDelay={ranked.length * 0.3 + 0.3}
-          />
-        )}
 
         {/* ── Section 3: Stats ── */}
         <motion.section
