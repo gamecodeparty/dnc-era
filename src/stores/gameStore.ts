@@ -1216,9 +1216,15 @@ export const useGameStore = create<GameState>((set, get) => ({
               const survivorCount = survivors.reduce((s: number, u: Unit) => s + u.quantity, 0);
               const atkLosses = origCount - survivorCount;
               const defLosses = targetTerritory.units.reduce((s: number, u: Unit) => s + u.quantity, 0);
+              const lootParts: string[] = [];
+              if (lootGrain > 0) lootParts.push(`+${lootGrain} grão`);
+              if (lootWood > 0) lootParts.push(`+${lootWood} madeira`);
+              if (lootGold > 0) lootParts.push(`+${lootGold} ouro`);
+              const lootStr = lootParts.length > 0 ? lootParts.join(", ") : "nenhum";
+              const victoryMsg = `Você atacou Território ${targetTerritory.position + 1} de ${targetTerritory.ownerName}. VITÓRIA! Conquistou o território. Saqueou: ${lootStr}. Perdas: ${atkLosses} unidades.`;
               expeditionEvents.push({
                 turn: newTurn,
-                message: `VITORIA! Territorio ${targetTerritory.position + 1} conquistado! Tropas retornando com saque.`,
+                message: victoryMsg,
                 type: "success",
                 eventKind: "COMBAT",
                 result: "victory",
@@ -1265,9 +1271,19 @@ export const useGameStore = create<GameState>((set, get) => ({
               const defSurvivorCount = survivors.reduce((s: number, u: Unit) => s + u.quantity, 0);
               const defAtkLosses = defOrigCount - defSurvivorCount;
               const defDefLosses = Math.floor(attackPower / 10);
+              const UNIT_NAMES: Record<UnitType, string> = { SOLDIER: "soldados", ARCHER: "arqueiros", KNIGHT: "cavaleiros", SPY: "espiões" };
+              const unitLossParts: string[] = exp.units
+                .map((u) => {
+                  const survivorUnit = survivors.find((s) => s.type === u.type);
+                  const lost = u.quantity - (survivorUnit?.quantity || 0);
+                  return lost > 0 ? `${lost} ${UNIT_NAMES[u.type]}` : null;
+                })
+                .filter((s): s is string => s !== null);
+              const unitLossStr = unitLossParts.length > 0 ? unitLossParts.join(", ") : `${defAtkLosses} unidades`;
+              const defeatMsg = `Você atacou Território ${targetTerritory.position + 1} de ${targetTerritory.ownerName}. DERROTA. Perdeu ${unitLossStr}.`;
               expeditionEvents.push({
                 turn: newTurn,
-                message: `DERROTA! Ataque ao territorio ${targetTerritory.position + 1} falhou! Sobreviventes em fuga.`,
+                message: defeatMsg,
                 type: "danger",
                 eventKind: "COMBAT",
                 result: "defeat",
