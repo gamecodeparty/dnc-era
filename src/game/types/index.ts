@@ -166,6 +166,9 @@ export interface OriginDefinition {
     value: number;
   };
   color: string;
+  bonusLabel: string;
+  bonusIcon: string;
+  bonusTooltip: string;
 }
 
 // ==============================================================================
@@ -202,6 +205,39 @@ export interface AIDecisionContext {
 }
 
 // ==============================================================================
+// TERRITORY INTEL
+// ==============================================================================
+
+export interface TerritoryIntel {
+  territoryId: string;
+  source: 'SPY' | 'COMBAT' | 'NONE';
+  defensePower: number | null;
+  revealedAt: number;
+  expiresAt: number;
+}
+
+// ==============================================================================
+// HORDA PREVIEW
+// ==============================================================================
+
+export interface HordaPreview {
+  targetClanId: string;
+  targetTerritoryId: string;
+  arrivesTurn: number;
+  strength: number;
+}
+
+// ==============================================================================
+// INCOMING ATTACK
+// ==============================================================================
+
+export interface IncomingAttack {
+  targetTerritoryId: string;
+  sourceClanId: string;
+  arrivesTurn: number;
+}
+
+// ==============================================================================
 // GAME STATE
 // ==============================================================================
 
@@ -212,6 +248,7 @@ export interface GameState {
   territories: TerritoryWithDetails[];
   events: GameEvent[];
   diplomacy: DiplomacyRelation[];
+  hordaPreview: HordaPreview | null;
 }
 
 export interface TerritoryWithDetails extends Territory {
@@ -269,6 +306,12 @@ export interface UseCardAction {
   targetStructureId?: string;
 }
 
+export interface MarketAction {
+  type: "MARKET_TRADE";
+  territoryId: string;
+  trade: "GRAIN_TO_WOOD" | "GRAIN_TO_GOLD";
+}
+
 export type TurnAction =
   | { type: "BUILD"; data: BuildAction }
   | { type: "UPGRADE"; data: UpgradeAction }
@@ -277,6 +320,7 @@ export type TurnAction =
   | { type: "ATTACK"; data: AttackAction }
   | { type: "DIPLOMACY"; data: DiplomacyAction }
   | { type: "USE_CARD"; data: UseCardAction }
+  | { type: "MARKET_TRADE"; data: MarketAction }
   | { type: "END_TURN" };
 
 // ==============================================================================
@@ -294,4 +338,5 @@ export interface TurnResult {
   hordeStrength?: number;
   gameEnded?: boolean;
   winner?: string;
+  hordaPreview?: HordaPreview | null;
 }

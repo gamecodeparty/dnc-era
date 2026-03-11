@@ -10,7 +10,7 @@ import { ResourceSystem } from "./ResourceSystem";
 import { CombatSystem } from "./CombatSystem";
 import { EraSystem } from "./EraSystem";
 import { AIController } from "../ai/AIController";
-import type { TurnResult, GameState } from "../types";
+import type { TurnResult, GameState, HordaPreview } from "../types";
 import { Era } from "@prisma/client";
 import { ERA_DURATION, HORDA } from "../constants";
 
@@ -73,8 +73,12 @@ export class GameEngine {
       }
     }
 
-    // 5. Advance turn
-    const newTurn = game.currentTurn + 1;
+    // 5. Compute HordaPreview for next turn (T-1 preview)
+    const nextTurn = game.currentTurn + 1;
+    const hordaPreview = await this.calculateHordaPreview(nextTurn);
+
+    // 6. Advance turn
+    const newTurn = nextTurn;
     await prisma.game.update({
       where: { id: this.gameId },
       data: {
@@ -114,6 +118,7 @@ export class GameEngine {
       hordeStrength,
       gameEnded: gameEnded.ended,
       winner: gameEnded.winner,
+      hordaPreview,
     };
   }
 
@@ -162,9 +167,9 @@ export class GameEngine {
       defenderStrength: totalDefense,
     });
 
-    // If Horda wins, remove a territory from target
+    // If Horda wins, remove weakest territory from target (recalculated at T)
     if (strength > totalDefense) {
-      const territoryToLose = target.territories[0];
+      const territoryToLose = await this.findWeakestTerritory(target.id) ?? target.territories[0];
       if (territoryToLose) {
         await prisma.territory.update({
           where: { id: territoryToLose.id },
@@ -194,6 +199,87 @@ export class GameEngine {
     }
 
     return { targetClanId: target.id, defeated: false };
+  }
+
+  /**
+   * Find the weakest territory of a clan (lowest defensePower; tie: fewer structures)
+   */
+  private async findWeakestTerritory(clanId: string) {
+    const territories = await prisma.territory.findMany({
+      where: { ownerId: clanId },
+      include: { structures: true, units: true },
+    });
+
+    if (territories.length === 0) return null;
+
+    const unitDefenseStats: Record<string, number> = {
+      SOLDIER: 2, ARCHER: 1, KNIGHT: 3, SPY: 0,
+    };
+    const WALL_DEFENSE_BONUS_PER_LEVEL = 0.2;
+
+    let weakest = territories[0]!;
+    let weakestDefense = Infinity;
+    let weakestStructureCount = Infinity;
+
+    for (const t of territories) {
+      let defense = t.units.reduce((sum, u) => sum + u.quantity * (unitDefenseStats[u.type] ?? 0), 0);
+      const wall = t.structures.find((s) => s.type === "WALL");
+      if (wall) defense *= 1 + wall.level * WALL_DEFENSE_BONUS_PER_LEVEL;
+
+      if (
+        defense < weakestDefense ||
+        (defense === weakestDefense && t.structures.length < weakestStructureCount)
+      ) {
+        weakestDefense = defense;
+        weakestStructureCount = t.structures.length;
+        weakest = t;
+      }
+    }
+
+    return weakest;
+  }
+
+  /**
+   * Calculate HordaPreview for a given turn (T-1 preview: call with nextTurn)
+   * Returns null if nextTurn is not a Horda attack turn.
+   */
+  private async calculateHordaPreview(nextTurn: number): Promise<HordaPreview | null> {
+    const game = await this.getGame();
+
+    // Only compute preview when nextTurn is a Horda attack turn in Era 3
+    const nextTurnInEra = nextTurn - ERA_DURATION.PEACE - ERA_DURATION.WAR;
+    const isHordaTurn =
+      game.currentEra === Era.INVASION &&
+      nextTurnInEra > 0 &&
+      nextTurnInEra % HORDA.ATTACK_FREQUENCY === 0;
+
+    if (!isHordaTurn) return null;
+
+    const waveIndex = Math.floor(nextTurnInEra / HORDA.ATTACK_FREQUENCY) - 1;
+    if (waveIndex >= HORDA.STRENGTH.length) return null;
+    const strength = HORDA.STRENGTH[waveIndex]!;
+
+    // Find target clan: most territories (same logic as processHordaAttack)
+    const clans = await prisma.clan.findMany({
+      where: { gameId: this.gameId, isAlive: true },
+      include: { territories: true },
+    });
+
+    if (clans.length === 0) return null;
+
+    clans.sort((a, b) => b.territories.length - a.territories.length);
+    const targetClan = clans[0]!;
+
+    // Find weakest territory (provisional target)
+    const weakestTerritory = await this.findWeakestTerritory(targetClan.id);
+    if (!weakestTerritory) return null;
+
+    return {
+      targetClanId: targetClan.id,
+      targetTerritoryId: weakestTerritory.id,
+      arrivesTurn: nextTurn,
+      strength,
+    };
   }
 
   /**
@@ -320,6 +406,9 @@ export class GameEngine {
       },
     });
 
+    // HordaPreview: compute if next turn (game.currentTurn + 1) is a Horda attack turn
+    const hordaPreview = await this.calculateHordaPreview(game.currentTurn + 1);
+
     return {
       game,
       playerClan,
@@ -327,6 +416,7 @@ export class GameEngine {
       territories,
       events,
       diplomacy,
+      hordaPreview,
     };
   }
 

@@ -1,0 +1,486 @@
+[
+  {
+    "id": "F-056",
+    "name": "Tracking de intel por território no GameState",
+    "description": "Em /src/game/types/index.ts, adicionar interface TerritoryIntel { territoryId, source: 'SPY'|'COMBAT'|'NONE', defensePower: number|null, revealedAt, expiresAt }. Em GameEngine.ts, ao resolver combate, registrar intel do território inimigo (source: 'COMBAT', defensePower observado, expiresAt: turno+3). Integrar intel de espião existente na mesma interface. Em gameStore.ts, adicionar array territoryIntel com cleanup automático de entradas expiradas a cada turno.",
+    "status": "passing",
+    "priority": 1,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Interface TerritoryIntel definida em types/index.ts com campos territoryId, source, defensePower, revealedAt, expiresAt",
+      "Intel de combate registrada automaticamente após resolução de batalha (source: 'COMBAT')",
+      "Intel de espião integrada na mesma interface TerritoryIntel (source: 'SPY')",
+      "Entradas expiradas removidas automaticamente no início de cada turno",
+      "Estado territoryIntel acessível via gameStore"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-018-military-intel-map.md",
+    "completed_at": "2026-03-11T15:42:00Z"
+  },
+  {
+    "id": "F-057",
+    "name": "Badges de tropas inimigas com 3 níveis de intel",
+    "description": "Em Territory.tsx, para territórios inimigos, exibir badge de força com 3 níveis: (1) Sem intel: ícone espada + '?' em cinza text-slate-400 com tooltip 'Força desconhecida — envie um Espião'; (2) Revelado por SPY: poder real + ícone 👁 em roxo text-purple-400; (3) Combate recente: ícone ⚔ + valor estimado em laranja text-orange-400. Territórios próprios borda verde border-green-500/60, inimigos borda vermelha border-red-500/60. Badges inimigos só aparecem durante Era da Guerra e Invasão. Toggle F-048 controla visibilidade.",
+    "status": "passing",
+    "priority": 2,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [
+      "F-056"
+    ],
+    "tests": [
+      "Territórios inimigos exibem badge '?' em cinza quando força é desconhecida",
+      "Territórios revelados por SPY exibem poder real com ícone 👁 em roxo",
+      "Territórios com combate recente (3 turnos) exibem estimativa com ícone ⚔ em laranja",
+      "Badges de territórios próprios têm borda verde; inimigos têm borda vermelha",
+      "Intel de combate expira após 3 turnos e badge volta para '?'",
+      "Badges inimigos só aparecem durante Era da Guerra e Invasão",
+      "Toggle de visibilidade (F-048) controla badges próprios e inimigos"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-018-military-intel-map.md",
+    "completed_at": "2026-03-11T15:50:00Z"
+  },
+  {
+    "id": "F-058",
+    "name": "Alerta de ataque iminente no mapa",
+    "description": "Em types/index.ts, adicionar interface IncomingAttack { targetTerritoryId, sourceClanId, arrivesTurn }. Em GameEngine.ts, quando AI lança ataque contra território do jogador, adicionar IncomingAttack ao array incomingAttacks no game state e remover entradas cujo arrivesTurn já passou. Em Territory.tsx, quando território do jogador tem ataque pendente, exibir badge vermelho pulsante: ⚠ 'Ataque iminente!' (text-red-400 bg-red-900/60, animate-pulse). Tooltip: 'Expedição inimiga detectada — chegará no próximo turno.' NÃO revelar atacante ou força. Só durante Era da Guerra e Invasão.",
+    "status": "passing",
+    "priority": 3,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [
+      "F-056"
+    ],
+    "tests": [
+      "Interface IncomingAttack definida em types com targetTerritoryId, sourceClanId, arrivesTurn",
+      "Quando AI lança ataque, badge vermelho pulsante aparece no território-alvo",
+      "Badge aparece 1 turno antes do ataque ser resolvido",
+      "Tooltip diz 'Ataque iminente' sem revelar atacante ou força",
+      "Badge desaparece após o turno de resolução do ataque",
+      "Alerta só funciona durante Era da Guerra e Invasão"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-018-military-intel-map.md",
+    "completed_at": "2026-03-11T16:10:00Z"
+  },
+  {
+    "id": "F-059",
+    "name": "Notificação de ataque iminente no log de eventos",
+    "description": "Em GameEngine.ts, no início do turno do jogador, se há IncomingAttack com arrivesTurn === currentTurn + 1, gerar evento no log: 'Expedição inimiga detectada se movendo em direção a [território]!'. Evento não revela identidade do atacante (a menos que espião ativo). Evento aparece apenas 1 vez por ataque iminente.",
+    "status": "passing",
+    "priority": 4,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [
+      "F-058"
+    ],
+    "tests": [
+      "Evento de notificação aparece no log quando ataque iminente é detectado",
+      "Evento não revela identidade do atacante (a menos que espião ativo no território)",
+      "Evento aparece apenas 1 vez por ataque iminente (não repete no próximo turno)"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-018-military-intel-map.md",
+    "completed_at": "2026-03-11T16:15:00Z"
+  },
+  {
+    "id": "F-075",
+    "name": "Dados de bônus nas constantes de origins",
+    "description": "Em /src/game/constants/origins.ts, adicionar campos bonusLabel, bonusIcon e bonusTooltip ao tipo de origem. Ferronatos: '⚔ +20% poder militar', tooltip sobre dano em combate, cor red. Verdâneos: '🌾 +20% produção de grão', tooltip sobre Farms, cor green. Umbral: '🗡 +30% eficiência de espiões', tooltip sobre chance de sucesso, cor purple. ClanPanel deve consumir dados das constantes (sem hardcode no componente).",
+    "status": "passing",
+    "priority": 5,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Campos bonusLabel, bonusIcon e bonusTooltip definidos para Ferronatos, Verdâneos e Umbral",
+      "Dados consumidos pelas constantes sem hardcode nos componentes",
+      "Cada origem tem cor, ícone e tooltip descritivo corretos"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-023-faction-bonus-badge.md",
+    "completed_at": "2026-03-11T16:10:00Z"
+  },
+  {
+    "id": "F-074",
+    "name": "Badge de bônus de facção no ClanPanel",
+    "description": "Em ClanPanel.tsx, adicionar seção de bônus abaixo do nome da facção. Badge mostra ícone + label do bônus + texto 'ATIVO ✓'. Cor do badge corresponde à facção (Ferronatos: text-red-400 bg-red-950/40, Verdâneos: text-green-400 bg-green-950/40, Umbral: text-purple-400 bg-purple-950/40). Tooltip ao tocar detalha o efeito mecânico. Badge sempre visível (não depende de turno ou era). Dados lidos das constantes de origins (F-075).",
+    "status": "passing",
+    "priority": 6,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [
+      "F-075"
+    ],
+    "tests": [
+      "ClanPanel exibe badge com bônus da facção do jogador (texto + ícone + cor)",
+      "Badge está sempre visível (não depende de turno ou era)",
+      "Texto indica 'ATIVO' para confirmar que o bônus está sendo aplicado",
+      "Tooltip detalha o efeito mecânico do bônus",
+      "Todas as 3 facções têm badge com informação correta",
+      "Cores do badge correspondem à facção (vermelho, verde, roxo)"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-023-faction-bonus-badge.md",
+    "completed_at": "2026-03-11T16:10:16Z"
+  },
+  {
+    "id": "F-067",
+    "name": "Constantes de balanceamento do mercado",
+    "description": "Em /src/game/constants/balance.ts, definir objeto MARKET com: GRAIN_TO_WOOD_COST: 30, GRAIN_TO_WOOD_YIELD: 10, GRAIN_TO_GOLD_COST: 40, GRAIN_TO_GOLD_YIELD: 10, TRADES_PER_TURN_PER_TAVERN: 1. Taxas intencionalmente desfavoráveis (3:1 e 4:1) para que mercado seja válvula de escape, não estratégia principal. Nenhum valor hardcoded na UI ou engine.",
+    "status": "passing",
+    "priority": 7,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Objeto MARKET exportado de balance.ts com todas as constantes definidas",
+      "Taxas de conversão: 30 grão → 10 madeira, 40 grão → 10 ouro",
+      "Limite de 1 troca por turno por Tavern definido na constante"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-020-grain-market.md",
+    "completed_at": "2026-03-11T16:12:18.757Z"
+  },
+  {
+    "id": "F-066",
+    "name": "Ação MARKET_TRADE no GameEngine",
+    "description": "Em types/index.ts, adicionar interface MarketAction { type: 'MARKET_TRADE', territoryId, trade: 'GRAIN_TO_WOOD'|'GRAIN_TO_GOLD' }. Em GameEngine.ts, nova ação no processamento de turno: valida que território tem Tavern, jogador tem recursos suficientes (30 ou 40 grão), não excedeu limite de trocas do turno. Máximo 1 troca por turno por Tavern (2 Taverns = 2 trocas). Estado 'troca usada neste turno' resetado no início de cada turno.",
+    "status": "passing",
+    "priority": 8,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [
+      "F-067"
+    ],
+    "tests": [
+      "Jogador pode trocar 30 grão por 10 madeira via ação MARKET_TRADE",
+      "Jogador pode trocar 40 grão por 10 ouro via ação MARKET_TRADE",
+      "Máximo 1 troca por turno por Tavern (2 Taverns em territórios diferentes = 2 trocas)",
+      "Trocas resetam a cada novo turno",
+      "Validações impedem trocas sem Tavern, sem recursos ou acima do limite"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-020-grain-market.md",
+    "completed_at": "2026-03-11T16:20:07Z"
+  },
+  {
+    "id": "F-065",
+    "name": "UI do Mercado no TerritoryBottomSheet",
+    "description": "Em TerritoryBottomSheet.tsx, adicionar tab/seção 'Mercado' no bottom sheet de território que tenha Tavern construída. Exibir duas opções: 30 🌾 → 10 🪵 e 40 🌾 → 10 💰 com botão 'Trocar'. Botão desabilitado se sem grão suficiente (consistente com F-033) ou troca já usada neste turno (tooltip: 'Limite de trocas atingido este turno'). Ao completar: ResourcePopup animação '-30 🌾 +10 🪵'. Sem Tavern: seção Mercado não aparece.",
+    "status": "passing",
+    "priority": 9,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [
+      "F-066"
+    ],
+    "tests": [
+      "Seção 'Mercado' aparece no bottom sheet de territórios com Tavern",
+      "Botão desabilitado quando recursos insuficientes ou limite atingido",
+      "ResourcePopup mostra resultado da troca com animação",
+      "Sem Tavern construída, seção Mercado não aparece",
+      "Tooltip indica motivo quando botão está desabilitado"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-020-grain-market.md",
+    "completed_at": "2026-03-11T16:25:45Z"
+  },
+  {
+    "id": "F-060",
+    "name": "Pacto de não-agressão para relação TRUSTED",
+    "description": "Em AIController.ts, quando relação jogador-AI é TRUSTED: AI não ataca por 5 turnos após aliança formada; após 5 turnos pode reavaliar (chance de quebra baseada em personalidade); se quebra, relação muda para NEUTRAL (nunca direto a HOSTILE). Em GameEngine.ts, impedir expedições de ataque do jogador contra territórios de clãs TRUSTED. Botão 'Atacar' desabilitado com tooltip 'Aliado — cancele a aliança antes de atacar'. Jogador pode cancelar aliança a qualquer momento via diplomacia.",
+    "status": "passing",
+    "priority": 10,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Clã aliado (TRUSTED) não ataca o jogador por 5 turnos após aliança",
+      "Jogador não pode atacar territórios de clã aliado (botão desabilitado com tooltip)",
+      "Aliança não pode ser quebrada nos primeiros 5 turnos pelo lado da AI",
+      "Jogador pode cancelar aliança a qualquer momento via página de diplomacia",
+      "Se AI quebra aliança, relação muda para NEUTRAL (nunca direto a HOSTILE)"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-019-diplomacy-concrete-effects.md",
+    "completed_at": "2026-03-11T16:45:00Z"
+  },
+  {
+    "id": "F-062",
+    "name": "Prioridade de ataque HOSTILE na AI",
+    "description": "Em AIController.ts, quando relação é HOSTILE: AI prioriza atacar territórios do jogador sobre outros alvos neutros. Multiplicador de agressividade: +50% chance de escolher jogador como alvo. Comportamento deve ser perceptível (não apenas marginal).",
+    "status": "passing",
+    "priority": 11,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Clã HOSTILE prioriza atacar jogador sobre outros alvos neutros",
+      "Multiplicador de +50% aplicado na seleção de alvo",
+      "Comportamento é perceptível no jogo (não apenas marginal)"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-019-diplomacy-concrete-effects.md",
+    "completed_at": "2026-03-11T16:45:00Z"
+  },
+  {
+    "id": "F-061",
+    "name": "Visibilidade de tropas aliadas no mapa",
+    "description": "Em Territory.tsx, territórios de clãs aliados (TRUSTED) exibem badges de defesa reais (não '?'), como se revelados por espião. Badge com ícone 🤝 em azul text-blue-400. Tooltip: 'Aliado — força visível pelo pacto'. Não expira enquanto aliança durar. Badges desaparecem imediatamente se aliança for quebrada. Reutilizar sistema TerritoryIntel de F-056 para consistência.",
+    "status": "passing",
+    "priority": 12,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [
+      "F-056",
+      "F-060"
+    ],
+    "tests": [
+      "Territórios aliados mostram badges de defesa reais com ícone 🤝 em azul",
+      "Badges desaparecem imediatamente se aliança for quebrada",
+      "Informação de tropas aliadas é precisa (não estimativa)",
+      "Tooltip mostra 'Aliado — força visível pelo pacto'"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-019-diplomacy-concrete-effects.md",
+    "completed_at": "2026-03-11T17:30:00Z"
+  },
+  {
+    "id": "F-063",
+    "name": "Indicador de saúde da aliança na página de diplomacia",
+    "description": "Em diplomacy/page.tsx, adicionar indicador visual de saúde da relação para clãs TRUSTED. Barra visual com percentual + turnos restantes do pacto + botão 'Cancelar Aliança'. Saúde inicia em 100%: -10%/turno se AI personalidade HOSTILE, -20% se jogador ataca perto do aliado, -5%/turno decaimento natural. Quando saúde < 30%, aliança pode ser quebrada pela AI. Tipos em index.ts: campos allianceHealth e allianceTurnFormed.",
+    "status": "passing",
+    "priority": 13,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [
+      "F-060"
+    ],
+    "tests": [
+      "Página de diplomacia mostra saúde da aliança em barra visual + turnos restantes",
+      "Saúde decresce conforme regras definidas (-10%, -20%, -5%)",
+      "Botão 'Cancelar Aliança' funciona e muda relação para NEUTRAL",
+      "Quando saúde < 30%, aliança pode ser quebrada pela AI"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-019-diplomacy-concrete-effects.md",
+    "completed_at": "2026-03-11T16:55:00Z"
+  },
+  {
+    "id": "F-064",
+    "name": "Notificação de quebra de aliança",
+    "description": "Em GameEngine.ts, quando AI quebra aliança: evento no log 'O Clã X rompeu a aliança! Relação mudou para Neutro.', TipBanner alerta 'Aliança rompida — seus territórios perto de X estão vulneráveis'. Transição: TRUSTED → NEUTRAL (nunca direto a HOSTILE por quebra automática).",
+    "status": "passing",
+    "priority": 14,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [
+      "F-060"
+    ],
+    "tests": [
+      "Quando AI quebra aliança, evento aparece no log com nome do clã",
+      "Relação muda para NEUTRAL (não HOSTILE)",
+      "TipBanner alerta o jogador sobre a vulnerabilidade",
+      "Transição de aliança respeita regra TRUSTED → NEUTRAL"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-019-diplomacy-concrete-effects.md",
+    "completed_at": "2026-03-11T16:58:00Z"
+  },
+  {
+    "id": "F-068",
+    "name": "Cálculo de HordaPreview no GameEngine",
+    "description": "Em types/index.ts, adicionar interface HordaPreview { targetClanId, targetTerritoryId, arrivesTurn, strength }. Em GameEngine.ts, no turno T-1 antes do ataque da Horda, calcular território-alvo provisório: território do clã-alvo com menor defensePower (empate: menos estruturas). Preview calculado em T-1 mas ataque real recalculado em T — se jogador reforçar entre T-1 e T, Horda pode mudar de alvo. Preview mostra intenção atual, não garantia.",
+    "status": "passing",
+    "priority": 15,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Interface HordaPreview definida em types com campos targetClanId, targetTerritoryId, arrivesTurn, strength",
+      "HordaPreview calculada corretamente 1 turno antes do ataque",
+      "Território mais fraco do clã-alvo selecionado como alvo provisório",
+      "Preview é provisório — ataque real pode mudar se jogador reforçar"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-021-horde-territory-indicator.md",
+    "completed_at": "2026-03-11T17:15:00Z"
+  },
+  {
+    "id": "F-069",
+    "name": "Badge de alvo da Horda no mapa",
+    "description": "Em Territory.tsx, quando território do jogador é hordaPreviewTarget: badge 💀 + 'Alvo da Horda' (text-red-500 bg-red-950/70 border-red-600, animate-pulse duration-2000). Tooltip: 'A Horda mira este território — ele tem a defesa mais fraca. Reforce antes do próximo turno!'. Indicador só aparece durante Era da Invasão quando há ataque agendado.",
+    "status": "passing",
+    "priority": 16,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [
+      "F-068"
+    ],
+    "tests": [
+      "Badge 💀 pulsante aparece no território-alvo 1 turno antes do ataque",
+      "Tooltip explica que o território é o mais fraco e pode ser reforçado",
+      "Indicador só aparece durante Era da Invasão",
+      "Badge desaparece após resolução do ataque"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-021-horde-territory-indicator.md",
+    "completed_at": "2026-03-11T17:13:49.541Z"
+  },
+  {
+    "id": "F-070",
+    "name": "Info de território-alvo no modal da Horda e EraIndicator",
+    "description": "Em InvasionInfoModal.tsx, adicionar linha quando há preview: 'Alvo atual: Território TX (defesa: Y)' + dica de reforço. Em EraIndicator.tsx, quando countdown Horda em 1 turno e há preview, adicionar indicador textual 'Alvo: TX' em cor vermelha abaixo do countdown. Informações consistentes entre mapa, modal e HUD.",
+    "status": "passing",
+    "priority": 17,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [
+      "F-068"
+    ],
+    "tests": [
+      "Modal da Horda inclui informação de território-alvo e defesa atual",
+      "EraIndicator mostra 'Alvo: TX' quando countdown está em 1",
+      "Informações são consistentes entre mapa, modal e HUD"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-021-horde-territory-indicator.md",
+    "completed_at": "2026-03-11T17:30:00Z"
+  },
+  {
+    "id": "F-071",
+    "name": "Tips de deadlock econômico",
+    "description": "Em useTips.ts, adicionar 2 tips: tip-07-deadlock-warning (prioridade 10) — trigger: jogador construiu estrutura mas nenhuma produtiva, turnos 1-5; mensagem '⚠ Atenção: sem estruturas de produção!'. tip-08-zero-production (prioridade 15) — trigger: turno >= 3 E produção de grão, madeira E ouro = 0; mensagem '🚨 Produção zerada!'. Adicionar playerGrainProduction, playerWoodProduction, playerGoldProduction e playerStructureTypes ao estado do trigger.",
+    "status": "passing",
+    "priority": 18,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "TipBanner aparece quando jogador construiu estrutura não-produtiva sem ter nenhuma produtiva (turnos 1-5)",
+      "TipBanner de urgência aparece quando produção total é zero a partir do turno 3",
+      "Tips respeitam lógica de dismissal existente (localStorage, mostrar 1 vez)",
+      "Tips respeitam prioridade e fila do sistema existente"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-022-onboarding-tips-expanded.md",
+    "completed_at": "2026-03-11T17:45:00Z"
+  },
+  {
+    "id": "F-072",
+    "name": "Alerta inline no menu de construção",
+    "description": "Em TerritoryBottomSheet.tsx, quando jogador seleciona estrutura não-produtiva (Wall, Barracks, Stable, Tavern, Shadow Guild) e não tem NENHUMA estrutura produtiva em nenhum território: exibir alerta inline acima do botão Construir '⚠ Sem estruturas produtivas! Considere construir Farm, Sawmill ou Mine primeiro.' (bg-amber-900/60 border-amber-500/40 text-amber-200). Alerta NÃO bloqueia construção. Desaparece se jogador já tem ao menos 1 produtiva.",
+    "status": "passing",
+    "priority": 19,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Alerta inline aparece ao selecionar estrutura não-produtiva sem ter produtivas em nenhum território",
+      "Alerta NÃO bloqueia a construção — apenas informa",
+      "Alerta desaparece se jogador já tem ao menos 1 Farm, Sawmill ou Mine",
+      "Estilo visual correto (bg-amber-900/60 border-amber-500/40 text-amber-200)"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-022-onboarding-tips-expanded.md",
+    "completed_at": "2026-03-11T17:40:00Z"
+  },
+  {
+    "id": "F-073",
+    "name": "Tips de cartas no early game",
+    "description": "Em useTips.ts, adicionar 2 tips: tip-09-cards-intro — trigger: turno 3-5, tem cartas, nunca usou nenhuma; mensagem '🃏 Você tem cartas na mão! Use ao enviar expedições de ataque.' tip-10-cards-reminder — trigger: turno 10+, 3+ cartas acumuladas, nunca usou; mensagem '🃏 Cartas acumuladas sem uso!'. Adicionar playerCards e hasUsedCard ao estado do trigger. Cada tip máximo 1 vez (localStorage). Não aparecem se jogador já usou carta.",
+    "status": "passing",
+    "priority": 20,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "TipBanner de cartas aparece nos turnos 3-5 se jogador tem cartas e nunca usou",
+      "TipBanner de lembrete aparece no turno 10+ se jogador tem 3+ cartas sem uso",
+      "Cada tip aparece no máximo 1 vez (persistido em localStorage)",
+      "Tips não aparecem se jogador já usou ao menos 1 carta"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-022-onboarding-tips-expanded.md",
+    "completed_at": "2026-03-11T17:37:58Z"
+  },
+  {
+    "id": "F-076",
+    "name": "Breakdown de score por categoria na GameResultsScreen",
+    "description": "Em GameResultsScreen.tsx, adicionar seção 'Como foi sua pontuação' abaixo do ranking. Decompor score em ScoreBreakdown: territórios (count × 100), população (count × 10), ouro (count × 1), unidades (count × 5). Cada linha aparece sequencialmente com fade-in (Framer Motion, delay 200ms). Números fazem count-up de 0 ao valor final (300ms). Total por último com destaque (text-2xl font-bold text-amber-400).",
+    "status": "passing",
+    "priority": 21,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Seção 'Como foi sua pontuação' aparece abaixo do ranking",
+      "Cada categoria mostra: quantidade × multiplicador = subtotal",
+      "Total confere com pontuação exibida no ranking",
+      "Animação de revelação sequencial com count-up nos números",
+      "Total aparece por último com destaque visual"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-024-score-breakdown-results.md",
+    "completed_at": "2026-03-11T17:45:00Z"
+  },
+  {
+    "id": "F-077",
+    "name": "Estatísticas expandidas na GameResultsScreen",
+    "description": "Em GameResultsScreen.tsx, adicionar seção 'Estatísticas da Partida' abaixo do breakdown. Exibir: batalhas vencidas (X/Y), territórios conquistados, territórios perdidos, estruturas construídas, unidades treinadas, cartas usadas (X/Y), horda repelida (Nx). Usar getGameStats(events) existente, adicionando campos faltantes: territoriesLost e totalCards. Layout responsivo mobile-first.",
+    "status": "passing",
+    "priority": 22,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Estatísticas mostram batalhas, territórios, estruturas, unidades, cartas, horda",
+      "Dados derivados dos eventos de jogo (não estimativas)",
+      "Layout responsivo (mobile-first)",
+      "Campos territoriesLost e totalCards adicionados ao getGameStats"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-024-score-breakdown-results.md",
+    "completed_at": "2026-03-11T17:49:27.927Z"
+  },
+  {
+    "id": "F-078",
+    "name": "Breakdown expandível para todos os clãs",
+    "description": "Em GameResultsScreen.tsx, permitir que jogador clique em qualquer clã do ranking para ver breakdown inline (mesma estrutura de F-076). Botão 'ver detalhes' ao lado do nome. Expansão/colapso com animação suave (Framer Motion). Breakdown do jogador aparece expandido por default.",
+    "status": "passing",
+    "priority": 23,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [
+      "F-076"
+    ],
+    "tests": [
+      "Jogador pode clicar em qualquer clã do ranking para ver seu breakdown",
+      "Expansão/colapso funciona com animação suave",
+      "Breakdown do jogador aparece expandido por default",
+      "Breakdowns de outros clãs aparecem colapsados por default"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-024-score-breakdown-results.md",
+    "completed_at": "2026-03-11T17:55:00Z"
+  },
+  {
+    "id": "F-079",
+    "name": "Texto mecânico na transição de era",
+    "description": "Em EraTransition.tsx, adicionar bloco de texto abaixo da descrição existente com bullet points de mudanças mecânicas. Era da Guerra: 'Clãs podem atacar territórios', 'AI mais agressiva', 'Novas cartas de combate'. Era da Invasão: 'Horda ataca a cada 3 turnos (50→300)', 'Alvo: clã com mais territórios', 'Alianças para sobreviver'. Definir textos como constante ERA_MECHANICS. Transição para Era da Paz NÃO exibe texto. Animação existente preservada.",
+    "status": "passing",
+    "priority": 24,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Transição para Era da Guerra exibe 3 bullet points explicando novas regras",
+      "Transição para Era da Invasão exibe 3 bullet points sobre a Horda",
+      "Transição de Era da Paz (início do jogo) NÃO exibe texto mecânico",
+      "Animação de transição existente não é alterada"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-025-era-transition-explanation.md",
+    "completed_at": "2026-03-11T17:55:00Z"
+  },
+  {
+    "id": "F-080",
+    "name": "Animação sequencial dos bullet points na transição",
+    "description": "Em EraTransition.tsx, animar bullet points mecânicos: texto aparece 2s após título da era (delay). Fade-in com slide-up (Framer Motion opacity: 0→1, y: 20→0). Cada bullet com 300ms delay entre eles. Fonte text-sm text-slate-300. Fundo bg-black/40 rounded-lg px-4 py-3. Desaparece junto com resto da animação de transição.",
+    "status": "passing",
+    "priority": 25,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [
+      "F-079"
+    ],
+    "tests": [
+      "Texto aparece 2 segundos após o título da era",
+      "Cada bullet point aparece sequencialmente com delay de 300ms",
+      "Estilo visual não compete com animação principal (fonte menor, fundo semi-transparente)",
+      "Bullet points desaparecem junto com a animação de transição"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-025-era-transition-explanation.md",
+    "completed_at": "2026-03-11T17:58:00Z"
+  }
+]

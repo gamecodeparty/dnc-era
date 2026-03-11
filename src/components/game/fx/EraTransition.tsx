@@ -18,11 +18,25 @@ const eraIcons = {
   INVASION: Skull,
 };
 
+const ERA_MECHANICS: Partial<Record<EraType, string[]>> = {
+  WAR: [
+    "Clãs podem atacar territórios",
+    "AI mais agressiva",
+    "Novas cartas de combate",
+  ],
+  INVASION: [
+    "Horda ataca a cada 3 turnos (50→300)",
+    "Alvo: clã com mais territórios",
+    "Alianças para sobreviver",
+  ],
+};
+
 export function EraTransition({ era, isVisible, onComplete }: EraTransitionProps) {
   const Icon = eraIcons[era];
   const color = eraColors[era];
   const name = eraNames[era];
   const description = eraDescriptions[era];
+  const mechanics = ERA_MECHANICS[era];
 
   return (
     <AnimatePresence>
@@ -72,6 +86,31 @@ export function EraTransition({ era, isVisible, onComplete }: EraTransitionProps
             <p className="text-xl text-white/70 max-w-md text-center font-crimson">
               {description}
             </p>
+
+            {/* Mechanics bullet points */}
+            {mechanics && (
+              <motion.div
+                className="mt-6 bg-black/40 rounded-lg px-4 py-3"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3, delay: 2 }}
+              >
+                <ul className="flex flex-col gap-1">
+                  {mechanics.map((point, index) => (
+                    <motion.li
+                      key={point}
+                      className="flex items-center gap-2 text-sm text-slate-300 font-crimson"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: 2 + index * 0.3 }}
+                    >
+                      <span style={{ color }}>•</span>
+                      {point}
+                    </motion.li>
+                  ))}
+                </ul>
+              </motion.div>
+            )}
 
             {/* Decorative lines */}
             <div className="flex items-center gap-4 mt-8">

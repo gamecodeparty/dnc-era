@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { X, MapPin, Building2, Users, Wheat, Trees, Coins, Sword, AlertTriangle } from "lucide-react";
+import { X, MapPin, Building2, Users, Wheat, Trees, Coins, Sword, AlertTriangle, ShoppingCart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MedievalButton } from "@/components/ui/medieval";
 import { useHaptic } from "@/hooks/useHaptic";
-import { UI } from "@/game/constants/balance";
+import { UI, MARKET } from "@/game/constants/balance";
 import { STRUCTURES } from "@/game/constants/structures";
 import { getProportionalCostWarnings, UNIT_COSTS, type CostWarning } from "@/stores/gameStore";
+import { ResourcePopupManager, type ResourceType } from "@/components/game/fx/ResourcePopup";
 
 type ResourceCost = { grain?: number; wood?: number; gold?: number };
 
@@ -154,6 +155,12 @@ interface TerritoryBottomSheetProps {
   onTrainUnit?: (unitType: string) => void;
   /** Called when attack action is selected (enemy territory only) */
   onAttack?: (territory: Territory) => void;
+  /** Territory IDs that have used their market trade this turn */
+  marketTradesUsed?: string[];
+  /** Called when market trade is triggered */
+  onMarketTrade?: (trade: "GRAIN_TO_WOOD" | "GRAIN_TO_GOLD") => void;
+  /** Whether player has at least 1 productive structure (Farm/Sawmill/Mine) in any territory */
+  playerHasProductiveStructures?: boolean;
   /** Additional class names */
   className?: string;
 }
@@ -170,6 +177,13 @@ const bonusLabels = {
   gold: "Ouro",
 };
 
+type MarketPopup = {
+  id: string;
+  amount: number;
+  type: ResourceType;
+  position: { x: number; y: number };
+};
+
 export function TerritoryBottomSheet({
   territory,
   structures = [],
@@ -184,11 +198,15 @@ export function TerritoryBottomSheet({
   onTrain,
   onTrainUnit,
   onAttack,
+  marketTradesUsed = [],
+  onMarketTrade,
+  playerHasProductiveStructures = true,
   className = "",
 }: TerritoryBottomSheetProps) {
   const { vibrate } = useHaptic();
   const [pendingAction, setPendingAction] = useState<"build" | "train" | null>(null);
   const [warnings, setWarnings] = useState<CostWarning[]>([]);
+  const [marketPopups, setMarketPopups] = useState<MarketPopup[]>([]);
 
   const handleClose = () => {
     vibrate("light");
@@ -243,6 +261,22 @@ export function TerritoryBottomSheet({
     onAttack?.(territory);
   };
 
+  const handleMarketTrade = (trade: "GRAIN_TO_WOOD" | "GRAIN_TO_GOLD") => {
+    vibrate("medium");
+    onMarketTrade?.(trade);
+    const cost = trade === "GRAIN_TO_WOOD" ? MARKET.GRAIN_TO_WOOD_COST : MARKET.GRAIN_TO_GOLD_COST;
+    const gainType: ResourceType = trade === "GRAIN_TO_WOOD" ? "WOOD" : "GOLD";
+    const gainAmount = trade === "GRAIN_TO_WOOD" ? MARKET.GRAIN_TO_WOOD_YIELD : MARKET.GRAIN_TO_GOLD_YIELD;
+    const cx = typeof window !== "undefined" ? window.innerWidth / 2 : 200;
+    const cy = typeof window !== "undefined" ? window.innerHeight - 280 : 400;
+    const idBase = `market-${Date.now()}`;
+    setMarketPopups((prev) => [
+      ...prev,
+      { id: `${idBase}-grain`, amount: -cost, type: "GRAIN", position: { x: cx - 70, y: cy } },
+      { id: `${idBase}-gain`, amount: gainAmount, type: gainType, position: { x: cx + 10, y: cy } },
+    ]);
+  };
+
   const BonusIcon = territory?.bonusResource ? bonusIcons[territory.bonusResource] : null;
 
   // F-033: canAfford checks and missing resource labels
@@ -266,7 +300,16 @@ export function TerritoryBottomSheet({
   const makeCostTooltip = (ws: typeof buildWarnings) =>
     ws.map((w) => `Custo elevado — usa ${Math.round(w.percent)}% do seu estoque de ${w.resourceLabel}`).join(" | ");
 
+  // Market section (F-065)
+  const hasTavern = structures.some((s) => s.type === "TAVERN");
+  const tradeUsedThisTurn = territory
+    ? marketTradesUsed.filter((id) => id === territory.id).length >= MARKET.TRADES_PER_TURN_PER_TAVERN
+    : false;
+  const canAffordWood = (playerResources?.grain ?? 0) >= MARKET.GRAIN_TO_WOOD_COST;
+  const canAffordGold = (playerResources?.grain ?? 0) >= MARKET.GRAIN_TO_GOLD_COST;
+
   return (
+    <>
     <AnimatePresence>
       {territory && (
         <>
@@ -424,6 +467,12 @@ export function TerritoryBottomSheet({
                       Território lotado (4/4 estruturas)
                     </p>
                   )}
+                  {/* F-072: Inline alert when player has no productive structures */}
+                  {!playerHasProductiveStructures && (
+                    <div className="px-3 py-2 rounded-lg bg-amber-900/60 border border-amber-500/40 text-amber-200 text-xs leading-snug">
+                      ⚠ Sem estruturas produtivas! Considere construir Farm, Sawmill ou Mine primeiro.
+                    </div>
+                  )}
                   <div className="flex gap-2">
                     {/* Build button */}
                     <div className="flex-1 flex flex-col gap-1">
@@ -498,6 +547,82 @@ export function TerritoryBottomSheet({
                         );
                       })}
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Market Section (F-065) — only when territory has Tavern */}
+              {isOwned && hasTavern && (
+                <div className="mt-3 border-t border-medieval-primary/20 pt-3">
+                  <h4 className="text-sm font-semibold text-medieval-text-secondary mb-2 flex items-center gap-2">
+                    <ShoppingCart className="w-4 h-4" />
+                    Mercado <span className="text-xs text-medieval-text-muted font-normal">(Taverna)</span>
+                  </h4>
+                  <p className="text-xs text-medieval-text-muted mb-2">Vender Grão:</p>
+                  <div className="flex flex-col gap-1.5">
+                    {/* 30 grain → 10 wood */}
+                    {(() => {
+                      const disabled = tradeUsedThisTurn || !canAffordWood;
+                      const tooltip = tradeUsedThisTurn
+                        ? "Limite de trocas atingido este turno"
+                        : !canAffordWood
+                        ? `Faltam: ${MARKET.GRAIN_TO_WOOD_COST - (playerResources?.grain ?? 0)} grão`
+                        : undefined;
+                      return (
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm text-medieval-text-primary">
+                            {MARKET.GRAIN_TO_WOOD_COST} 🌾 → {MARKET.GRAIN_TO_WOOD_YIELD} 🪵
+                          </span>
+                          <button
+                            disabled={disabled}
+                            onClick={() => !disabled && handleMarketTrade("GRAIN_TO_WOOD")}
+                            title={tooltip}
+                            className={`
+                              px-3 py-1 rounded text-xs font-semibold border transition-colors
+                              ${disabled
+                                ? "opacity-50 cursor-not-allowed bg-gray-700/50 border-gray-600/50 text-gray-400"
+                                : "bg-emerald-800/40 border-emerald-600/50 text-emerald-300 hover:bg-emerald-700/50"
+                              }
+                            `}
+                          >
+                            Trocar
+                          </button>
+                        </div>
+                      );
+                    })()}
+                    {/* 40 grain → 10 gold */}
+                    {(() => {
+                      const disabled = tradeUsedThisTurn || !canAffordGold;
+                      const tooltip = tradeUsedThisTurn
+                        ? "Limite de trocas atingido este turno"
+                        : !canAffordGold
+                        ? `Faltam: ${MARKET.GRAIN_TO_GOLD_COST - (playerResources?.grain ?? 0)} grão`
+                        : undefined;
+                      return (
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm text-medieval-text-primary">
+                            {MARKET.GRAIN_TO_GOLD_COST} 🌾 → {MARKET.GRAIN_TO_GOLD_YIELD} 💰
+                          </span>
+                          <button
+                            disabled={disabled}
+                            onClick={() => !disabled && handleMarketTrade("GRAIN_TO_GOLD")}
+                            title={tooltip}
+                            className={`
+                              px-3 py-1 rounded text-xs font-semibold border transition-colors
+                              ${disabled
+                                ? "opacity-50 cursor-not-allowed bg-gray-700/50 border-gray-600/50 text-gray-400"
+                                : "bg-yellow-800/40 border-yellow-600/50 text-yellow-300 hover:bg-yellow-700/50"
+                              }
+                            `}
+                          >
+                            Trocar
+                          </button>
+                        </div>
+                      );
+                    })()}
+                    <p className="text-xs text-medieval-text-muted">
+                      Limite: 1 troca por turno
+                    </p>
                   </div>
                 </div>
               )}
@@ -622,5 +747,14 @@ export function TerritoryBottomSheet({
         </>
       )}
     </AnimatePresence>
+
+    {/* Market trade ResourcePopup animations (F-065) */}
+    <ResourcePopupManager
+      popups={marketPopups}
+      onPopupComplete={(id) =>
+        setMarketPopups((prev) => prev.filter((p) => p.id !== id))
+      }
+    />
+    </>
   );
 }

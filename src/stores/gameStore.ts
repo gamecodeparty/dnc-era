@@ -1,10 +1,10 @@
 import { create } from "zustand";
-import { TURN_DURATION_MS } from "@/game/constants/balance";
+import { TURN_DURATION_MS, MARKET, TERRITORY_ADJACENCY } from "@/game/constants/balance";
 
 // Tipos
 export type Era = "PEACE" | "WAR" | "INVASION";
 export type ResourceType = "GRAIN" | "WOOD" | "GOLD";
-export type StructureType = "FARM" | "SAWMILL" | "MINE" | "BARRACKS" | "STABLE" | "WALL" | "SHADOW_GUILD";
+export type StructureType = "FARM" | "SAWMILL" | "MINE" | "BARRACKS" | "STABLE" | "WALL" | "TAVERN" | "SHADOW_GUILD";
 export type UnitType = "SOLDIER" | "ARCHER" | "KNIGHT" | "SPY";
 export type DiplomacyRelation = "TRUSTED" | "NEUTRAL" | "HOSTILE";
 export type AIPersonality = "CONQUEROR" | "DEFENDER" | "OPPORTUNIST" | "MERCHANT";
@@ -131,6 +131,27 @@ export interface RevealedTerritory {
   expiresAt: number;   // revealedAt + 5
 }
 
+export interface TerritoryIntel {
+  territoryId: string;
+  source: 'SPY' | 'COMBAT' | 'NONE';
+  defensePower: number | null;
+  revealedAt: number;
+  expiresAt: number;
+}
+
+export interface IncomingAttack {
+  targetTerritoryId: string;
+  sourceClanId: string;
+  arrivesTurn: number;
+}
+
+export interface HordaPreview {
+  targetClanId: string;
+  targetTerritoryId: string;
+  arrivesTurn: number;
+  strength: number;
+}
+
 // Constantes
 export const SPY_SUCCESS_CHANCE_BASE = 0.7;   // 70% base
 export const SPY_UMBRAL_BONUS = 0.3;           // +30% para Umbral = 100%
@@ -176,6 +197,7 @@ export const STRUCTURE_COSTS: Record<StructureType, { grain?: number; wood?: num
   BARRACKS: { grain: 30, wood: 40 },
   STABLE: { grain: 50, wood: 60, gold: 30 },
   WALL: { wood: 50, gold: 20 },
+  TAVERN: { wood: 15, gold: 20 },
   SHADOW_GUILD: { wood: 20, gold: 30 },
 };
 
@@ -186,6 +208,7 @@ export const STRUCTURE_PRODUCTION: Record<StructureType, { resource?: ResourceTy
   BARRACKS: {},
   STABLE: {},
   WALL: {},
+  TAVERN: {},
   SHADOW_GUILD: {},
 };
 
@@ -556,8 +579,15 @@ interface GameState {
   timerPaused: boolean;
   timeRemaining: number;
   revealedTerritories: Record<string, RevealedTerritory>;
+  territoryIntel: TerritoryIntel[];
+  incomingAttacks: IncomingAttack[];
   playerCards: PlayerCard[];
   invasionModalShown: boolean;
+  marketTradesUsed: string[]; // territoryIds that have used their trade this turn
+  allianceTurnFormed: Record<string, number>; // clanId -> turn when TRUSTED was formed
+  allianceHealth: Record<string, number>; // clanId -> alliance health (0-100)
+  allianceBreakAlerts: Array<{ clanId: string; clanName: string }>; // F-064: clans that broke alliance this turn
+  hordaPreview: HordaPreview | null; // F-068: provisional Horda target for next attack (T-1 preview)
 
   // Getters
   getPlayerClan: () => Clan;
@@ -584,6 +614,7 @@ interface GameState {
   cancelExpedition: (expeditionId: string) => { success: boolean; message: string };
   declareWar: (clanId: string) => { success: boolean; message: string };
   proposePeace: (clanId: string) => { success: boolean; message: string };
+  cancelAlliance: (clanId: string) => { success: boolean; message: string };
   sendExploration: (
     fromTerritoryId: string,
     siteId: string,
@@ -593,6 +624,7 @@ interface GameState {
     fromTerritoryId: string,
     toTerritoryId: string
   ) => { success: boolean; message: string; expeditionId?: string };
+  marketTrade: (territoryId: string, trade: "GRAIN_TO_WOOD" | "GRAIN_TO_GOLD") => { success: boolean; message: string };
   processTurn: () => void;
   resetGame: () => void;
   pauseTimer: () => void;
@@ -615,7 +647,14 @@ export const useGameStore = create<GameState>((set, get) => ({
   timerPaused: false,
   timeRemaining: TURN_DURATION_MS,
   revealedTerritories: {},
+  territoryIntel: [],
+  incomingAttacks: [],
   invasionModalShown: false,
+  marketTradesUsed: [],
+  allianceTurnFormed: {},
+  allianceHealth: {},
+  allianceBreakAlerts: [],
+  hordaPreview: null,
   playerCards: [
     { id: "pc1", type: "REINFORCEMENTS", used: false },
     { id: "pc2", type: "INFORMANT", used: false },
@@ -791,6 +830,11 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (!from || !to) return { success: false, message: "Territorio invalido" };
     if (from.ownerId !== "player") return { success: false, message: "Voce so pode enviar de seus territorios" };
     if (to.ownerId === "player") return { success: false, message: "Nao pode atacar a si mesmo" };
+
+    // F-060: Bloquear ataque a clãs aliados (TRUSTED)
+    if (to.ownerId && state.diplomacy[to.ownerId] === "TRUSTED") {
+      return { success: false, message: "Aliado — cancele a aliança antes de atacar" };
+    }
 
     // Validar unidades disponíveis
     for (const unit of units) {
@@ -1041,6 +1085,12 @@ export const useGameStore = create<GameState>((set, get) => ({
           ...state.diplomacy,
           [clanId]: newRelation,
         },
+        allianceTurnFormed: newRelation === "TRUSTED"
+          ? { ...state.allianceTurnFormed, [clanId]: state.currentTurn }
+          : state.allianceTurnFormed,
+        allianceHealth: newRelation === "TRUSTED"
+          ? { ...state.allianceHealth, [clanId]: 100 }
+          : state.allianceHealth,
         events: [
           { turn: state.currentTurn, message: `PAZ! ${clan.name} aceitou sua proposta de paz!`, type: "success" as const },
           ...state.events.slice(0, 9),
@@ -1056,6 +1106,36 @@ export const useGameStore = create<GameState>((set, get) => ({
       }));
       return { success: false, message: `${clan.name} rejeitou sua proposta de paz.` };
     }
+  },
+
+  cancelAlliance: (clanId: string) => {
+    const state = get();
+    const clan = state.clans.find((c) => c.id === clanId);
+    if (!clan) return { success: false, message: "Clã não encontrado" };
+
+    const currentRelation = state.diplomacy[clanId];
+    if (currentRelation !== "TRUSTED") {
+      return { success: false, message: "Você não tem aliança com este clã" };
+    }
+
+    const newAllianceTurnFormed = { ...state.allianceTurnFormed };
+    delete newAllianceTurnFormed[clanId];
+    const newAllianceHealth = { ...state.allianceHealth };
+    delete newAllianceHealth[clanId];
+
+    set((s) => ({
+      diplomacy: {
+        ...s.diplomacy,
+        [clanId]: "NEUTRAL" as DiplomacyRelation,
+      },
+      allianceTurnFormed: newAllianceTurnFormed,
+      allianceHealth: newAllianceHealth,
+      events: [
+        { turn: s.currentTurn, message: `Você cancelou a aliança com ${clan.name}. Relação agora Neutra.`, type: "warning" as const },
+        ...s.events.slice(0, 9),
+      ],
+    }));
+    return { success: true, message: `Aliança com ${clan.name} cancelada.` };
   },
 
   sendExploration: (fromTerritoryId, siteId, units) => {
@@ -1160,6 +1240,59 @@ export const useGameStore = create<GameState>((set, get) => ({
     };
   },
 
+  marketTrade: (territoryId, trade) => {
+    const state = get();
+    const territory = state.territories.find((t) => t.id === territoryId);
+
+    // Validate territory belongs to player
+    if (!territory || territory.ownerId !== "player") {
+      return { success: false, message: "Território inválido." };
+    }
+
+    // Validate territory has Tavern
+    const hasTavern = territory.structures.some((s) => s.type === "TAVERN");
+    if (!hasTavern) {
+      return { success: false, message: "Este território não possui Taverna." };
+    }
+
+    // Validate trade limit per turn per territory (1 per Tavern, tracked by territoryId)
+    const tradesUsedHere = state.marketTradesUsed.filter((id) => id === territoryId).length;
+    if (tradesUsedHere >= MARKET.TRADES_PER_TURN_PER_TAVERN) {
+      return { success: false, message: "Limite de trocas atingido este turno." };
+    }
+
+    const player = state.getPlayerClan();
+    const cost = trade === "GRAIN_TO_WOOD" ? MARKET.GRAIN_TO_WOOD_COST : MARKET.GRAIN_TO_GOLD_COST;
+    if (player.grain < cost) {
+      return { success: false, message: `Grão insuficiente. Necessário: ${cost}.` };
+    }
+
+    const woodGain = trade === "GRAIN_TO_WOOD" ? MARKET.GRAIN_TO_WOOD_YIELD : 0;
+    const goldGain = trade === "GRAIN_TO_GOLD" ? MARKET.GRAIN_TO_GOLD_YIELD : 0;
+
+    set((s) => ({
+      clans: s.clans.map((c) =>
+        c.isPlayer
+          ? { ...c, grain: c.grain - cost, wood: c.wood + woodGain, gold: c.gold + goldGain }
+          : c
+      ),
+      marketTradesUsed: [...s.marketTradesUsed, territoryId],
+      events: [
+        ...s.events,
+        {
+          turn: s.currentTurn,
+          message:
+            trade === "GRAIN_TO_WOOD"
+              ? `Mercado: -${cost} grão, +${woodGain} madeira`
+              : `Mercado: -${cost} grão, +${goldGain} ouro`,
+          type: "info" as const,
+        },
+      ],
+    }));
+
+    return { success: true, message: trade === "GRAIN_TO_WOOD" ? `+${woodGain} madeira` : `+${goldGain} ouro` };
+  },
+
   processTurn: () => {
     const state = get();
 
@@ -1212,6 +1345,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const sabotageTargets: string[] = []; // IDs de territórios onde estrutura deve ser destruída
     const exploredSites: { siteId: string; turn: number }[] = [];
     const spyReveals: { territoryId: string; units: Unit[]; structures: Structure[]; revealedAt: number; expiresAt: number }[] = [];
+    const combatIntelUpdates: TerritoryIntel[] = [];
 
     for (const exp of state.expeditions) {
       const newTurnsRemaining = exp.turnsRemaining - 1;
@@ -1242,6 +1376,15 @@ export const useGameStore = create<GameState>((set, get) => ({
 
             const wallLevel = targetTerritory.structures.find((s) => s.type === "WALL")?.level || 0;
             const defensePower = getDefensePower(targetTerritory.units, wallLevel);
+
+            // Registrar intel de combate do território atacado (source: COMBAT, expira em 3 turnos)
+            combatIntelUpdates.push({
+              territoryId: targetTerritory.id,
+              source: 'COMBAT',
+              defensePower,
+              revealedAt: newTurn,
+              expiresAt: newTurn + 3,
+            });
 
             const victory = attackPower > defensePower;
             const ratio = defensePower > 0 ? attackPower / defensePower : 10;
@@ -1553,6 +1696,16 @@ export const useGameStore = create<GameState>((set, get) => ({
                 expiresAt: newTurn + SPY_REVEAL_DURATION,
               });
 
+              // Integrar intel de espião na interface TerritoryIntel
+              const spyWallLevel = targetTerritory.structures.find((s) => s.type === "WALL")?.level || 0;
+              combatIntelUpdates.push({
+                territoryId: exp.toTerritoryId,
+                source: 'SPY',
+                defensePower: getDefensePower(targetTerritory.units, spyWallLevel),
+                revealedAt: newTurn,
+                expiresAt: newTurn + SPY_REVEAL_DURATION,
+              });
+
               // Criar expedição de retorno para o espião
               const returnTime = exp.totalTurns;
               updatedExpeditions.push({
@@ -1665,14 +1818,137 @@ export const useGameStore = create<GameState>((set, get) => ({
       );
     }
 
+    // Resolver ataques iminentes que chegam neste turno (F-058)
+    const resolvedIncomingAttacks = state.incomingAttacks.filter((a) => a.arrivesTurn <= newTurn);
+    for (const incoming of resolvedIncomingAttacks) {
+      const targetTerritory = updatedTerritories.find((t) => t.id === incoming.targetTerritoryId);
+      if (!targetTerritory || targetTerritory.ownerId !== "player") continue;
+
+      const attackerClan = updatedClans.find((c) => c.id === incoming.sourceClanId);
+      if (!attackerClan) continue;
+
+      const attackerTerritories = updatedTerritories.filter((t) => t.ownerId === incoming.sourceClanId);
+      const allAiUnits: Unit[] = attackerTerritories.flatMap((t) => t.units);
+      const attackPower = getAttackPower(allAiUnits);
+      const wallLevel = targetTerritory.structures.find((s) => s.type === "WALL")?.level || 0;
+      const defensePower = getDefensePower(targetTerritory.units, wallLevel);
+
+      if (attackPower > defensePower) {
+        // Atacante vence: captura o território
+        updatedTerritories = updatedTerritories.map((t) =>
+          t.id === targetTerritory.id
+            ? { ...t, ownerId: incoming.sourceClanId, ownerName: attackerClan.name, units: [] }
+            : t
+        );
+        newEvents.push({
+          turn: newTurn,
+          message: `${attackerClan.name} atacou e conquistou Território ${targetTerritory.position + 1}!`,
+          type: "danger",
+          eventKind: "COMBAT",
+          result: "defeat",
+          attackerClanId: incoming.sourceClanId,
+          attackerClanName: attackerClan.name,
+          defenderClanId: "player",
+          defenderClanName: "Voce",
+          territoryId: targetTerritory.id,
+          territoryName: `Territorio ${targetTerritory.position + 1}`,
+          attackerLosses: 0,
+          defenderLosses: targetTerritory.units.reduce((s, u) => s + u.quantity, 0),
+          territoryConquered: true,
+          isPlayerInvolved: true,
+        } as GameEvent);
+      } else {
+        // Defensor vence: ataque repelido
+        newEvents.push({
+          turn: newTurn,
+          message: `Ataque de ${attackerClan.name} repelido em Território ${targetTerritory.position + 1}!`,
+          type: "warning",
+          eventKind: "COMBAT",
+          result: "victory",
+          attackerClanId: incoming.sourceClanId,
+          attackerClanName: attackerClan.name,
+          defenderClanId: "player",
+          defenderClanName: "Voce",
+          territoryId: targetTerritory.id,
+          territoryName: `Territorio ${targetTerritory.position + 1}`,
+          attackerLosses: allAiUnits.reduce((s, u) => s + u.quantity, 0),
+          defenderLosses: 0,
+          territoryConquered: false,
+          isPlayerInvolved: true,
+        } as GameEvent);
+      }
+    }
+
+    // F-063: Compute alliance health decay for TRUSTED alliances
+    const updatedAllianceHealth = { ...state.allianceHealth };
+    const playerAttackExpeditions = state.expeditions.filter((e) => e.ownerId === "player" && e.type === "ATTACK");
+    ["ai1", "ai2", "ai3", "ai4"].forEach((aiId) => {
+      if (state.diplomacy[aiId] !== "TRUSTED") return;
+      const currentHealth = updatedAllianceHealth[aiId] ?? 100;
+      const aiClan = updatedClans.find((c) => c.id === aiId);
+      let decay = 5; // -5% natural decay
+      // -10% extra if AI personality is HOSTILE (CONQUEROR or OPPORTUNIST)
+      if (aiClan?.personality === "CONQUEROR" || aiClan?.personality === "OPPORTUNIST") {
+        decay += 10;
+      }
+      // -20% if player has active attack expedition targeting territory adjacent to or owned by ally
+      const allyTerritoryPositions = updatedTerritories
+        .filter((t) => t.ownerId === aiId)
+        .map((t) => t.position);
+      const playerAttacksNearAlly = playerAttackExpeditions.some((e) => {
+        const targetTerritory = updatedTerritories.find((t) => t.id === e.toTerritoryId);
+        if (!targetTerritory) return false;
+        return allyTerritoryPositions.some((pos) => {
+          const adjacentToAlly = TERRITORY_ADJACENCY[pos] ?? [];
+          return adjacentToAlly.includes(targetTerritory.position) || allyTerritoryPositions.includes(targetTerritory.position);
+        });
+      });
+      if (playerAttacksNearAlly) {
+        decay += 20;
+      }
+      updatedAllianceHealth[aiId] = Math.max(0, currentHealth - decay);
+    });
+
     // IA faz acoes simples
-    const aiActions = processAI(updatedTerritories, updatedClans, newEra);
+    const { actions: aiActions, newIncomingAttacks, diplomacyBreaks } = processAI(
+      updatedTerritories, updatedClans, newEra, newTurn,
+      state.diplomacy, state.allianceTurnFormed, updatedAllianceHealth
+    );
 
     aiActions.forEach((action) => {
       newEvents.push({ turn: newTurn, message: action.message, type: "warning", ...(action.combatData ?? {}) });
       if (action.territories) updatedTerritories = action.territories;
       if (action.clans) updatedClans = action.clans;
     });
+
+    // F-059: Notificação de ataque iminente no log de eventos
+    // Apenas para novos ataques (newIncomingAttacks) — garante evento 1 vez por ataque
+    for (const attack of newIncomingAttacks) {
+      const targetTerritory = updatedTerritories.find((t) => t.id === attack.targetTerritoryId);
+      if (!targetTerritory || targetTerritory.ownerId !== "player") continue;
+
+      // Verificar se espião ativo em algum território do clã atacante
+      const revealedWithNew: Record<string, boolean> = {};
+      for (const [tid, rev] of Object.entries(state.revealedTerritories) as [string, RevealedTerritory][]) {
+        if (rev.expiresAt > newTurn) revealedWithNew[tid] = true;
+      }
+      for (const reveal of spyReveals) {
+        revealedWithNew[reveal.territoryId] = true;
+      }
+      const spyActiveOnSourceClan = updatedTerritories.some(
+        (t) => t.ownerId === attack.sourceClanId && revealedWithNew[t.id]
+      );
+
+      let attackMessage: string;
+      if (spyActiveOnSourceClan) {
+        const sourceClan = updatedClans.find((c) => c.id === attack.sourceClanId);
+        attackMessage = `⚠ Expedição inimiga de ${sourceClan?.name ?? "clã desconhecido"} detectada se movendo em direção ao Território ${targetTerritory.position + 1}!`;
+      } else {
+        attackMessage = `⚠ Expedição inimiga detectada se movendo em direção ao Território ${targetTerritory.position + 1}!`;
+      }
+
+      newEvents.push({ turn: newTurn, message: attackMessage, type: "warning" });
+    }
 
     // Horda na Era 3
     if (newEra === "INVASION" && newTurn % 3 === 0) {
@@ -1711,7 +1987,17 @@ export const useGameStore = create<GameState>((set, get) => ({
       const isPlayerTarget = primaryTargetId === "player";
       const hordaWins = hordaStrength > primaryTotalDefense;
       const resultLabel = hordaWins ? "DERROTADO" : "REPELIDO";
-      const territoryLost = hordaWins ? primaryTerritories[0] : null;
+      // Find weakest territory of target clan (recalculated at T — consistent with HordaPreview logic)
+      const weakestPrimaryTerritory = primaryTerritories.reduce<Territory | null>((weakest, t) => {
+        const wall = t.structures.find((s) => s.type === "WALL");
+        const def = getDefensePower(t.units, wall?.level ?? 0);
+        if (!weakest) return t;
+        const weakestWall = weakest.structures.find((s) => s.type === "WALL");
+        const weakestDef = getDefensePower(weakest.units, weakestWall?.level ?? 0);
+        if (def < weakestDef || (def === weakestDef && t.structures.length < weakest.structures.length)) return t;
+        return weakest;
+      }, null);
+      const territoryLost = hordaWins ? (weakestPrimaryTerritory ?? primaryTerritories[0] ?? null) : null;
       const lossLabel = territoryLost ? ` / Perdeu: Território ${territoryLost.position + 1}` : "";
       const nextAttackTurn = newTurn + 3;
       const nextStrength = 50 + (nextAttackTurn - 36) * 20;
@@ -1782,6 +2068,18 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
     }
 
+    // F-060: Gerar eventos de quebra de aliança pela AI
+    for (const { clanId } of diplomacyBreaks) {
+      const brokenClan = updatedClans.find((c) => c.id === clanId);
+      if (brokenClan) {
+        newEvents.push({
+          turn: newTurn,
+          message: `${brokenClan.name} rompeu a aliança! Relação mudou para Neutro.`,
+          type: "warning",
+        } as GameEvent);
+      }
+    }
+
     // Combinar todos os eventos
     const allEvents = [...expeditionEvents, ...newEvents];
 
@@ -1811,6 +2109,66 @@ export const useGameStore = create<GameState>((set, get) => ({
       };
     }
 
+    // F-068: Compute HordaPreview — show provisional target 1 turn before Horda attack (T-1 preview)
+    const nextHordaTurn = newTurn + 1;
+    let hordaPreview: HordaPreview | null = null;
+    if (newEra === "INVASION" && nextHordaTurn % 3 === 0 && nextHordaTurn <= TOTAL_TURNS) {
+      // Find target clan: most territories (alive)
+      const clanTerritoryCount: Record<string, number> = {};
+      for (const t of updatedTerritories) {
+        if (t.ownerId !== null) {
+          clanTerritoryCount[t.ownerId] = (clanTerritoryCount[t.ownerId] ?? 0) + 1;
+        }
+      }
+      let targetClanId: string | null = null;
+      let maxCount = 0;
+      for (const [clanId, count] of Object.entries(clanTerritoryCount)) {
+        if (count > maxCount) {
+          maxCount = count;
+          targetClanId = clanId;
+        }
+      }
+      if (targetClanId) {
+        const clanTerritories = updatedTerritories.filter((t) => t.ownerId === targetClanId);
+        // Find territory with lowest defensePower (tie: fewer structures)
+        let weakestTerritory: Territory | null = null;
+        let weakestDefense = Infinity;
+        let weakestStructureCount = Infinity;
+        for (const t of clanTerritories) {
+          const wall = t.structures.find((s) => s.type === "WALL");
+          const wallLevel = wall?.level ?? 0;
+          const defense = getDefensePower(t.units, wallLevel);
+          if (
+            defense < weakestDefense ||
+            (defense === weakestDefense && t.structures.length < weakestStructureCount)
+          ) {
+            weakestDefense = defense;
+            weakestStructureCount = t.structures.length;
+            weakestTerritory = t;
+          }
+        }
+        if (weakestTerritory) {
+          const strength = 50 + (nextHordaTurn - 36) * 20;
+          hordaPreview = {
+            targetClanId,
+            targetTerritoryId: weakestTerritory.id,
+            arrivesTurn: nextHordaTurn,
+            strength,
+          };
+        }
+      }
+    }
+
+    // Atualizar territoryIntel: remover expiradas e adicionar novas
+    const updatedTerritoryIntel: TerritoryIntel[] = [
+      // Manter entradas não expiradas (excluindo territórios com nova intel)
+      ...state.territoryIntel.filter(
+        (intel) => intel.expiresAt > newTurn && !combatIntelUpdates.some((u) => u.territoryId === intel.territoryId)
+      ),
+      // Adicionar/substituir com nova intel de combate e espião
+      ...combatIntelUpdates,
+    ];
+
     // Atualiza estado
     set((state) => ({
       currentTurn: newTurn,
@@ -1829,6 +2187,41 @@ export const useGameStore = create<GameState>((set, get) => ({
       expeditions: updatedExpeditions,
       explorationSites: updatedExplorationSites,
       revealedTerritories: updatedRevealedTerritories,
+      territoryIntel: updatedTerritoryIntel,
+      // Atualizar incomingAttacks: remover resolvidos/expirados, adicionar novos (F-058)
+      incomingAttacks: [
+        ...state.incomingAttacks.filter((a) => a.arrivesTurn > newTurn),
+        ...newIncomingAttacks,
+      ],
+      // Reset market trades used at start of new turn (F-066)
+      marketTradesUsed: [],
+      // F-064: Set alliance break alerts for TipBanner (cleared each turn)
+      allianceBreakAlerts: diplomacyBreaks.map(({ clanId }) => {
+        const clan = updatedClans.find((c) => c.id === clanId);
+        return { clanId, clanName: clan?.name ?? clanId };
+      }),
+      // F-068: Horda preview (null if not T-1 before attack)
+      hordaPreview,
+      // F-060: Apply diplomacy breaks from AI (TRUSTED → NEUTRAL)
+      diplomacy: diplomacyBreaks.length > 0
+        ? diplomacyBreaks.reduce(
+            (d, { clanId, newRelation }) => ({ ...d, [clanId]: newRelation }),
+            state.diplomacy
+          )
+        : state.diplomacy,
+      allianceTurnFormed: diplomacyBreaks.length > 0
+        ? (() => {
+            const updated = { ...state.allianceTurnFormed };
+            diplomacyBreaks.forEach(({ clanId }) => { delete updated[clanId]; });
+            return updated;
+          })()
+        : state.allianceTurnFormed,
+      // F-063: Update alliance health, clear on breaks
+      allianceHealth: (() => {
+        const h = { ...updatedAllianceHealth };
+        diplomacyBreaks.forEach(({ clanId }) => { delete h[clanId]; });
+        return h;
+      })(),
       events: [...allEvents, ...state.events.slice(0, 10 - allEvents.length)],
     }));
 
@@ -1857,7 +2250,14 @@ export const useGameStore = create<GameState>((set, get) => ({
       timerPaused: false,
       timeRemaining: TURN_DURATION_MS,
       revealedTerritories: {},
+      territoryIntel: [],
+      incomingAttacks: [],
       invasionModalShown: false,
+      marketTradesUsed: [],
+      allianceTurnFormed: {},
+      allianceHealth: {},
+      allianceBreakAlerts: [],
+      hordaPreview: null,
     });
   },
 
@@ -1893,8 +2293,18 @@ type AIAction = {
   combatData?: Omit<GameEvent, "turn" | "message" | "type">;
 };
 
-function processAI(territories: Territory[], clans: Clan[], era: Era) {
+function processAI(
+  territories: Territory[],
+  clans: Clan[],
+  era: Era,
+  currentTurn: number,
+  diplomacy: DiplomacyState = {},
+  allianceTurnFormed: Record<string, number> = {},
+  allianceHealth: Record<string, number> = {}
+): { actions: AIAction[], newIncomingAttacks: IncomingAttack[], diplomacyBreaks: { clanId: string; newRelation: DiplomacyRelation }[] } {
   const actions: AIAction[] = [];
+  const newIncomingAttacks: IncomingAttack[] = [];
+  const diplomacyBreaks: { clanId: string; newRelation: DiplomacyRelation }[] = [];
 
   const aiIds = ["ai1", "ai2", "ai3", "ai4"];
   let updatedTerritories = [...territories];
@@ -1933,8 +2343,11 @@ function processAI(territories: Territory[], clans: Clan[], era: Era) {
       }
     }
 
-    // IA ataca na era de guerra
-    if (era === "WAR" && Math.random() > 0.6) {
+    // F-062: Calcular relação com jogador antes dos blocos de ataque
+    const relationWithPlayer = diplomacy[aiId] ?? "NEUTRAL";
+
+    // IA ataca na era de guerra — F-062: HOSTILE pula neutros para focar no jogador
+    if (era === "WAR" && Math.random() > 0.6 && relationWithPlayer !== "HOSTILE") {
       const neutralTerritories = updatedTerritories.filter((t) => t.ownerId === null);
       if (neutralTerritories.length > 0) {
         const target = neutralTerritories[Math.floor(Math.random() * neutralTerritories.length)];
@@ -1960,13 +2373,71 @@ function processAI(territories: Territory[], clans: Clan[], era: Era) {
         });
       }
     }
+
+    // F-060: Pacto de não-agressão — verificar relação com jogador
+    const allianceTurn = allianceTurnFormed[aiId] ?? 0;
+    const turnsSinceAlliance = currentTurn - allianceTurn;
+
+    if (relationWithPlayer === "TRUSTED") {
+      // Dentro dos primeiros 5 turnos: não ataca o jogador
+      if (turnsSinceAlliance <= 5) {
+        // Pacto ativo — pula ataque ao jogador
+      } else {
+        // Após 5 turnos: chance de quebrar aliança baseada em personalidade e saúde
+        const baseBreakChance = clan.personality === "CONQUEROR" ? 0.20
+          : clan.personality === "OPPORTUNIST" ? 0.15
+          : clan.personality === "DEFENDER" ? 0.05
+          : 0.03; // MERCHANT
+        // F-063: When health < 30%, AI can break the alliance more easily
+        const health = allianceHealth[aiId] ?? 100;
+        const breakChance = health < 30 ? Math.min(0.90, baseBreakChance * 4) : baseBreakChance;
+
+        if (Math.random() < breakChance) {
+          diplomacyBreaks.push({ clanId: aiId, newRelation: "NEUTRAL" });
+          // Quebrou aliança — pode atacar este turno ainda (vai cair no bloco abaixo sem TRUSTED)
+        }
+      }
+    }
+
+    // Verificar relação atualizada (pode ter quebrado acima)
+    const updatedRelation = diplomacyBreaks.some((b) => b.clanId === aiId) ? "NEUTRAL" : relationWithPlayer;
+
+    // IA telegrafar ataque contra território do jogador (F-058)
+    // Normal: WAR=25%, INVASION=35%. F-062 HOSTILE: +50% relativo → WAR=37.5%, INVASION=52.5%
+    // F-062: HOSTILE também ataca na era de Paz (20%) — comportamento perceptível
+    // F-060: Não ataca jogador se aliança ativa (TRUSTED e sem quebra)
+    const isHostile = updatedRelation === "HOSTILE";
+    const basePlayerAttackProb = era === "INVASION" ? 0.35 : era === "WAR" ? 0.25 : 0;
+    const playerAttackProb = isHostile
+      ? (era === "PEACE" ? 0.20 : basePlayerAttackProb * 1.5)
+      : basePlayerAttackProb;
+    const canAttackPlayer = isHostile
+      ? (era === "WAR" || era === "INVASION" || era === "PEACE")
+      : (era === "WAR" || era === "INVASION");
+    if (canAttackPlayer && Math.random() < playerAttackProb && updatedRelation !== "TRUSTED") {
+      const playerTerritories = updatedTerritories.filter((t) => t.ownerId === "player");
+      // Só atacar se AI tem soldados suficientes
+      const aiSoldiers = aiTerritories.reduce((sum, t) => sum + t.units.reduce((s, u) => u.type === "SOLDIER" ? s + u.quantity : s, 0), 0);
+      if (playerTerritories.length > 0 && aiSoldiers >= 5) {
+        const target = playerTerritories[Math.floor(Math.random() * playerTerritories.length)];
+        // Não telegrafar se já há ataque pendente para este território
+        const alreadyPending = newIncomingAttacks.some((a) => a.targetTerritoryId === target.id);
+        if (!alreadyPending) {
+          newIncomingAttacks.push({
+            targetTerritoryId: target.id,
+            sourceClanId: aiId,
+            arrivesTurn: currentTurn + 1,
+          });
+        }
+      }
+    }
   });
 
   if (actions.length > 0) {
     actions[actions.length - 1].territories = updatedTerritories;
   }
 
-  return actions;
+  return { actions, newIncomingAttacks, diplomacyBreaks };
 }
 
 // ─── F-044: Agregação de estatísticas da partida ─────────────────────────────
@@ -1986,23 +2457,27 @@ export interface EpicMoment {
 export interface GameStats {
   turnsPlayed: number;
   territoriesCaptured: number;
+  territoriesLost: number;
   battlesWon: number;
   battlesTotal: number;
   structuresBuilt: number;
   unitsTrained: number;
   cardsUsed: number;
+  totalCards: number;
   hordeRepelled: number;
   epicMoment: EpicMoment | null;
 }
 
-export function getGameStats(events: GameEvent[]): GameStats {
+export function getGameStats(events: GameEvent[], playerCards?: PlayerCard[]): GameStats {
   let turnsPlayed = 0;
   let territoriesCaptured = 0;
+  let territoriesLost = 0;
   let battlesWon = 0;
   let battlesTotal = 0;
   let structuresBuilt = 0;
   let unitsTrained = 0;
-  let cardsUsed = 0;
+  let cardsUsed = playerCards ? playerCards.filter((c) => c.used).length : 0;
+  const totalCards = playerCards ? playerCards.length : 0;
   let hordeRepelled = 0;
 
   const playerVictories: EpicMoment[] = [];
@@ -2028,8 +2503,8 @@ export function getGameStats(events: GameEvent[]): GameStats {
       hordeRepelled += 1;
     }
 
-    // Cartas usadas: SABOTAGE deixa marca na mensagem
-    if (ev.message.includes("Sabotagem:")) {
+    // Cartas usadas: SABOTAGE deixa marca na mensagem (fallback quando playerCards não disponível)
+    if (!playerCards && ev.message.includes("Sabotagem:")) {
       cardsUsed += 1;
     }
 
@@ -2068,6 +2543,9 @@ export function getGameStats(events: GameEvent[]): GameStats {
           message: ev.message,
           powerScore,
         });
+      } else if (ev.result === "victory" && ev.defenderClanId === "player" && ev.territoryConquered) {
+        // Inimigo atacou e conquistou território do jogador
+        territoriesLost += 1;
       }
     }
   }
@@ -2088,11 +2566,13 @@ export function getGameStats(events: GameEvent[]): GameStats {
   return {
     turnsPlayed,
     territoriesCaptured,
+    territoriesLost,
     battlesWon,
     battlesTotal,
     structuresBuilt,
     unitsTrained,
     cardsUsed,
+    totalCards,
     hordeRepelled,
     epicMoment,
   };

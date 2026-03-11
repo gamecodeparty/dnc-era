@@ -9,6 +9,12 @@ import {
   type Expedition,
   type PlayerCard,
 } from "@/stores/gameStore";
+import { PRODUCTION_PER_LEVEL } from "@/game/constants/balance";
+
+interface AllianceBreakAlert {
+  clanId: string;
+  clanName: string;
+}
 
 const DISMISSED_TIPS_KEY = "dnc-dismissed-tips";
 
@@ -30,11 +36,39 @@ interface TipDefinition {
     playerTotalUnits: number;
     playerTerritoriesWithUnits: number;
     playerCards: { used: boolean }[];
+    hasUsedCard: boolean;
     hasActiveReinforcement: boolean;
+    playerGrainProduction: number;
+    playerWoodProduction: number;
+    playerGoldProduction: number;
   }) => boolean;
 }
 
 const TIP_DEFINITIONS: TipDefinition[] = [
+  {
+    id: "tip-08-zero-production",
+    icon: "🚨",
+    message:
+      "🚨 Produção zerada! Você não está gerando nenhum recurso. Construa Farm (grão), Sawmill (madeira) ou Mine (ouro) para sair do deadlock.",
+    trigger: ({ currentTurn, playerGrainProduction, playerWoodProduction, playerGoldProduction }) =>
+      currentTurn >= 3 &&
+      playerGrainProduction === 0 &&
+      playerWoodProduction === 0 &&
+      playerGoldProduction === 0,
+  },
+  {
+    id: "tip-07-deadlock-warning",
+    icon: "⚠",
+    message:
+      "⚠ Atenção: você não tem estruturas de produção! Sem Farm, Sawmill ou Mine, seus recursos não vão crescer. Construa uma estrutura produtiva o quanto antes.",
+    trigger: ({ currentTurn, playerStructureTypes }) =>
+      currentTurn >= 1 &&
+      currentTurn <= 5 &&
+      playerStructureTypes.size > 0 &&
+      !playerStructureTypes.has("FARM") &&
+      !playerStructureTypes.has("SAWMILL") &&
+      !playerStructureTypes.has("MINE"),
+  },
   {
     id: "tip-01-build-farm",
     icon: "🌾",
@@ -82,6 +116,25 @@ const TIP_DEFINITIONS: TipDefinition[] = [
       currentTurn >= 13 && currentTurn <= 14 && currentEra === "PEACE",
   },
   {
+    id: "tip-09-cards-intro",
+    icon: "🃏",
+    message:
+      "🃏 Você tem cartas na mão! Cartas dão vantagem em batalha — use ao enviar expedições de ataque. Toque no ícone de cartas para ver suas opções.",
+    trigger: ({ currentTurn, playerCards, hasUsedCard }) =>
+      currentTurn >= 3 &&
+      currentTurn <= 5 &&
+      playerCards.length > 0 &&
+      !hasUsedCard,
+  },
+  {
+    id: "tip-10-cards-reminder",
+    icon: "🃏",
+    message:
+      "🃏 Você tem cartas acumuladas sem uso! Use-as em expedições para vantagem estratégica.",
+    trigger: ({ currentTurn, playerCards, hasUsedCard }) =>
+      currentTurn >= 10 && playerCards.length >= 3 && !hasUsedCard,
+  },
+  {
     id: "tip-06-cards",
     icon: "🃏",
     message:
@@ -127,6 +180,9 @@ export function useTips(): { currentTip: Tip | null; dismissTip: (id: string) =>
   const clans = useGameStore((s: { clans: Clan[] }) => s.clans);
   const expeditions = useGameStore((s: { expeditions: Expedition[] }) => s.expeditions);
   const playerCards = useGameStore((s: { playerCards: PlayerCard[] }) => s.playerCards);
+  const allianceBreakAlerts = useGameStore(
+    (s: { allianceBreakAlerts: AllianceBreakAlert[] }) => s.allianceBreakAlerts
+  );
 
   // Auto-dismiss tip-04 when player completes a REINFORCE expedition
   const prevHasReinforcement = useRef(false);
@@ -148,14 +204,17 @@ export function useTips(): { currentTip: Tip | null; dismissTip: (id: string) =>
     prevHasReinforcement.current = hasActiveReinforcement;
   }, [hasActiveReinforcement]);
 
-  // Auto-dismiss tip-06 when any card is used
+  // Auto-dismiss card tips when any card is used
   const anyCardUsed = useMemo(() => playerCards.some((c: PlayerCard) => c.used), [playerCards]);
   useEffect(() => {
     if (anyCardUsed) {
       setDismissed((prev) => {
-        if (prev.has("tip-06-cards")) return prev;
+        const toAdd = ["tip-06-cards", "tip-09-cards-intro", "tip-10-cards-reminder"].filter(
+          (id) => !prev.has(id)
+        );
+        if (toAdd.length === 0) return prev;
         const next = new Set(prev);
-        next.add("tip-06-cards");
+        for (const id of toAdd) next.add(id);
         saveDismissed(next);
         return next;
       });
@@ -181,6 +240,24 @@ export function useTips(): { currentTip: Tip | null; dismissTip: (id: string) =>
       if (territoryTotal > 0) playerTerritoriesWithUnits++;
     }
 
+    let playerGrainProduction = 0;
+    let playerWoodProduction = 0;
+    let playerGoldProduction = 0;
+    for (const t of playerTerritories) {
+      for (const s of t.structures) {
+        const level = s.level - 1; // 0-indexed
+        if (s.type === "FARM") {
+          playerGrainProduction += PRODUCTION_PER_LEVEL.FARM[level] ?? 0;
+        } else if (s.type === "SAWMILL") {
+          playerWoodProduction += PRODUCTION_PER_LEVEL.SAWMILL[level] ?? 0;
+        } else if (s.type === "MINE") {
+          playerGoldProduction += PRODUCTION_PER_LEVEL.MINE[level] ?? 0;
+        }
+      }
+    }
+
+    const hasUsedCard = playerCards.some((c: PlayerCard) => c.used);
+
     return {
       currentTurn,
       currentEra,
@@ -189,11 +266,26 @@ export function useTips(): { currentTip: Tip | null; dismissTip: (id: string) =>
       playerTotalUnits,
       playerTerritoriesWithUnits,
       playerCards,
+      hasUsedCard,
       hasActiveReinforcement,
+      playerGrainProduction,
+      playerWoodProduction,
+      playerGoldProduction,
     };
   }, [currentTurn, currentEra, territories, clans, playerCards, hasActiveReinforcement]);
 
   const currentTip = useMemo<Tip | null>(() => {
+    // F-064: Alliance break alerts have highest priority
+    for (const alert of allianceBreakAlerts) {
+      const tipId = `tip-alliance-break-${alert.clanId}-${currentTurn}`;
+      if (!dismissed.has(tipId)) {
+        return {
+          id: tipId,
+          icon: "⚠️",
+          message: `Aliança rompida — seus territórios perto de **${alert.clanName}** estão vulneráveis`,
+        };
+      }
+    }
     for (const def of TIP_DEFINITIONS) {
       if (dismissed.has(def.id)) continue;
       if (def.trigger(triggerState)) {
@@ -201,7 +293,7 @@ export function useTips(): { currentTip: Tip | null; dismissTip: (id: string) =>
       }
     }
     return null;
-  }, [dismissed, triggerState]);
+  }, [dismissed, triggerState, allianceBreakAlerts, currentTurn]);
 
   const dismissTip = (id: string) => {
     setDismissed((prev) => {

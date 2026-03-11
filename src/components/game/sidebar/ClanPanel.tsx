@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Star, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ORIGINS } from "@/game/constants/origins";
 
 interface ClanPanelProps {
   name: string;
@@ -11,18 +12,6 @@ interface ClanPanelProps {
   reputation: string;
   territoriesCount: number;
 }
-
-const ORIGIN_COLORS = {
-  FERRONATOS: "text-red-400",
-  VERDANEOS: "text-green-400",
-  UMBRAL: "text-purple-400",
-};
-
-const ORIGIN_NAMES = {
-  FERRONATOS: "Ferronatos",
-  VERDANEOS: "Verdaneos",
-  UMBRAL: "Umbral",
-};
 
 const REPUTATION_COLORS = {
   TRUSTED: "text-green-400",
@@ -36,6 +25,22 @@ const REPUTATION_NAMES = {
   HOSTILE: "Hostil",
 };
 
+// Derive color class from hex color stored in constants
+function hexToColorClass(hex: string): string {
+  if (hex === "#ef4444") return "text-red-400";
+  if (hex === "#22c55e") return "text-green-400";
+  if (hex === "#8b5cf6") return "text-purple-400";
+  return "text-slate-400";
+}
+
+// Derive badge background class from hex color stored in constants
+function hexToBadgeBgClass(hex: string): string {
+  if (hex === "#ef4444") return "bg-red-950/40";
+  if (hex === "#22c55e") return "bg-green-950/40";
+  if (hex === "#8b5cf6") return "bg-purple-950/40";
+  return "bg-slate-700/50";
+}
+
 export function ClanPanel({
   name,
   origin,
@@ -43,8 +48,13 @@ export function ClanPanel({
   reputation,
   territoriesCount,
 }: ClanPanelProps) {
-  const originColor = ORIGIN_COLORS[origin as keyof typeof ORIGIN_COLORS] || "text-slate-400";
-  const originName = ORIGIN_NAMES[origin as keyof typeof ORIGIN_NAMES] || origin;
+  const originDef = ORIGINS[origin as keyof typeof ORIGINS];
+  const originColor = originDef ? hexToColorClass(originDef.color) : "text-slate-400";
+  const originBgClass = originDef ? hexToBadgeBgClass(originDef.color) : "bg-slate-700/50";
+  const originName = originDef?.name ?? origin;
+  const bonusIcon = originDef?.bonusIcon ?? "";
+  const bonusLabel = originDef?.bonusLabel ?? "";
+  const bonusTooltip = originDef?.bonusTooltip ?? "";
   const repColor = REPUTATION_COLORS[reputation as keyof typeof REPUTATION_COLORS] || "text-slate-400";
   const repName = REPUTATION_NAMES[reputation as keyof typeof REPUTATION_NAMES] || reputation;
 
@@ -57,6 +67,20 @@ export function ClanPanel({
             {originName}
           </span>
         </CardTitle>
+        {bonusLabel && (
+          <div
+            className={cn(
+              "flex items-center gap-1.5 text-xs rounded px-2 py-1 mt-1",
+              originColor,
+              originBgClass
+            )}
+            title={bonusTooltip}
+          >
+            <span>{bonusIcon}</span>
+            <span className="flex-1">{bonusLabel}</span>
+            <span className="font-semibold">ATIVO ✓</span>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex items-center justify-between">

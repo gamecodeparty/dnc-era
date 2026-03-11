@@ -74,6 +74,7 @@ import { GameResultsScreen } from "@/components/game/results/GameResultsScreen";
 
 // Tips
 import { TipBanner } from "@/components/game/hud/TipBanner";
+import { EraIndicator } from "@/components/game/hud/EraIndicator";
 
 // Timer hook
 import { useTurnTimer } from "@/hooks/useTurnTimer";
@@ -180,8 +181,14 @@ export default function GamePage() {
     sendExploration,
     sendSpy,
     revealedTerritories,
+    territoryIntel,
+    incomingAttacks,
     playerCards,
     train,
+    marketTradesUsed,
+    marketTrade,
+    diplomacy,
+    hordaPreview,
   } = useGameStore();
 
   const player = getPlayerClan();
@@ -192,6 +199,12 @@ export default function GamePage() {
   const MILITARY_UNITS = ["SOLDIER", "ARCHER", "KNIGHT"] as const;
   const playerHasTroops = playerTerritories.some((t) =>
     t.units.some((u) => MILITARY_UNITS.includes(u.type as typeof MILITARY_UNITS[number]) && u.quantity > 0)
+  );
+
+  // F-072: Productive structure check (Farm, Sawmill, Mine)
+  const PRODUCTIVE_STRUCTURES = ["FARM", "SAWMILL", "MINE"] as const;
+  const playerHasProductiveStructures = playerTerritories.some((t) =>
+    t.structures.some((s) => PRODUCTIVE_STRUCTURES.includes(s.type as typeof PRODUCTIVE_STRUCTURES[number]))
   );
 
   // SPY helpers
@@ -215,6 +228,14 @@ export default function GamePage() {
     SPY_SUCCESS_CHANCE_BASE + (isUmbral ? SPY_UMBRAL_BONUS : 0)
   );
   const spySuccessPercent = Math.round(spySuccessChance * 100);
+
+  // F-070: HordaPreview target info for EraIndicator and InvasionInfoModal (passed via GameAnimationProvider)
+  const hordaTargetTerritory = hordaPreview
+    ? territories.find((t) => t.id === hordaPreview.targetTerritoryId)
+    : null;
+  const hordaTargetForHud = hordaTargetTerritory
+    ? { position: hordaTargetTerritory.position }
+    : null;
 
   // Auto-update troop badge visibility when era changes (unless manually set)
   useEffect(() => {
@@ -544,6 +565,15 @@ export default function GamePage() {
               </PanelContent>
             </ParchmentPanel>
 
+            {/* F-070: Era + Horda indicator (INVASION era only) */}
+            {currentEra === "INVASION" && (
+              <EraIndicator
+                currentEra={currentEra}
+                currentTurn={currentTurn}
+                hordaTarget={hordaTargetForHud}
+              />
+            )}
+
             {/* Recursos */}
             <ParchmentPanel animated>
               <PanelHeader title="Recursos" />
@@ -763,6 +793,38 @@ export default function GamePage() {
                       </div>
                     )}
 
+                    {/* Incoming attack alert (F-058) — shown during WAR/INVASION for player territories */}
+                    {isPlayer && (currentEra === "WAR" || currentEra === "INVASION") && incomingAttacks.some((a) => a.targetTerritoryId === territory.id) && (
+                      <div className="absolute top-0.5 right-0.5 z-10 group/attack">
+                        <div className="rounded px-0.5 sm:px-1 py-0.5 bg-red-900/60 flex items-center gap-0.5 animate-pulse">
+                          <span className="text-red-400 text-[8px] sm:text-[9px] leading-none">⚠</span>
+                          <span className="text-red-400 text-[7px] sm:text-[8px] leading-none font-semibold hidden sm:inline">Ataque!</span>
+                        </div>
+                        <div className="absolute right-0 top-6 invisible group-hover/attack:visible z-30
+                          bg-slate-900 border border-red-500/60 rounded p-2 text-[10px] sm:text-xs
+                          text-slate-200 whitespace-nowrap shadow-lg pointer-events-none min-w-[200px]">
+                          <p className="font-bold text-red-300 mb-0.5">Ataque iminente!</p>
+                          <p>Expedição inimiga detectada — chegará no próximo turno. Reforce a defesa!</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* F-069: Horda preview target badge — shown during INVASION era for weakest player territory */}
+                    {isPlayer && currentEra === "INVASION" && hordaPreview?.targetTerritoryId === territory.id && (
+                      <div className="absolute bottom-0.5 left-0.5 z-10 group/hordapreview">
+                        <div className="flex items-center gap-0.5 px-1 py-0.5 rounded border text-[7px] sm:text-[9px] leading-none font-semibold text-red-500 bg-red-950/70 border-red-600 animate-pulse">
+                          <span>💀</span>
+                          <span className="hidden sm:inline">Alvo da Horda</span>
+                        </div>
+                        <div className="absolute left-0 bottom-5 invisible group-hover/hordapreview:visible z-30
+                          bg-slate-900 border border-red-600/60 rounded p-2 text-[10px] sm:text-xs
+                          text-slate-200 whitespace-nowrap shadow-lg pointer-events-none min-w-[240px]">
+                          <p className="font-bold text-red-400 mb-0.5">💀 Alvo da Horda</p>
+                          <p>A Horda mira este território — ele tem a defesa mais fraca. Reforce antes do próximo turno!</p>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Travel time badge — visible during expedition modal */}
                     {expeditionTarget && expeditionOrigin && (() => {
                       const originTerritory = territories.find((t) => t.id === expeditionOrigin);
@@ -822,12 +884,37 @@ export default function GamePage() {
                               </div>
                             );
                           })()}
-                          {showTroopBadges && !isPlayer && !isNeutral && (() => {
-                            if (isRevealed && revealedData) {
-                              const dp = calcDefensePower(revealedData.units);
+                          {showTroopBadges && !isPlayer && !isNeutral && (currentEra === "WAR" || currentEra === "INVASION") && (() => {
+                            // F-061: Allied visibility — TRUSTED clan territories show real defense power
+                            const isAllied = territory.ownerId !== null && diplomacy[territory.ownerId] === "TRUSTED";
+                            if (isAllied) {
+                              const dp = territory.units.reduce((sum: number, u: { type: string; quantity: number }) => {
+                                const DEF: Record<string, number> = { SOLDIER: 2, ARCHER: 1, KNIGHT: 3, SPY: 0 };
+                                return sum + u.quantity * (DEF[u.type] ?? 0);
+                              }, 0);
                               return (
-                                <div className="flex items-center justify-center gap-0.5 sm:gap-1 text-purple-300">
-                                  <span className="text-[8px] sm:text-[10px]">👁 {dp}</span>
+                                <div className="flex items-center justify-center gap-0.5 sm:gap-1 text-blue-400 relative group/allied">
+                                  <span className="text-[8px] sm:text-[10px]">🤝 {dp}</span>
+                                  <div className="absolute bottom-5 left-1/2 -translate-x-1/2 invisible group-hover/allied:visible z-30
+                                    bg-slate-900 border border-blue-500/60 rounded p-2 text-[10px] sm:text-xs
+                                    text-slate-200 whitespace-nowrap shadow-lg pointer-events-none">
+                                    Aliado — força visível pelo pacto
+                                  </div>
+                                </div>
+                              );
+                            }
+                            const intel = territoryIntel.find(i => i.territoryId === territory.id);
+                            if (intel?.source === "SPY" && intel.defensePower != null) {
+                              return (
+                                <div className="flex items-center justify-center gap-0.5 sm:gap-1 text-purple-400">
+                                  <span className="text-[8px] sm:text-[10px]">👁 {intel.defensePower}</span>
+                                </div>
+                              );
+                            }
+                            if (intel?.source === "COMBAT" && intel.defensePower != null) {
+                              return (
+                                <div className="flex items-center justify-center gap-0.5 sm:gap-1 text-orange-400">
+                                  <span className="text-[8px] sm:text-[10px]">⚔ {intel.defensePower}</span>
                                 </div>
                               );
                             }
@@ -1095,6 +1182,13 @@ export default function GamePage() {
         onAttack={(territory) => {
           setSelectedTerritoryId(null);
           handleAttack(territory.id);
+        }}
+        playerHasProductiveStructures={playerHasProductiveStructures}
+        marketTradesUsed={marketTradesUsed}
+        onMarketTrade={(trade) => {
+          if (selectedTerritory?.ownerId === "player") {
+            marketTrade(selectedTerritory.id, trade);
+          }
         }}
         className="lg:hidden"
       />

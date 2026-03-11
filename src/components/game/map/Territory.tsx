@@ -26,10 +26,26 @@ interface TerritoryProps {
   avgDefensePower?: number;
   /** Computed defense power for enemy territory revealed by SPY */
   revealedDefensePower?: number;
-  /** Current game era — used for undefended territory alert */
+  /** Current game era — used for undefended territory alert and badge visibility */
   currentEra?: string;
   /** This territory's owner is the Horda target (clan with most territories) */
   isHordaTarget?: boolean;
+  /** Intel source for enemy territory (F-056/F-057) */
+  intelSource?: 'SPY' | 'COMBAT' | 'NONE';
+  /** Observed/estimated defense power from intel */
+  intelDefensePower?: number | null;
+  /** Turns remaining before intel expires */
+  intelTurnsRemaining?: number;
+  /** Whether to show troop badges (F-048 toggle) */
+  showBadges?: boolean;
+  /** Whether there is an incoming enemy attack on this player territory (F-058) */
+  hasIncomingAttack?: boolean;
+  /** F-061: Whether this territory's owner is a TRUSTED ally */
+  isAllied?: boolean;
+  /** F-061: Real defense power of allied territory (visible by pact) */
+  alliedDefensePower?: number | null;
+  /** F-069: This specific territory is the Horda's preview attack target (weakest player territory) */
+  isHordaPreviewTarget?: boolean;
   onClick?: () => void;
 }
 
@@ -78,6 +94,14 @@ export function Territory({
   revealedDefensePower,
   currentEra,
   isHordaTarget = false,
+  intelSource,
+  intelDefensePower,
+  intelTurnsRemaining,
+  showBadges = true,
+  hasIncomingAttack = false,
+  isAllied = false,
+  alliedDefensePower,
+  isHordaPreviewTarget = false,
   onClick,
 }: TerritoryProps) {
   const ResourceIcon = RESOURCE_ICONS[bonusResource as keyof typeof RESOURCE_ICONS] || Wheat;
@@ -86,7 +110,9 @@ export function Territory({
   const isNeutral = !ownerId;
   const borderColor = isNeutral
     ? "border-slate-600"
-    : ORIGIN_BORDER_COLORS[ownerOrigin as keyof typeof ORIGIN_BORDER_COLORS] || "border-slate-600";
+    : isPlayerOwned
+    ? "border-green-500/60"
+    : "border-red-500/60";
   const bgColor = isNeutral
     ? "bg-slate-800/30"
     : ORIGIN_BG_COLORS[ownerOrigin as keyof typeof ORIGIN_BG_COLORS] || "bg-slate-800/30";
@@ -138,6 +164,41 @@ export function Territory({
               Alvo da Horda
             </p>
             <p className="text-slate-300">Alvo da Horda — este clã tem mais territórios</p>
+          </div>
+        </div>
+      )}
+
+      {/* F-069: Horda preview target badge — shown during INVASION era for the weakest player territory */}
+      {isHordaPreviewTarget && isPlayerOwned && currentEra === "INVASION" && (
+        <div className="absolute top-1 left-1 group/hordapreview z-10">
+          <div className={cn(
+            "flex items-center gap-0.5 px-1 py-0.5 rounded border text-[9px] leading-none font-semibold",
+            "text-red-500 bg-red-950/70 border-red-600 animate-pulse"
+          )}>
+            <span>💀</span>
+            <span>Alvo da Horda</span>
+          </div>
+          <div className="absolute left-0 top-6 invisible group-hover/hordapreview:visible z-20
+            bg-slate-900 border border-red-600/60 rounded p-2 text-xs text-slate-200
+            whitespace-nowrap shadow-lg min-w-[260px]">
+            <p className="font-bold text-red-400 mb-0.5">💀 Alvo da Horda</p>
+            <p className="text-slate-300">A Horda mira este território — ele tem a defesa mais fraca. Reforce antes do próximo turno!</p>
+          </div>
+        </div>
+      )}
+
+      {/* Incoming attack alert (F-058) — shown during WAR/INVASION for player territories */}
+      {isPlayerOwned && hasIncomingAttack && (currentEra === "WAR" || currentEra === "INVASION") && (
+        <div className="absolute top-1 right-1 group/attack z-10">
+          <div className="rounded px-1 py-0.5 bg-red-900/60 flex items-center gap-0.5 animate-pulse">
+            <span className="text-red-400 text-[9px] leading-none">⚠</span>
+            <span className="text-red-400 text-[9px] leading-none font-semibold">Ataque iminente!</span>
+          </div>
+          <div className="absolute right-0 top-6 invisible group-hover/attack:visible z-20
+            bg-slate-900 border border-red-500/50 rounded p-2 text-xs text-slate-200
+            whitespace-nowrap shadow-lg min-w-[240px]">
+            <p className="font-bold text-red-300 mb-0.5">Ataque iminente!</p>
+            <p className="text-slate-300">Expedição inimiga detectada — chegará no próximo turno. Reforce a defesa!</p>
           </div>
         </div>
       )}
@@ -198,7 +259,7 @@ export function Territory({
             </div>
           )}
         </div>
-        {isPlayerOwned && defensePower !== undefined && (
+        {isPlayerOwned && defensePower !== undefined && showBadges && (
           isUndefendedAlert ? (
             <div className="flex items-center gap-0.5 text-red-400 relative group/undefended">
               <span>⚠ 0</span>
@@ -220,15 +281,43 @@ export function Territory({
             </div>
           )
         )}
-        {!isPlayerOwned && ownerId !== null && (
-          isRevealed && revealedDefensePower !== undefined ? (
-            <div className="flex items-center gap-0.5 text-purple-300">
-              <span className="text-[10px]">👁 {revealedDefensePower}</span>
+        {!isPlayerOwned && ownerId !== null && showBadges && (currentEra === "WAR" || currentEra === "INVASION") && (
+          isAllied && alliedDefensePower != null ? (
+            <div className="flex items-center gap-0.5 text-blue-400 relative group/intel">
+              <span className="text-[10px]">🤝 {alliedDefensePower}</span>
+              <div className="absolute bottom-5 left-1/2 -translate-x-1/2 invisible group-hover/intel:visible z-20
+                bg-slate-900 border border-blue-500/50 rounded p-1.5 text-xs text-slate-200
+                whitespace-nowrap shadow-lg">
+                Aliado — força visível pelo pacto
+              </div>
+            </div>
+          ) : intelSource === "SPY" && intelDefensePower != null ? (
+            <div className="flex items-center gap-0.5 text-purple-400 relative group/intel">
+              <span className="text-[10px]">👁 {intelDefensePower}</span>
+              <div className="absolute bottom-5 left-1/2 -translate-x-1/2 invisible group-hover/intel:visible z-20
+                bg-slate-900 border border-purple-500/50 rounded p-1.5 text-xs text-slate-200
+                whitespace-nowrap shadow-lg">
+                Intel de espião — expira em {intelTurnsRemaining ?? 0} turno(s)
+              </div>
+            </div>
+          ) : intelSource === "COMBAT" && intelDefensePower != null ? (
+            <div className="flex items-center gap-0.5 text-orange-400 relative group/intel">
+              <span className="text-[10px]">⚔ {intelDefensePower}</span>
+              <div className="absolute bottom-5 left-1/2 -translate-x-1/2 invisible group-hover/intel:visible z-20
+                bg-slate-900 border border-orange-500/50 rounded p-1.5 text-xs text-slate-200
+                whitespace-nowrap shadow-lg">
+                Estimativa baseada em combate recente
+              </div>
             </div>
           ) : (
-            <div className="flex items-center gap-0.5 text-slate-400">
+            <div className="flex items-center gap-0.5 text-slate-400 relative group/intel">
               <Swords className="w-3 h-3" />
               <span>?</span>
+              <div className="absolute bottom-5 left-1/2 -translate-x-1/2 invisible group-hover/intel:visible z-20
+                bg-slate-900 border border-slate-500/50 rounded p-1.5 text-xs text-slate-200
+                whitespace-nowrap shadow-lg">
+                Força desconhecida — envie um Espião para revelar
+              </div>
             </div>
           )
         )}

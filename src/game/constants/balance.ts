@@ -255,6 +255,20 @@ export const TURN_DURATION_MS = 30_000;
 export const TAVERN_CARD_INTERVAL = 5; // Generates a card every N turns
 
 // ==============================================================================
+// MARKET (Grain Conversion via Tavern)
+// ==============================================================================
+
+// Rates intentionally unfavorable (3:1 and 4:1) so the market is an escape
+// valve, not a primary strategy. No values should be hardcoded in UI or engine.
+export const MARKET = {
+  GRAIN_TO_WOOD_COST: 30,         // grain spent per trade
+  GRAIN_TO_WOOD_YIELD: 10,        // wood received per trade (3:1 rate)
+  GRAIN_TO_GOLD_COST: 40,         // grain spent per trade
+  GRAIN_TO_GOLD_YIELD: 10,        // gold received per trade (4:1 rate)
+  TRADES_PER_TURN_PER_TAVERN: 1,  // max trades per Tavern per turn
+} as const;
+
+// ==============================================================================
 // UI CONSTANTS
 // ==============================================================================
 

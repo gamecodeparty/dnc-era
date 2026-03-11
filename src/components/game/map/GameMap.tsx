@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Territory } from "./Territory";
-import type { TerritoryWithDetails } from "@/game/types";
+import type { TerritoryWithDetails, HordaPreview } from "@/game/types";
+import type { TerritoryIntel, IncomingAttack } from "@/stores/gameStore";
 
 const HINT_DISMISSED_KEY = "dnc-expedition-hint-dismissed";
 
@@ -78,8 +79,16 @@ interface GameMapProps {
   playerClanId: string;
   selectedTerritoryId?: string;
   currentEra?: string;
+  currentTurn?: number;
   playerHasTroops?: boolean;
   revealedTerritories?: Record<string, { units: { type: string; quantity: number }[] }>;
+  territoryIntel?: TerritoryIntel[];
+  incomingAttacks?: IncomingAttack[];
+  showBadges?: boolean;
+  /** F-061: Diplomacy map — clanId -> relation, to show allied territory info */
+  diplomacy?: Record<string, string>;
+  /** F-069: Horda preview for showing the weakest target territory badge */
+  hordaPreview?: HordaPreview | null;
   onTerritoryClick?: (territoryId: string) => void;
 }
 
@@ -88,8 +97,14 @@ export function GameMap({
   playerClanId,
   selectedTerritoryId,
   currentEra,
+  currentTurn = 0,
   playerHasTroops = false,
   revealedTerritories = {},
+  territoryIntel = [],
+  incomingAttacks = [],
+  showBadges = true,
+  diplomacy = {},
+  hordaPreview = null,
   onTerritoryClick,
 }: GameMapProps) {
   // Sort territories by position
@@ -142,6 +157,19 @@ export function GameMap({
           const revealedDefensePower = isRevealed ? calcDefensePower(revealedData.units) : undefined;
           const isHordaTarget = hordaTargetClanId !== null && territory.ownerId === hordaTargetClanId;
 
+          const intel = !isPlayerOwned ? territoryIntel.find(i => i.territoryId === territory.id) : undefined;
+          const intelSource = intel?.source;
+          const intelDefensePower = intel?.defensePower ?? null;
+          const intelTurnsRemaining = intel ? Math.max(0, intel.expiresAt - currentTurn) : undefined;
+          const hasIncomingAttack = isPlayerOwned && incomingAttacks.some((a) => a.targetTerritoryId === territory.id);
+
+          // F-061: Allied visibility — TRUSTED clan territories show real defense power
+          const isAllied = !isPlayerOwned && territory.ownerId !== null && diplomacy[territory.ownerId] === "TRUSTED";
+          const alliedDefensePower = isAllied ? calcDefensePower(territory.units) : null;
+
+          // F-069: Horda preview target — weakest player territory highlighted 1 turn before attack
+          const isHordaPreviewTarget = isPlayerOwned && hordaPreview !== null && hordaPreview.targetTerritoryId === territory.id;
+
           return (
             <Territory
               key={territory.id}
@@ -163,6 +191,14 @@ export function GameMap({
               revealedDefensePower={revealedDefensePower}
               currentEra={currentEra}
               isHordaTarget={isHordaTarget}
+              intelSource={intelSource}
+              intelDefensePower={intelDefensePower}
+              intelTurnsRemaining={intelTurnsRemaining}
+              showBadges={showBadges}
+              hasIncomingAttack={hasIncomingAttack}
+              isAllied={isAllied}
+              alliedDefensePower={alliedDefensePower}
+              isHordaPreviewTarget={isHordaPreviewTarget}
               onClick={() => onTerritoryClick?.(territory.id)}
             />
           );
