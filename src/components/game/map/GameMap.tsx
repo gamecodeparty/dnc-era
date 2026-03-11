@@ -7,6 +7,12 @@ import type { TerritoryWithDetails } from "@/game/types";
 
 const HINT_DISMISSED_KEY = "dnc-expedition-hint-dismissed";
 
+const DEF_VALUES: Record<string, number> = { SOLDIER: 2, ARCHER: 1, KNIGHT: 3, SPY: 0 };
+
+function calcDefensePower(units: { type: string; quantity: number }[]): number {
+  return units.reduce((sum, u) => sum + u.quantity * (DEF_VALUES[u.type] ?? 0), 0);
+}
+
 interface ExpeditionHintProps {
   currentTurn: number;
   expeditionCount: number;
@@ -73,6 +79,7 @@ interface GameMapProps {
   selectedTerritoryId?: string;
   currentEra?: string;
   playerHasTroops?: boolean;
+  revealedTerritories?: Record<string, { units: { type: string; quantity: number }[] }>;
   onTerritoryClick?: (territoryId: string) => void;
 }
 
@@ -82,12 +89,19 @@ export function GameMap({
   selectedTerritoryId,
   currentEra,
   playerHasTroops = false,
+  revealedTerritories = {},
   onTerritoryClick,
 }: GameMapProps) {
   // Sort territories by position
   const sortedTerritories = [...territories].sort(
     (a, b) => a.position - b.position
   );
+
+  // Calculate average defense power across player territories for color thresholds
+  const playerTerritories = sortedTerritories.filter(t => t.ownerId === playerClanId);
+  const avgDefensePower = playerTerritories.length > 0
+    ? playerTerritories.reduce((sum, t) => sum + calcDefensePower(t.units), 0) / playerTerritories.length
+    : 0;
 
   return (
     <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
@@ -97,13 +111,19 @@ export function GameMap({
             (sum, u) => sum + u.quantity,
             0
           );
-          const isEnemy = territory.ownerId !== null && territory.ownerId !== playerClanId;
+          const isPlayerOwned = territory.ownerId === playerClanId;
+          const isEnemy = territory.ownerId !== null && !isPlayerOwned;
           const isNeutral = territory.ownerId === null;
           const isAttackable =
             isEnemy &&
             playerHasTroops &&
             (currentEra === "WAR" || currentEra === "INVASION");
           const isExpeditionAvailable = isNeutral && playerHasTroops;
+
+          const revealedData = revealedTerritories[territory.id];
+          const isRevealed = !!revealedData;
+          const defensePower = isPlayerOwned ? calcDefensePower(territory.units) : undefined;
+          const revealedDefensePower = isRevealed ? calcDefensePower(revealedData.units) : undefined;
 
           return (
             <Territory
@@ -116,10 +136,14 @@ export function GameMap({
               bonusResource={territory.bonusResource}
               structuresCount={territory.structures.length}
               unitsCount={unitsCount}
-              isPlayerOwned={territory.ownerId === playerClanId}
+              isPlayerOwned={isPlayerOwned}
               isSelected={territory.id === selectedTerritoryId}
+              isRevealed={isRevealed}
               isAttackable={isAttackable}
               isExpeditionAvailable={isExpeditionAvailable}
+              defensePower={defensePower}
+              avgDefensePower={avgDefensePower}
+              revealedDefensePower={revealedDefensePower}
               onClick={() => onTerritoryClick?.(territory.id)}
             />
           );

@@ -249,7 +249,7 @@
     "id": "F-046",
     "name": "Badge de poder de defesa nos territórios do mapa",
     "description": "Em Territory.tsx, substituir indicador atual de unidades (apenas contagem) por badge de poder de defesa calculado: defensePower = sum(quantity × defValues[type]) onde Soldier:2, Archer:1, Knight:3, Spy:0. Para territórios do jogador: badge '⚔ X' com cor verde (>= média), amarelo (> 0 mas < média), vermelho (== 0). Para territórios inimigos: '?' (não revelados) ou poder real com ícone 👁 (revelados por SPY).",
-    "status": "pending",
+    "status": "passing",
     "priority": 14,
     "agent": "coder",
     "task": "vibe-code",
@@ -261,7 +261,8 @@
       "Territórios inimigos revelados por SPY mostram poder real com ícone 👁",
       "Cálculo de poder usa valores corretos: Soldier:2, Archer:1, Knight:3, Spy:0"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-015-troop-overview-map-badges.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-015-troop-overview-map-badges.md",
+    "completed_at": "2026-03-11T13:50:00.000Z"
   },
   {
     "id": "F-047",

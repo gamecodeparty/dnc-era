@@ -195,6 +195,14 @@ export default function GamePage() {
     t.units.some((u) => u.type === "SPY" && u.quantity > 0)
   );
   const isUmbral = player?.origin === "UMBRAL";
+
+  // Defense power helpers (F-046)
+  const DEF_VALUES: Record<string, number> = { SOLDIER: 2, ARCHER: 1, KNIGHT: 3, SPY: 0 };
+  const calcDefensePower = (units: { type: string; quantity: number }[]) =>
+    units.reduce((sum, u) => sum + u.quantity * (DEF_VALUES[u.type] ?? 0), 0);
+  const avgPlayerDefensePower = playerTerritories.length > 0
+    ? playerTerritories.reduce((sum, t) => sum + calcDefensePower(t.units), 0) / playerTerritories.length
+    : 0;
   const spySuccessChance = Math.min(
     1,
     SPY_SUCCESS_CHANCE_BASE + (isUmbral ? SPY_UMBRAL_BONUS : 0)
@@ -771,14 +779,33 @@ export default function GamePage() {
                               <Coins className="w-3 h-3 sm:w-4 sm:h-4 text-gold" />
                             )}
                           </div>
-                          {territory.units.length > 0 && (
-                            <div className="flex items-center justify-center gap-0.5 sm:gap-1">
-                              <Swords className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-medieval-accent" />
-                              <span className="text-[8px] sm:text-[10px] text-medieval-text-primary">
-                                {territory.units.reduce((sum, u) => sum + u.quantity, 0)}
-                              </span>
-                            </div>
-                          )}
+                          {/* Defense power badge (F-046) */}
+                          {isPlayer && (() => {
+                            const dp = calcDefensePower(territory.units);
+                            const color = dp === 0 ? "text-red-400" : dp >= avgPlayerDefensePower ? "text-green-400" : "text-yellow-400";
+                            return (
+                              <div className={`flex items-center justify-center gap-0.5 sm:gap-1 ${color}`}>
+                                <Swords className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                                <span className="text-[8px] sm:text-[10px] font-semibold">⚔ {dp}</span>
+                              </div>
+                            );
+                          })()}
+                          {!isPlayer && !isNeutral && (() => {
+                            if (isRevealed && revealedData) {
+                              const dp = calcDefensePower(revealedData.units);
+                              return (
+                                <div className="flex items-center justify-center gap-0.5 sm:gap-1 text-purple-300">
+                                  <span className="text-[8px] sm:text-[10px]">👁 {dp}</span>
+                                </div>
+                              );
+                            }
+                            return (
+                              <div className="flex items-center justify-center gap-0.5 sm:gap-1 text-slate-400">
+                                <Swords className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                                <span className="text-[8px] sm:text-[10px]">?</span>
+                              </div>
+                            );
+                          })()}
                         </>
                       )}
                     </div>

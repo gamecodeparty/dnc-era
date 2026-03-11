@@ -20,6 +20,12 @@ interface TerritoryProps {
   revealedStructuresCount?: number;
   isAttackable?: boolean;
   isExpeditionAvailable?: boolean;
+  /** Computed defense power for player-owned territory */
+  defensePower?: number;
+  /** Average defense power across all player territories (for color threshold) */
+  avgDefensePower?: number;
+  /** Computed defense power for enemy territory revealed by SPY */
+  revealedDefensePower?: number;
   onClick?: () => void;
 }
 
@@ -63,6 +69,9 @@ export function Territory({
   revealedStructuresCount,
   isAttackable = false,
   isExpeditionAvailable = false,
+  defensePower,
+  avgDefensePower = 0,
+  revealedDefensePower,
   onClick,
 }: TerritoryProps) {
   const ResourceIcon = RESOURCE_ICONS[bonusResource as keyof typeof RESOURCE_ICONS] || Wheat;
@@ -151,11 +160,28 @@ export function Territory({
             </div>
           )}
         </div>
-        {unitsCount > 0 && (
-          <div className="flex items-center gap-0.5 text-red-400">
+        {isPlayerOwned && defensePower !== undefined && (
+          <div className={cn(
+            "flex items-center gap-0.5",
+            defensePower === 0 ? "text-red-400" :
+            defensePower >= avgDefensePower ? "text-green-400" :
+            "text-yellow-400"
+          )}>
             <Swords className="w-3 h-3" />
-            <span>{unitsCount}</span>
+            <span>⚔ {defensePower}</span>
           </div>
+        )}
+        {!isPlayerOwned && ownerId !== null && (
+          isRevealed && revealedDefensePower !== undefined ? (
+            <div className="flex items-center gap-0.5 text-purple-300">
+              <span className="text-[10px]">👁 {revealedDefensePower}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-0.5 text-slate-400">
+              <Swords className="w-3 h-3" />
+              <span>?</span>
+            </div>
+          )
         )}
       </div>
     </button>
