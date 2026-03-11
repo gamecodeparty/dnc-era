@@ -40,6 +40,10 @@ interface TerritoryProps {
   showBadges?: boolean;
   /** Whether there is an incoming enemy attack on this player territory (F-058) */
   hasIncomingAttack?: boolean;
+  /** F-061: Whether this territory's owner is a TRUSTED ally */
+  isAllied?: boolean;
+  /** F-061: Real defense power of allied territory (visible by pact) */
+  alliedDefensePower?: number | null;
   onClick?: () => void;
 }
 
@@ -93,6 +97,8 @@ export function Territory({
   intelTurnsRemaining,
   showBadges = true,
   hasIncomingAttack = false,
+  isAllied = false,
+  alliedDefensePower,
   onClick,
 }: TerritoryProps) {
   const ResourceIcon = RESOURCE_ICONS[bonusResource as keyof typeof RESOURCE_ICONS] || Wheat;
@@ -254,7 +260,16 @@ export function Territory({
           )
         )}
         {!isPlayerOwned && ownerId !== null && showBadges && (currentEra === "WAR" || currentEra === "INVASION") && (
-          intelSource === "SPY" && intelDefensePower != null ? (
+          isAllied && alliedDefensePower != null ? (
+            <div className="flex items-center gap-0.5 text-blue-400 relative group/intel">
+              <span className="text-[10px]">🤝 {alliedDefensePower}</span>
+              <div className="absolute bottom-5 left-1/2 -translate-x-1/2 invisible group-hover/intel:visible z-20
+                bg-slate-900 border border-blue-500/50 rounded p-1.5 text-xs text-slate-200
+                whitespace-nowrap shadow-lg">
+                Aliado — força visível pelo pacto
+              </div>
+            </div>
+          ) : intelSource === "SPY" && intelDefensePower != null ? (
             <div className="flex items-center gap-0.5 text-purple-400 relative group/intel">
               <span className="text-[10px]">👁 {intelDefensePower}</span>
               <div className="absolute bottom-5 left-1/2 -translate-x-1/2 invisible group-hover/intel:visible z-20

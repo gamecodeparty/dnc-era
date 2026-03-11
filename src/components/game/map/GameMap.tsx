@@ -85,6 +85,8 @@ interface GameMapProps {
   territoryIntel?: TerritoryIntel[];
   incomingAttacks?: IncomingAttack[];
   showBadges?: boolean;
+  /** F-061: Diplomacy map — clanId -> relation, to show allied territory info */
+  diplomacy?: Record<string, string>;
   onTerritoryClick?: (territoryId: string) => void;
 }
 
@@ -99,6 +101,7 @@ export function GameMap({
   territoryIntel = [],
   incomingAttacks = [],
   showBadges = true,
+  diplomacy = {},
   onTerritoryClick,
 }: GameMapProps) {
   // Sort territories by position
@@ -157,6 +160,10 @@ export function GameMap({
           const intelTurnsRemaining = intel ? Math.max(0, intel.expiresAt - currentTurn) : undefined;
           const hasIncomingAttack = isPlayerOwned && incomingAttacks.some((a) => a.targetTerritoryId === territory.id);
 
+          // F-061: Allied visibility — TRUSTED clan territories show real defense power
+          const isAllied = !isPlayerOwned && territory.ownerId !== null && diplomacy[territory.ownerId] === "TRUSTED";
+          const alliedDefensePower = isAllied ? calcDefensePower(territory.units) : null;
+
           return (
             <Territory
               key={territory.id}
@@ -183,6 +190,8 @@ export function GameMap({
               intelTurnsRemaining={intelTurnsRemaining}
               showBadges={showBadges}
               hasIncomingAttack={hasIncomingAttack}
+              isAllied={isAllied}
+              alliedDefensePower={alliedDefensePower}
               onClick={() => onTerritoryClick?.(territory.id)}
             />
           );

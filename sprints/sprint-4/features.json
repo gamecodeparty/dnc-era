@@ -220,7 +220,7 @@
     "id": "F-061",
     "name": "Visibilidade de tropas aliadas no mapa",
     "description": "Em Territory.tsx, territórios de clãs aliados (TRUSTED) exibem badges de defesa reais (não '?'), como se revelados por espião. Badge com ícone 🤝 em azul text-blue-400. Tooltip: 'Aliado — força visível pelo pacto'. Não expira enquanto aliança durar. Badges desaparecem imediatamente se aliança for quebrada. Reutilizar sistema TerritoryIntel de F-056 para consistência.",
-    "status": "pending",
+    "status": "passing",
     "priority": 12,
     "agent": "coder",
     "task": "vibe-code",
@@ -234,7 +234,8 @@
       "Informação de tropas aliadas é precisa (não estimativa)",
       "Tooltip mostra 'Aliado — força visível pelo pacto'"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-019-diplomacy-concrete-effects.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-019-diplomacy-concrete-effects.md",
+    "completed_at": "2026-03-11T17:30:00Z"
   },
   {
     "id": "F-063",

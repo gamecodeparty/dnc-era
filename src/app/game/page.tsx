@@ -186,6 +186,7 @@ export default function GamePage() {
     train,
     marketTradesUsed,
     marketTrade,
+    diplomacy,
   } = useGameStore();
 
   const player = getPlayerClan();
@@ -843,6 +844,24 @@ export default function GamePage() {
                             );
                           })()}
                           {showTroopBadges && !isPlayer && !isNeutral && (currentEra === "WAR" || currentEra === "INVASION") && (() => {
+                            // F-061: Allied visibility — TRUSTED clan territories show real defense power
+                            const isAllied = territory.ownerId !== null && diplomacy[territory.ownerId] === "TRUSTED";
+                            if (isAllied) {
+                              const dp = territory.units.reduce((sum: number, u: { type: string; quantity: number }) => {
+                                const DEF: Record<string, number> = { SOLDIER: 2, ARCHER: 1, KNIGHT: 3, SPY: 0 };
+                                return sum + u.quantity * (DEF[u.type] ?? 0);
+                              }, 0);
+                              return (
+                                <div className="flex items-center justify-center gap-0.5 sm:gap-1 text-blue-400 relative group/allied">
+                                  <span className="text-[8px] sm:text-[10px]">🤝 {dp}</span>
+                                  <div className="absolute bottom-5 left-1/2 -translate-x-1/2 invisible group-hover/allied:visible z-30
+                                    bg-slate-900 border border-blue-500/60 rounded p-2 text-[10px] sm:text-xs
+                                    text-slate-200 whitespace-nowrap shadow-lg pointer-events-none">
+                                    Aliado — força visível pelo pacto
+                                  </div>
+                                </div>
+                              );
+                            }
                             const intel = territoryIntel.find(i => i.territoryId === territory.id);
                             if (intel?.source === "SPY" && intel.defensePower != null) {
                               return (
