@@ -1,10 +1,10 @@
 import { create } from "zustand";
-import { TURN_DURATION_MS } from "@/game/constants/balance";
+import { TURN_DURATION_MS, MARKET } from "@/game/constants/balance";
 
 // Tipos
 export type Era = "PEACE" | "WAR" | "INVASION";
 export type ResourceType = "GRAIN" | "WOOD" | "GOLD";
-export type StructureType = "FARM" | "SAWMILL" | "MINE" | "BARRACKS" | "STABLE" | "WALL" | "SHADOW_GUILD";
+export type StructureType = "FARM" | "SAWMILL" | "MINE" | "BARRACKS" | "STABLE" | "WALL" | "TAVERN" | "SHADOW_GUILD";
 export type UnitType = "SOLDIER" | "ARCHER" | "KNIGHT" | "SPY";
 export type DiplomacyRelation = "TRUSTED" | "NEUTRAL" | "HOSTILE";
 export type AIPersonality = "CONQUEROR" | "DEFENDER" | "OPPORTUNIST" | "MERCHANT";
@@ -190,6 +190,7 @@ export const STRUCTURE_COSTS: Record<StructureType, { grain?: number; wood?: num
   BARRACKS: { grain: 30, wood: 40 },
   STABLE: { grain: 50, wood: 60, gold: 30 },
   WALL: { wood: 50, gold: 20 },
+  TAVERN: { wood: 15, gold: 20 },
   SHADOW_GUILD: { wood: 20, gold: 30 },
 };
 
@@ -200,6 +201,7 @@ export const STRUCTURE_PRODUCTION: Record<StructureType, { resource?: ResourceTy
   BARRACKS: {},
   STABLE: {},
   WALL: {},
+  TAVERN: {},
   SHADOW_GUILD: {},
 };
 
@@ -574,6 +576,7 @@ interface GameState {
   incomingAttacks: IncomingAttack[];
   playerCards: PlayerCard[];
   invasionModalShown: boolean;
+  marketTradesUsed: string[]; // territoryIds that have used their trade this turn
 
   // Getters
   getPlayerClan: () => Clan;
@@ -609,6 +612,7 @@ interface GameState {
     fromTerritoryId: string,
     toTerritoryId: string
   ) => { success: boolean; message: string; expeditionId?: string };
+  marketTrade: (territoryId: string, trade: "GRAIN_TO_WOOD" | "GRAIN_TO_GOLD") => { success: boolean; message: string };
   processTurn: () => void;
   resetGame: () => void;
   pauseTimer: () => void;
@@ -634,6 +638,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   territoryIntel: [],
   incomingAttacks: [],
   invasionModalShown: false,
+  marketTradesUsed: [],
   playerCards: [
     { id: "pc1", type: "REINFORCEMENTS", used: false },
     { id: "pc2", type: "INFORMANT", used: false },
@@ -1176,6 +1181,59 @@ export const useGameStore = create<GameState>((set, get) => ({
       message: `Expedicao enviada para ${site.name}! Chegada em ${travelTime} turno(s).`,
       expeditionId,
     };
+  },
+
+  marketTrade: (territoryId, trade) => {
+    const state = get();
+    const territory = state.territories.find((t) => t.id === territoryId);
+
+    // Validate territory belongs to player
+    if (!territory || territory.ownerId !== "player") {
+      return { success: false, message: "Território inválido." };
+    }
+
+    // Validate territory has Tavern
+    const hasTavern = territory.structures.some((s) => s.type === "TAVERN");
+    if (!hasTavern) {
+      return { success: false, message: "Este território não possui Taverna." };
+    }
+
+    // Validate trade limit per turn per territory (1 per Tavern, tracked by territoryId)
+    const tradesUsedHere = state.marketTradesUsed.filter((id) => id === territoryId).length;
+    if (tradesUsedHere >= MARKET.TRADES_PER_TURN_PER_TAVERN) {
+      return { success: false, message: "Limite de trocas atingido este turno." };
+    }
+
+    const player = state.getPlayerClan();
+    const cost = trade === "GRAIN_TO_WOOD" ? MARKET.GRAIN_TO_WOOD_COST : MARKET.GRAIN_TO_GOLD_COST;
+    if (player.grain < cost) {
+      return { success: false, message: `Grão insuficiente. Necessário: ${cost}.` };
+    }
+
+    const woodGain = trade === "GRAIN_TO_WOOD" ? MARKET.GRAIN_TO_WOOD_YIELD : 0;
+    const goldGain = trade === "GRAIN_TO_GOLD" ? MARKET.GRAIN_TO_GOLD_YIELD : 0;
+
+    set((s) => ({
+      clans: s.clans.map((c) =>
+        c.isPlayer
+          ? { ...c, grain: c.grain - cost, wood: c.wood + woodGain, gold: c.gold + goldGain }
+          : c
+      ),
+      marketTradesUsed: [...s.marketTradesUsed, territoryId],
+      events: [
+        ...s.events,
+        {
+          turn: s.currentTurn,
+          message:
+            trade === "GRAIN_TO_WOOD"
+              ? `Mercado: -${cost} grão, +${woodGain} madeira`
+              : `Mercado: -${cost} grão, +${goldGain} ouro`,
+          type: "info" as const,
+        },
+      ],
+    }));
+
+    return { success: true, message: trade === "GRAIN_TO_WOOD" ? `+${woodGain} madeira` : `+${goldGain} ouro` };
   },
 
   processTurn: () => {
@@ -1973,6 +2031,8 @@ export const useGameStore = create<GameState>((set, get) => ({
         ...state.incomingAttacks.filter((a) => a.arrivesTurn > newTurn),
         ...newIncomingAttacks,
       ],
+      // Reset market trades used at start of new turn (F-066)
+      marketTradesUsed: [],
       events: [...allEvents, ...state.events.slice(0, 10 - allEvents.length)],
     }));
 
@@ -2004,6 +2064,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       territoryIntel: [],
       incomingAttacks: [],
       invasionModalShown: false,
+      marketTradesUsed: [],
     });
   },
 

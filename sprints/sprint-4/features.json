@@ -142,7 +142,7 @@
     "id": "F-066",
     "name": "Ação MARKET_TRADE no GameEngine",
     "description": "Em types/index.ts, adicionar interface MarketAction { type: 'MARKET_TRADE', territoryId, trade: 'GRAIN_TO_WOOD'|'GRAIN_TO_GOLD' }. Em GameEngine.ts, nova ação no processamento de turno: valida que território tem Tavern, jogador tem recursos suficientes (30 ou 40 grão), não excedeu limite de trocas do turno. Máximo 1 troca por turno por Tavern (2 Taverns = 2 trocas). Estado 'troca usada neste turno' resetado no início de cada turno.",
-    "status": "blocked",
+    "status": "passing",
     "priority": 8,
     "agent": "coder",
     "task": "vibe-code",
@@ -156,13 +156,14 @@
       "Trocas resetam a cada novo turno",
       "Validações impedem trocas sem Tavern, sem recursos ou acima do limite"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-020-grain-market.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-020-grain-market.md",
+    "completed_at": "2026-03-11T16:20:07Z"
   },
   {
     "id": "F-065",
     "name": "UI do Mercado no TerritoryBottomSheet",
     "description": "Em TerritoryBottomSheet.tsx, adicionar tab/seção 'Mercado' no bottom sheet de território que tenha Tavern construída. Exibir duas opções: 30 🌾 → 10 🪵 e 40 🌾 → 10 💰 com botão 'Trocar'. Botão desabilitado se sem grão suficiente (consistente com F-033) ou troca já usada neste turno (tooltip: 'Limite de trocas atingido este turno'). Ao completar: ResourcePopup animação '-30 🌾 +10 🪵'. Sem Tavern: seção Mercado não aparece.",
-    "status": "blocked",
+    "status": "pending",
     "priority": 9,
     "agent": "coder",
     "task": "vibe-code",

@@ -294,6 +294,12 @@ export interface UseCardAction {
   targetStructureId?: string;
 }
 
+export interface MarketAction {
+  type: "MARKET_TRADE";
+  territoryId: string;
+  trade: "GRAIN_TO_WOOD" | "GRAIN_TO_GOLD";
+}
+
 export type TurnAction =
   | { type: "BUILD"; data: BuildAction }
   | { type: "UPGRADE"; data: UpgradeAction }
@@ -302,6 +308,7 @@ export type TurnAction =
   | { type: "ATTACK"; data: AttackAction }
   | { type: "DIPLOMACY"; data: DiplomacyAction }
   | { type: "USE_CARD"; data: UseCardAction }
+  | { type: "MARKET_TRADE"; data: MarketAction }
   | { type: "END_TURN" };
 
 // ==============================================================================
