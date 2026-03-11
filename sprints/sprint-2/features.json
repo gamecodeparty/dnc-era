@@ -118,7 +118,7 @@
     "id": "F-026",
     "name": "Banner de onboarding de expedições no mapa",
     "description": "Criar componente ExpeditionHint em GameMap.tsx. Aparece quando: turno >= 3, jogador nunca enviou expedição (expeditions.length === 0), existe ≥1 território neutro. Banner flutuante na parte inferior do mapa (acima do bottom nav) com texto explicativo e botão 'Entendi'. Animação fade-in (Framer Motion). 'Entendi' dispensa permanentemente via localStorage key 'dnc-expedition-hint-dismissed'. Desaparece ao enviar primeira expedição. Não bloqueia gameplay. Arquivo: src/components/game/map/GameMap.tsx",
-    "status": "pending",
+    "status": "passing",
     "priority": 7,
     "agent": "coder",
     "task": "vibe-code",
@@ -130,7 +130,8 @@
       "Não aparece se não há territórios neutros",
       "Não bloqueia gameplay"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-2/worktree/sprints/sprint-2/3-prps/PRP-008-expedition-onboarding.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-2/worktree/sprints/sprint-2/3-prps/PRP-008-expedition-onboarding.md",
+    "completed_at": "2026-03-11T03:09:26.581Z"
   },
   {
     "id": "F-027",

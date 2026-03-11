@@ -67,6 +67,9 @@ import { ExpeditionModal, ExplorationModal, ExpeditionsPanel } from "@/component
 // Tutorial components
 import { TutorialOverlay } from "@/components/game/tutorial";
 
+// Map components
+import { ExpeditionHint } from "@/components/game/map/GameMap";
+
 // Timer hook
 import { useTurnTimer } from "@/hooks/useTurnTimer";
 
@@ -784,6 +787,13 @@ export default function GamePage() {
                 );
               })}
             </div>
+
+            {/* Expedition onboarding hint */}
+            <ExpeditionHint
+              currentTurn={currentTurn}
+              expeditionCount={expeditions.filter((e) => e.ownerId === "player").length}
+              hasNeutralTerritories={territories.some((t) => t.ownerId === null)}
+            />
 
             {/* Legenda - Desktop only */}
             <div className="hidden sm:flex mt-6 justify-center gap-8 text-sm">
