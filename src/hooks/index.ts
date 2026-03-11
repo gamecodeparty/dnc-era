@@ -20,3 +20,7 @@ export { useHaptic, triggerHaptic } from "./useHaptic";
 
 // Timer hook
 export { useTurnTimer } from "./useTurnTimer";
+
+// Tips hook
+export { useTips } from "./useTips";
+export type { Tip } from "./useTips";

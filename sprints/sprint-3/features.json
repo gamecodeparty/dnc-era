@@ -380,7 +380,7 @@
     "id": "F-053",
     "name": "Hook useTips com sistema de triggers",
     "description": "Criar /src/hooks/useTips.ts: hook que gerencia estado de dicas exibidas. 6 dicas definidas: tip-01-build-farm (turno 1, sem estruturas), tip-02-build-mine (turno 2-3, sem Mine, ouro<20), tip-03-train-units (turno 3-4, tem Barracks, 0 unidades), tip-04-reinforce (2+ territórios com unidades, nunca fez REINFORCE), tip-05-war-coming (turno 13-14, Era da Paz), tip-06-cards (tem cartas, nunca usou). Estado persistido em localStorage (key: dnc-dismissed-tips). Máximo 1 dica ativa por vez, prioridade pela ordem.",
-    "status": "pending",
+    "status": "passing",
     "priority": 21,
     "agent": "coder",
     "task": "vibe-code",
@@ -392,7 +392,8 @@
       "Máximo 1 dica ativa por vez (prioridade pela ordem da lista)",
       "Hook retorna currentTip e função dismissTip"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-017-contextual-tips-system.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-017-contextual-tips-system.md",
+    "completed_at": "2026-03-11T14:25:13Z"
   },
   {
     "id": "F-054",
