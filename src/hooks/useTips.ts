@@ -41,10 +41,19 @@ interface TipDefinition {
     playerGrainProduction: number;
     playerWoodProduction: number;
     playerGoldProduction: number;
+    playerOrigin: string | undefined;
   }) => boolean;
 }
 
 const TIP_DEFINITIONS: TipDefinition[] = [
+  {
+    id: "tip-11-umbral-economy",
+    icon: "💡",
+    message:
+      "**Dica Umbral:** Sua facção brilha com espiões, mas espiões custam ouro. Construa uma **Fazenda** e **Mina** antes da Guilda das Sombras para garantir renda.",
+    trigger: ({ currentTurn, playerOrigin }) =>
+      currentTurn === 1 && playerOrigin === "UMBRAL",
+  },
   {
     id: "tip-08-zero-production",
     icon: "🚨",
@@ -271,6 +280,7 @@ export function useTips(): { currentTip: Tip | null; dismissTip: (id: string) =>
       playerGrainProduction,
       playerWoodProduction,
       playerGoldProduction,
+      playerOrigin: playerClan?.origin,
     };
   }, [currentTurn, currentEra, territories, clans, playerCards, hasActiveReinforcement]);
 

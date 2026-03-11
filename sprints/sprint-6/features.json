@@ -178,7 +178,7 @@
     "id": "F-103",
     "name": "TipBanner Umbral turno 1",
     "description": "Em /src/components/game/hud/TipBanner.tsx, adicionar tip contextual para jogadores com clan.origin === 'UMBRAL' no turno 1. Texto: 'Dica Umbral: Sua facção brilha com espiões, mas espiões custam ouro. Construa uma Fazenda e Mina antes da Guilda das Sombras para garantir renda.' Seguir padrão visual existente do TipBanner (implementado em S4). Tip não aparece para outras facções e não reaparece após turno 1.",
-    "status": "pending",
+    "status": "passing",
     "priority": 10,
     "agent": "coder",
     "task": "vibe-code",
@@ -190,7 +190,8 @@
       "Tip não aparece para outras facções",
       "Tip não reaparece após turno 1"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-032-shadow-guild-contextual-warning.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-032-shadow-guild-contextual-warning.md",
+    "completed_at": "2026-03-11T21:58:00.000Z"
   },
   {
     "id": "F-106",
