@@ -99,6 +99,7 @@ export class CombatSystem {
       outcome,
       attackerModifiers,
       defenderModifiers,
+      isApproximate: false,
     };
   }
 

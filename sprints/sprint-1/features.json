@@ -248,7 +248,7 @@
     "id": "F-014",
     "name": "Integração SPY com preview de combate",
     "description": "No ExpeditionModal: usar informação exata de defesa (sem '~') quando território está em revealedTerritories. Requer PRP-001 (F-003 fog-of-war) implementado para que haja o painel de preview com valores aproximados a serem substituídos por exatos.",
-    "status": "blocked",
+    "status": "passing",
     "priority": 14,
     "agent": "coder",
     "task": "vibe-code",
@@ -260,7 +260,8 @@
       "Preview de combate mostra defesa exata (sem '~') quando território está em revealedTerritories",
       "Mantém valor aproximado '~X' para territórios não revelados (comportamento de F-003)"
     ],
-    "prp_path": "sprints/sprint-1/3-prps/PRP-004-spy-system.md"
+    "prp_path": "sprints/sprint-1/3-prps/PRP-004-spy-system.md",
+    "completed_at": "2026-03-11T00:38:00Z"
   },
   {
     "id": "F-015",

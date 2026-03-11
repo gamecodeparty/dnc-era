@@ -133,6 +133,8 @@ export interface CombatPreview {
   outcome: CombatPreviewOutcome;
   attackerModifiers: string[];
   defenderModifiers: string[];
+  /** True when defender territory is AI-owned and not in revealedTerritories — defense value is approximate */
+  isApproximate: boolean;
 }
 
 // ==============================================================================
