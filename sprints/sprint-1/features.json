@@ -284,7 +284,7 @@
     "id": "F-016",
     "name": "Formatação de batalhas AI no log UI",
     "description": "Em TabContent.tsx (seção de log), formatar eventos COMBAT com isPlayerInvolved=false: mostrar atacante, defensor, território, resultado, baixas (~X), conquista. Cor neutra (cinza/azul) para AI, cores existentes (verde/vermelho) para jogador.",
-    "status": "blocked",
+    "status": "passing",
     "priority": 16,
     "agent": "coder",
     "task": "vibe-code",
@@ -296,7 +296,8 @@
       "Combates AI usam cor neutra (cinza/azul), visualmente distintos dos combates do jogador",
       "Conquista de território mencionada quando ocorre"
     ],
-    "prp_path": "sprints/sprint-1/3-prps/PRP-005-information-transparency.md"
+    "prp_path": "sprints/sprint-1/3-prps/PRP-005-information-transparency.md",
+    "completed_at": "2026-03-11T00:51:00Z"
   },
   {
     "id": "F-017",

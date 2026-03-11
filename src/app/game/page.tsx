@@ -315,9 +315,7 @@ export default function GamePage() {
 
   const mobileEvents = events.slice(0, 10).map((e, i) => ({
     id: `event-${i}`,
-    type: e.type,
-    message: e.message,
-    turn: e.turn,
+    ...e,
   }));
 
   // Game Over / Victory Screen
@@ -920,23 +918,40 @@ export default function GamePage() {
               <PanelContent>
                 <div className="space-y-1 text-xs max-h-48 overflow-y-auto">
                   <AnimatedList>
-                    {events.slice(0, 10).map((event, i) => (
-                      <AnimatedListItem
-                        key={i}
-                        className={`py-1.5 border-b border-medieval-primary/10 last:border-0 ${
-                          event.type === "success"
-                            ? "text-era-peace"
-                            : event.type === "danger"
-                            ? "text-medieval-accent"
-                            : event.type === "warning"
-                            ? "text-gold"
-                            : "text-medieval-text-secondary"
-                        }`}
-                      >
-                        <span className="text-medieval-text-muted">[{event.turn}]</span>{" "}
-                        {event.message}
-                      </AnimatedListItem>
-                    ))}
+                    {events.slice(0, 10).map((event, i) => {
+                      const isAICombat = event.eventKind === "COMBAT" && event.isPlayerInvolved === false;
+                      return (
+                        <AnimatedListItem
+                          key={i}
+                          className={`py-1.5 border-b border-medieval-primary/10 last:border-0 ${
+                            isAICombat
+                              ? "text-sky-400"
+                              : event.type === "success"
+                              ? "text-era-peace"
+                              : event.type === "danger"
+                              ? "text-medieval-accent"
+                              : event.type === "warning"
+                              ? "text-gold"
+                              : "text-medieval-text-secondary"
+                          }`}
+                        >
+                          <span className="text-medieval-text-muted">[{event.turn}]</span>{" "}
+                          {isAICombat ? (
+                            <>
+                              ⚔ {event.attackerClanName} vs {event.defenderClanName}
+                              {event.territoryName ? ` (${event.territoryName})` : ""}
+                              {event.result === "victory" ? ` → ${event.attackerClanName} venceu` : ""}
+                              {event.territoryConquered ? ". Conquistado!" : ""}
+                              {event.defenderLosses !== undefined ? (
+                                <span className="text-slate-500"> ~{event.defenderLosses} baixas</span>
+                              ) : null}
+                            </>
+                          ) : (
+                            event.message
+                          )}
+                        </AnimatedListItem>
+                      );
+                    })}
                   </AnimatedList>
                 </div>
               </PanelContent>

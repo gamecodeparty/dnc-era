@@ -22,6 +22,16 @@ interface GameEvent {
   type: string;
   message: string;
   turn: number;
+  // Combat fields (F-016)
+  eventKind?: "COMBAT";
+  result?: "victory" | "defeat" | "draw";
+  attackerClanName?: string;
+  defenderClanName?: string;
+  territoryName?: string;
+  attackerLosses?: number;
+  defenderLosses?: number;
+  territoryConquered?: boolean;
+  isPlayerInvolved?: boolean;
 }
 
 interface TabContentProps {
@@ -178,24 +188,53 @@ export function TabContent({
               Nenhum evento recente.
             </p>
           ) : (
-            events.slice(0, 10).map((event) => (
-              <motion.div
-                key={event.id}
-                variants={staggerItem}
-                className="p-3 rounded-lg bg-medieval-bg-card"
-              >
-                <div className="flex items-start gap-2">
-                  <Scroll className="w-4 h-4 text-medieval-primary mt-0.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-medieval-text-primary">{event.message}</p>
-                    <p className="text-xs text-medieval-text-muted flex items-center gap-1 mt-1">
-                      <Clock className="w-3 h-3" />
-                      Turno {event.turn}
-                    </p>
+            events.slice(0, 10).map((event) => {
+              const isAICombat = event.eventKind === "COMBAT" && event.isPlayerInvolved === false;
+              return (
+                <motion.div
+                  key={event.id}
+                  variants={staggerItem}
+                  className={`p-3 rounded-lg ${isAICombat ? "bg-sky-950/30 border border-sky-900/40" : "bg-medieval-bg-card"}`}
+                >
+                  <div className="flex items-start gap-2">
+                    {isAICombat
+                      ? <Swords className="w-4 h-4 text-sky-500 mt-0.5 flex-shrink-0" />
+                      : <Scroll className="w-4 h-4 text-medieval-primary mt-0.5 flex-shrink-0" />
+                    }
+                    <div className="flex-1 min-w-0">
+                      {isAICombat ? (
+                        <div className="space-y-0.5">
+                          <p className="text-sm text-sky-400 font-medium">
+                            {event.attackerClanName} atacou {event.defenderClanName}
+                            {event.territoryName ? ` em ${event.territoryName}` : ""}
+                          </p>
+                          <p className="text-xs text-sky-300/80">
+                            {event.result === "victory"
+                              ? `→ Vitória de ${event.attackerClanName}!`
+                              : event.result === "defeat"
+                              ? `→ ${event.defenderClanName} resistiu!`
+                              : "→ Combate inconclusivo."}
+                            {event.territoryConquered ? " Território conquistado." : ""}
+                          </p>
+                          {(event.attackerLosses !== undefined || event.defenderLosses !== undefined) && (
+                            <p className="text-xs text-slate-500">
+                              Baixas: {event.attackerClanName} ~{event.attackerLosses ?? 0},{" "}
+                              {event.defenderClanName} ~{event.defenderLosses ?? 0}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-medieval-text-primary">{event.message}</p>
+                      )}
+                      <p className="text-xs text-medieval-text-muted flex items-center gap-1 mt-1">
+                        <Clock className="w-3 h-3" />
+                        Turno {event.turn}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            ))
+                </motion.div>
+              );
+            })
           )}
         </motion.div>
       );
