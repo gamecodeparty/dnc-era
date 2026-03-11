@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MedievalButton } from "@/components/ui/medieval";
 import { useHaptic } from "@/hooks/useHaptic";
 import { UI } from "@/game/constants/balance";
+import { STRUCTURES, getStructureLabel } from "@/game/constants/structures";
 
 interface Territory {
   id: string;
@@ -188,15 +189,28 @@ export function TerritoryBottomSheet({
                     );
                   })()}
                   <div className="grid grid-cols-2 gap-2">
-                    {structures.map((structure) => (
-                      <div
-                        key={structure.id}
-                        className="p-2 rounded-lg bg-medieval-bg-card text-sm"
-                      >
-                        <span className="text-medieval-text-primary">{structure.type}</span>
-                        <span className="text-medieval-text-muted ml-1">Nv.{structure.level}</span>
-                      </div>
-                    ))}
+                    {structures.map((structure) => {
+                      const def = STRUCTURES[structure.type];
+                      const label = getStructureLabel(structure.type, structure.level);
+                      return (
+                        <div
+                          key={structure.id}
+                          className="p-2 rounded-lg bg-medieval-bg-card text-sm"
+                        >
+                          <div className="flex items-center gap-1">
+                            <span className="text-medieval-text-primary">
+                              {def?.name ?? structure.type}
+                            </span>
+                            <span className="text-medieval-text-muted text-xs">Nv.{structure.level}</span>
+                          </div>
+                          {label && (
+                            <p className="text-xs text-medieval-text-muted mt-0.5 leading-tight">
+                              {label}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

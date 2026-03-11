@@ -76,6 +76,7 @@ export interface StructureDefinition {
   unlocks?: UnitType[];
   productionPerLevel?: number[];
   defenseBonusPerLevel?: number;
+  cardIntervalTurns?: number;
   costPerLevel: ResourceCost[];
 }
 
