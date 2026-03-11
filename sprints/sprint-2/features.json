@@ -262,7 +262,7 @@
     "id": "F-031",
     "name": "Modal de confirmação de custo proporcional",
     "description": "Em gameStore.ts: criar função getProportionalCostWarnings(cost, resources) que retorna warnings quando custo > 80% do estoque. Em TerritoryBottomSheet.tsx: ao clicar 'Construir' ou 'Treinar', calcular warnings. Se warnings > 0: modal de confirmação com percentuais por recurso (fundo amber, ícone ⚠, 'Cancelar' proeminente, 'Confirmar' neutro). Se warnings === 0: executar ação diretamente. Funciona para construção E treino. Arquivos: src/stores/gameStore.ts, src/components/game/mobile/TerritoryBottomSheet.tsx",
-    "status": "pending",
+    "status": "passing",
     "priority": 15,
     "agent": "coder",
     "task": "vibe-code",
@@ -274,7 +274,8 @@
       "Custo ≤ 80%: ação executa diretamente (sem modal)",
       "Funciona para construção E treino de unidades"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-2/worktree/sprints/sprint-2/3-prps/PRP-009-cost-clarity-warnings.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-2/worktree/sprints/sprint-2/3-prps/PRP-009-cost-clarity-warnings.md",
+    "completed_at": "2026-03-11T03:50:00Z"
   },
   {
     "id": "F-032",

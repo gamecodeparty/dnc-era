@@ -1,11 +1,13 @@
 "use client";
 
-import { X, MapPin, Building2, Users, Wheat, Trees, Coins, Sword } from "lucide-react";
+import { useState } from "react";
+import { X, MapPin, Building2, Users, Wheat, Trees, Coins, Sword, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MedievalButton } from "@/components/ui/medieval";
 import { useHaptic } from "@/hooks/useHaptic";
 import { UI } from "@/game/constants/balance";
 import { STRUCTURES, getStructureLabel } from "@/game/constants/structures";
+import { getProportionalCostWarnings, type CostWarning } from "@/stores/gameStore";
 
 interface Territory {
   id: string;
@@ -34,6 +36,12 @@ interface TerritoryBottomSheetProps {
   currentEra?: Era;
   /** Whether player has ≥1 territory with military units */
   playerHasTroops?: boolean;
+  /** Player's current resources (used for proportional cost warnings) */
+  playerResources?: { grain: number; wood: number; gold: number };
+  /** Representative cost for build action (used for proportional cost warnings) */
+  buildCost?: { grain?: number; wood?: number; gold?: number };
+  /** Representative cost for train action (used for proportional cost warnings) */
+  trainCost?: { grain?: number; wood?: number; gold?: number };
   /** Called when sheet should close */
   onClose: () => void;
   /** Called when build action is selected */
@@ -64,6 +72,9 @@ export function TerritoryBottomSheet({
   isOwned = false,
   currentEra = "PEACE",
   playerHasTroops = false,
+  playerResources,
+  buildCost,
+  trainCost,
   onClose,
   onBuild,
   onTrain,
@@ -71,6 +82,8 @@ export function TerritoryBottomSheet({
   className = "",
 }: TerritoryBottomSheetProps) {
   const { vibrate } = useHaptic();
+  const [pendingAction, setPendingAction] = useState<"build" | "train" | null>(null);
+  const [warnings, setWarnings] = useState<CostWarning[]>([]);
 
   const handleClose = () => {
     vibrate("light");
@@ -79,12 +92,43 @@ export function TerritoryBottomSheet({
 
   const handleBuild = () => {
     vibrate("medium");
+    if (playerResources && buildCost) {
+      const w = getProportionalCostWarnings(buildCost, playerResources);
+      if (w.length > 0) {
+        setWarnings(w);
+        setPendingAction("build");
+        return;
+      }
+    }
     onBuild?.();
   };
 
   const handleTrain = () => {
     vibrate("medium");
+    if (playerResources && trainCost) {
+      const w = getProportionalCostWarnings(trainCost, playerResources);
+      if (w.length > 0) {
+        setWarnings(w);
+        setPendingAction("train");
+        return;
+      }
+    }
     onTrain?.();
+  };
+
+  const handleConfirmAction = () => {
+    vibrate("medium");
+    const action = pendingAction;
+    setPendingAction(null);
+    setWarnings([]);
+    if (action === "build") onBuild?.();
+    else if (action === "train") onTrain?.();
+  };
+
+  const handleCancelAction = () => {
+    vibrate("light");
+    setPendingAction(null);
+    setWarnings([]);
   };
 
   const handleAttack = () => {
@@ -284,6 +328,76 @@ export function TerritoryBottomSheet({
                   Conquistar
                 </MedievalButton>
               )}
+            </div>
+          </motion.div>
+        </>
+      )}
+
+      {/* Proportional Cost Warning Modal */}
+      {pendingAction && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 lg:hidden"
+            onClick={handleCancelAction}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="fixed inset-x-4 bottom-24 z-50 rounded-xl bg-amber-900/95 border border-amber-500/60 p-4 shadow-xl lg:hidden"
+          >
+            {/* Header */}
+            <div className="flex items-start gap-3 mb-3">
+              <AlertTriangle className="w-6 h-6 text-amber-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-cinzel font-semibold text-amber-200 text-sm">
+                  Recursos Insuficientes
+                </h4>
+                <p className="text-xs text-amber-300/80 mt-0.5">
+                  Esta ação consumirá uma parte significativa dos seus recursos:
+                </p>
+              </div>
+            </div>
+
+            {/* Resource percentages */}
+            <div className="space-y-2 mb-4">
+              {warnings.map((w) => (
+                <div key={w.resource} className="flex items-center justify-between bg-amber-800/50 rounded-lg px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    {w.resource === "grain" && <Wheat className="w-4 h-4 text-amber-300" />}
+                    {w.resource === "wood" && <Trees className="w-4 h-4 text-amber-300" />}
+                    {w.resource === "gold" && <Coins className="w-4 h-4 text-amber-300" />}
+                    <span className="text-sm text-amber-200">{w.resourceLabel}</span>
+                  </div>
+                  <span className="text-sm font-bold text-amber-400">
+                    {Math.round(w.percent)}%
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2">
+              <MedievalButton
+                variant="primary"
+                size="sm"
+                className="flex-1 bg-amber-700 border-amber-600 hover:bg-amber-600 font-semibold"
+                onClick={handleCancelAction}
+              >
+                Cancelar
+              </MedievalButton>
+              <MedievalButton
+                variant="ghost"
+                size="sm"
+                className="flex-1 text-amber-300 border-amber-700/50 hover:bg-amber-800/50"
+                onClick={handleConfirmAction}
+              >
+                Confirmar
+              </MedievalButton>
             </div>
           </motion.div>
         </>

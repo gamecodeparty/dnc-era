@@ -1041,6 +1041,9 @@ export default function GamePage() {
         isOwned={selectedTerritory?.ownerId === "player"}
         currentEra={currentEra as "PEACE" | "WAR" | "INVASION"}
         playerHasTroops={playerHasTroops}
+        playerResources={{ grain: Math.floor(player.grain), wood: Math.floor(player.wood), gold: Math.floor(player.gold) }}
+        buildCost={{ grain: 30, wood: 40 }}
+        trainCost={{ grain: 10, gold: 5 }}
         onClose={() => setSelectedTerritoryId(null)}
         onBuild={() => {
           if (selectedTerritory?.ownerId === "player") {

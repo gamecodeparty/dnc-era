@@ -140,6 +140,35 @@ export { TURN_DURATION_MS };
 export const TURN_INTERVAL_MS = TURN_DURATION_MS;
 export const TOTAL_TURNS = 50;
 
+export interface CostWarning {
+  resource: "grain" | "wood" | "gold";
+  resourceLabel: string;
+  percent: number;
+}
+
+/** Returns warnings for resources where cost exceeds 80% of current stock. */
+export function getProportionalCostWarnings(
+  cost: { grain?: number; wood?: number; gold?: number },
+  resources: { grain: number; wood: number; gold: number }
+): CostWarning[] {
+  const warnings: CostWarning[] = [];
+  const check = (
+    resource: "grain" | "wood" | "gold",
+    resourceLabel: string,
+    costAmount: number | undefined,
+    stock: number
+  ) => {
+    if (costAmount && costAmount > 0 && stock > 0) {
+      const percent = (costAmount / stock) * 100;
+      if (percent > 80) warnings.push({ resource, resourceLabel, percent });
+    }
+  };
+  check("grain", "Grão", cost.grain, resources.grain);
+  check("wood", "Madeira", cost.wood, resources.wood);
+  check("gold", "Ouro", cost.gold, resources.gold);
+  return warnings;
+}
+
 export const STRUCTURE_COSTS: Record<StructureType, { grain?: number; wood?: number; gold?: number }> = {
   FARM: { wood: 20, gold: 10 },
   SAWMILL: { grain: 15, gold: 10 },
