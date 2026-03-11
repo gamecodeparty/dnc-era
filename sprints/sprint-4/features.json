@@ -45,7 +45,7 @@
     "id": "F-058",
     "name": "Alerta de ataque iminente no mapa",
     "description": "Em types/index.ts, adicionar interface IncomingAttack { targetTerritoryId, sourceClanId, arrivesTurn }. Em GameEngine.ts, quando AI lança ataque contra território do jogador, adicionar IncomingAttack ao array incomingAttacks no game state e remover entradas cujo arrivesTurn já passou. Em Territory.tsx, quando território do jogador tem ataque pendente, exibir badge vermelho pulsante: ⚠ 'Ataque iminente!' (text-red-400 bg-red-900/60, animate-pulse). Tooltip: 'Expedição inimiga detectada — chegará no próximo turno.' NÃO revelar atacante ou força. Só durante Era da Guerra e Invasão.",
-    "status": "pending",
+    "status": "passing",
     "priority": 3,
     "agent": "coder",
     "task": "vibe-code",
@@ -60,13 +60,14 @@
       "Badge desaparece após o turno de resolução do ataque",
       "Alerta só funciona durante Era da Guerra e Invasão"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-018-military-intel-map.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-018-military-intel-map.md",
+    "completed_at": "2026-03-11T16:10:00Z"
   },
   {
     "id": "F-059",
     "name": "Notificação de ataque iminente no log de eventos",
     "description": "Em GameEngine.ts, no início do turno do jogador, se há IncomingAttack com arrivesTurn === currentTurn + 1, gerar evento no log: 'Expedição inimiga detectada se movendo em direção a [território]!'. Evento não revela identidade do atacante (a menos que espião ativo). Evento aparece apenas 1 vez por ataque iminente.",
-    "status": "blocked",
+    "status": "pending",
     "priority": 4,
     "agent": "coder",
     "task": "vibe-code",

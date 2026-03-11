@@ -38,6 +38,8 @@ interface TerritoryProps {
   intelTurnsRemaining?: number;
   /** Whether to show troop badges (F-048 toggle) */
   showBadges?: boolean;
+  /** Whether there is an incoming enemy attack on this player territory (F-058) */
+  hasIncomingAttack?: boolean;
   onClick?: () => void;
 }
 
@@ -90,6 +92,7 @@ export function Territory({
   intelDefensePower,
   intelTurnsRemaining,
   showBadges = true,
+  hasIncomingAttack = false,
   onClick,
 }: TerritoryProps) {
   const ResourceIcon = RESOURCE_ICONS[bonusResource as keyof typeof RESOURCE_ICONS] || Wheat;
@@ -152,6 +155,22 @@ export function Territory({
               Alvo da Horda
             </p>
             <p className="text-slate-300">Alvo da Horda — este clã tem mais territórios</p>
+          </div>
+        </div>
+      )}
+
+      {/* Incoming attack alert (F-058) — shown during WAR/INVASION for player territories */}
+      {isPlayerOwned && hasIncomingAttack && (currentEra === "WAR" || currentEra === "INVASION") && (
+        <div className="absolute top-1 right-1 group/attack z-10">
+          <div className="rounded px-1 py-0.5 bg-red-900/60 flex items-center gap-0.5 animate-pulse">
+            <span className="text-red-400 text-[9px] leading-none">⚠</span>
+            <span className="text-red-400 text-[9px] leading-none font-semibold">Ataque iminente!</span>
+          </div>
+          <div className="absolute right-0 top-6 invisible group-hover/attack:visible z-20
+            bg-slate-900 border border-red-500/50 rounded p-2 text-xs text-slate-200
+            whitespace-nowrap shadow-lg min-w-[240px]">
+            <p className="font-bold text-red-300 mb-0.5">Ataque iminente!</p>
+            <p className="text-slate-300">Expedição inimiga detectada — chegará no próximo turno. Reforce a defesa!</p>
           </div>
         </div>
       )}

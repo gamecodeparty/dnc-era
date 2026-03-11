@@ -181,6 +181,7 @@ export default function GamePage() {
     sendSpy,
     revealedTerritories,
     territoryIntel,
+    incomingAttacks,
     playerCards,
     train,
   } = useGameStore();
@@ -760,6 +761,22 @@ export default function GamePage() {
                           <p>Tropas: {revealedData.units.reduce((s, u) => s + u.quantity, 0)}</p>
                           <p>Estruturas: {revealedData.structures.length}</p>
                           <p className="text-slate-400 mt-0.5">Expira turno {revealedData.expiresAt}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Incoming attack alert (F-058) — shown during WAR/INVASION for player territories */}
+                    {isPlayer && (currentEra === "WAR" || currentEra === "INVASION") && incomingAttacks.some((a) => a.targetTerritoryId === territory.id) && (
+                      <div className="absolute top-0.5 right-0.5 z-10 group/attack">
+                        <div className="rounded px-0.5 sm:px-1 py-0.5 bg-red-900/60 flex items-center gap-0.5 animate-pulse">
+                          <span className="text-red-400 text-[8px] sm:text-[9px] leading-none">⚠</span>
+                          <span className="text-red-400 text-[7px] sm:text-[8px] leading-none font-semibold hidden sm:inline">Ataque!</span>
+                        </div>
+                        <div className="absolute right-0 top-6 invisible group-hover/attack:visible z-30
+                          bg-slate-900 border border-red-500/60 rounded p-2 text-[10px] sm:text-xs
+                          text-slate-200 whitespace-nowrap shadow-lg pointer-events-none min-w-[200px]">
+                          <p className="font-bold text-red-300 mb-0.5">Ataque iminente!</p>
+                          <p>Expedição inimiga detectada — chegará no próximo turno. Reforce a defesa!</p>
                         </div>
                       </div>
                     )}

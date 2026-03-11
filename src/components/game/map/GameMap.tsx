@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Territory } from "./Territory";
 import type { TerritoryWithDetails } from "@/game/types";
-import type { TerritoryIntel } from "@/stores/gameStore";
+import type { TerritoryIntel, IncomingAttack } from "@/stores/gameStore";
 
 const HINT_DISMISSED_KEY = "dnc-expedition-hint-dismissed";
 
@@ -83,6 +83,7 @@ interface GameMapProps {
   playerHasTroops?: boolean;
   revealedTerritories?: Record<string, { units: { type: string; quantity: number }[] }>;
   territoryIntel?: TerritoryIntel[];
+  incomingAttacks?: IncomingAttack[];
   showBadges?: boolean;
   onTerritoryClick?: (territoryId: string) => void;
 }
@@ -96,6 +97,7 @@ export function GameMap({
   playerHasTroops = false,
   revealedTerritories = {},
   territoryIntel = [],
+  incomingAttacks = [],
   showBadges = true,
   onTerritoryClick,
 }: GameMapProps) {
@@ -153,6 +155,7 @@ export function GameMap({
           const intelSource = intel?.source;
           const intelDefensePower = intel?.defensePower ?? null;
           const intelTurnsRemaining = intel ? Math.max(0, intel.expiresAt - currentTurn) : undefined;
+          const hasIncomingAttack = isPlayerOwned && incomingAttacks.some((a) => a.targetTerritoryId === territory.id);
 
           return (
             <Territory
@@ -179,6 +182,7 @@ export function GameMap({
               intelDefensePower={intelDefensePower}
               intelTurnsRemaining={intelTurnsRemaining}
               showBadges={showBadges}
+              hasIncomingAttack={hasIncomingAttack}
               onClick={() => onTerritoryClick?.(territory.id)}
             />
           );

@@ -139,6 +139,12 @@ export interface TerritoryIntel {
   expiresAt: number;
 }
 
+export interface IncomingAttack {
+  targetTerritoryId: string;
+  sourceClanId: string;
+  arrivesTurn: number;
+}
+
 // Constantes
 export const SPY_SUCCESS_CHANCE_BASE = 0.7;   // 70% base
 export const SPY_UMBRAL_BONUS = 0.3;           // +30% para Umbral = 100%
@@ -565,6 +571,7 @@ interface GameState {
   timeRemaining: number;
   revealedTerritories: Record<string, RevealedTerritory>;
   territoryIntel: TerritoryIntel[];
+  incomingAttacks: IncomingAttack[];
   playerCards: PlayerCard[];
   invasionModalShown: boolean;
 
@@ -625,6 +632,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   timeRemaining: TURN_DURATION_MS,
   revealedTerritories: {},
   territoryIntel: [],
+  incomingAttacks: [],
   invasionModalShown: false,
   playerCards: [
     { id: "pc1", type: "REINFORCEMENTS", used: false },
@@ -1695,8 +1703,69 @@ export const useGameStore = create<GameState>((set, get) => ({
       );
     }
 
+    // Resolver ataques iminentes que chegam neste turno (F-058)
+    const resolvedIncomingAttacks = state.incomingAttacks.filter((a) => a.arrivesTurn <= newTurn);
+    for (const incoming of resolvedIncomingAttacks) {
+      const targetTerritory = updatedTerritories.find((t) => t.id === incoming.targetTerritoryId);
+      if (!targetTerritory || targetTerritory.ownerId !== "player") continue;
+
+      const attackerClan = updatedClans.find((c) => c.id === incoming.sourceClanId);
+      if (!attackerClan) continue;
+
+      const attackerTerritories = updatedTerritories.filter((t) => t.ownerId === incoming.sourceClanId);
+      const allAiUnits: Unit[] = attackerTerritories.flatMap((t) => t.units);
+      const attackPower = getAttackPower(allAiUnits);
+      const wallLevel = targetTerritory.structures.find((s) => s.type === "WALL")?.level || 0;
+      const defensePower = getDefensePower(targetTerritory.units, wallLevel);
+
+      if (attackPower > defensePower) {
+        // Atacante vence: captura o território
+        updatedTerritories = updatedTerritories.map((t) =>
+          t.id === targetTerritory.id
+            ? { ...t, ownerId: incoming.sourceClanId, ownerName: attackerClan.name, units: [] }
+            : t
+        );
+        newEvents.push({
+          turn: newTurn,
+          message: `${attackerClan.name} atacou e conquistou Território ${targetTerritory.position + 1}!`,
+          type: "danger",
+          eventKind: "COMBAT",
+          result: "defeat",
+          attackerClanId: incoming.sourceClanId,
+          attackerClanName: attackerClan.name,
+          defenderClanId: "player",
+          defenderClanName: "Voce",
+          territoryId: targetTerritory.id,
+          territoryName: `Territorio ${targetTerritory.position + 1}`,
+          attackerLosses: 0,
+          defenderLosses: targetTerritory.units.reduce((s, u) => s + u.quantity, 0),
+          territoryConquered: true,
+          isPlayerInvolved: true,
+        } as GameEvent);
+      } else {
+        // Defensor vence: ataque repelido
+        newEvents.push({
+          turn: newTurn,
+          message: `Ataque de ${attackerClan.name} repelido em Território ${targetTerritory.position + 1}!`,
+          type: "warning",
+          eventKind: "COMBAT",
+          result: "victory",
+          attackerClanId: incoming.sourceClanId,
+          attackerClanName: attackerClan.name,
+          defenderClanId: "player",
+          defenderClanName: "Voce",
+          territoryId: targetTerritory.id,
+          territoryName: `Territorio ${targetTerritory.position + 1}`,
+          attackerLosses: allAiUnits.reduce((s, u) => s + u.quantity, 0),
+          defenderLosses: 0,
+          territoryConquered: false,
+          isPlayerInvolved: true,
+        } as GameEvent);
+      }
+    }
+
     // IA faz acoes simples
-    const aiActions = processAI(updatedTerritories, updatedClans, newEra);
+    const { actions: aiActions, newIncomingAttacks } = processAI(updatedTerritories, updatedClans, newEra, newTurn);
 
     aiActions.forEach((action) => {
       newEvents.push({ turn: newTurn, message: action.message, type: "warning", ...(action.combatData ?? {}) });
@@ -1870,6 +1939,11 @@ export const useGameStore = create<GameState>((set, get) => ({
       explorationSites: updatedExplorationSites,
       revealedTerritories: updatedRevealedTerritories,
       territoryIntel: updatedTerritoryIntel,
+      // Atualizar incomingAttacks: remover resolvidos/expirados, adicionar novos (F-058)
+      incomingAttacks: [
+        ...state.incomingAttacks.filter((a) => a.arrivesTurn > newTurn),
+        ...newIncomingAttacks,
+      ],
       events: [...allEvents, ...state.events.slice(0, 10 - allEvents.length)],
     }));
 
@@ -1899,6 +1973,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       timeRemaining: TURN_DURATION_MS,
       revealedTerritories: {},
       territoryIntel: [],
+      incomingAttacks: [],
       invasionModalShown: false,
     });
   },
@@ -1935,8 +2010,9 @@ type AIAction = {
   combatData?: Omit<GameEvent, "turn" | "message" | "type">;
 };
 
-function processAI(territories: Territory[], clans: Clan[], era: Era) {
+function processAI(territories: Territory[], clans: Clan[], era: Era, currentTurn: number): { actions: AIAction[], newIncomingAttacks: IncomingAttack[] } {
   const actions: AIAction[] = [];
+  const newIncomingAttacks: IncomingAttack[] = [];
 
   const aiIds = ["ai1", "ai2", "ai3", "ai4"];
   let updatedTerritories = [...territories];
@@ -2002,13 +2078,34 @@ function processAI(territories: Territory[], clans: Clan[], era: Era) {
         });
       }
     }
+
+    // IA telegrafar ataque contra território do jogador (F-058)
+    // 25% chance na Era de Guerra, 35% na Era de Invasão
+    const attackChance = era === "INVASION" ? 0.65 : era === "WAR" ? 0.75 : 1;
+    if ((era === "WAR" || era === "INVASION") && Math.random() > attackChance) {
+      const playerTerritories = updatedTerritories.filter((t) => t.ownerId === "player");
+      // Só atacar se AI tem soldados suficientes
+      const aiSoldiers = aiTerritories.reduce((sum, t) => sum + t.units.reduce((s, u) => u.type === "SOLDIER" ? s + u.quantity : s, 0), 0);
+      if (playerTerritories.length > 0 && aiSoldiers >= 5) {
+        const target = playerTerritories[Math.floor(Math.random() * playerTerritories.length)];
+        // Não telegrafar se já há ataque pendente para este território
+        const alreadyPending = newIncomingAttacks.some((a) => a.targetTerritoryId === target.id);
+        if (!alreadyPending) {
+          newIncomingAttacks.push({
+            targetTerritoryId: target.id,
+            sourceClanId: aiId,
+            arrivesTurn: currentTurn + 1,
+          });
+        }
+      }
+    }
   });
 
   if (actions.length > 0) {
     actions[actions.length - 1].territories = updatedTerritories;
   }
 
-  return actions;
+  return { actions, newIncomingAttacks };
 }
 
 // ─── F-044: Agregação de estatísticas da partida ─────────────────────────────
