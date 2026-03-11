@@ -154,7 +154,7 @@
     "id": "F-089",
     "name": "Aviso leve para defesa fraca (1-2 unidades)",
     "description": "Em ExpeditionModal.tsx, se remainingUnits > 0 mas <= 2, exibir banner amarelo não-bloqueante acima do botão Enviar. Expedições REINFORCE não exibem aviso. Aviso não aparece durante Era da Paz (sem ameaça de ataque).",
-    "status": "blocked",
+    "status": "passing",
     "priority": 9,
     "agent": "coder",
     "task": "vibe-code",
@@ -167,7 +167,8 @@
       "Expedições REINFORCE não exibem aviso",
       "Aviso não aparece durante Era da Paz"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-028-expedition-combat-ux.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-028-expedition-combat-ux.md",
+    "completed_at": "2026-03-11T23:59:00Z"
   },
   {
     "id": "F-090",

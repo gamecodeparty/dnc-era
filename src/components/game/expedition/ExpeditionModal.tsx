@@ -803,6 +803,16 @@ export function ExpeditionModal({
                 </p>
               </div>
             )}
+
+            {/* F-089: Weak defense warning (1-2 units remaining, non-blocking) */}
+            {remainingUnits > 0 && remainingUnits <= 2 && expeditionType !== "REINFORCE" && currentEra !== "PEACE" && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-900/20 border border-amber-500/50">
+                <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-300">
+                  Defesa fraca: apenas {remainingUnits} {remainingUnits === 1 ? "unidade ficará" : "unidades ficarão"} no Território {fromTerritory.position + 1}. O território estará vulnerável a ataques.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Footer */}
