@@ -7,6 +7,7 @@ import { useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGameStore, TOTAL_TURNS, SPY_SUCCESS_CHANCE_BASE, SPY_UMBRAL_BONUS, getDistance, type UnitType } from "@/stores/gameStore";
 import { TURN_DURATION_MS } from "@/game/constants/balance";
+import { calculateTravelTime } from "@/game/engine";
 import {
   LogOut,
   Scroll,
@@ -766,6 +767,22 @@ export default function GamePage() {
                         </div>
                       </div>
                     )}
+
+                    {/* Travel time badge — visible during expedition modal */}
+                    {expeditionTarget && expeditionOrigin && (() => {
+                      const originTerritory = territories.find((t) => t.id === expeditionOrigin);
+                      if (!originTerritory) return null;
+                      const travelTime = calculateTravelTime(originTerritory.position, territory.position);
+                      const colorClass =
+                        travelTime === 1 ? "text-green-400" :
+                        travelTime === 2 ? "text-yellow-400" :
+                        "text-red-400";
+                      return (
+                        <div className={`absolute bottom-1 left-1 z-20 text-[9px] sm:text-[10px] font-bold leading-none ${colorClass}`}>
+                          ⏱{travelTime}t
+                        </div>
+                      );
+                    })()}
 
                     <div className="text-center h-full flex flex-col justify-between">
                       {hasExplorationSite ? (

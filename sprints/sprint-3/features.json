@@ -169,7 +169,7 @@
     "id": "F-042",
     "name": "Badge de tempo de viagem no mapa durante seleção",
     "description": "Em Territory.tsx, quando ExpeditionModal está aberto (fluxo de expedição), exibir badge '⏱ Xt' sobre cada território alvo potencial. Cor baseada no tempo: verde (1 turno), amarelo (2 turnos), vermelho (3+ turnos). Badge posicionado no canto inferior esquerdo do tile. Desaparece quando ExpeditionModal é fechado.",
-    "status": "pending",
+    "status": "passing",
     "priority": 10,
     "agent": "coder",
     "task": "vibe-code",
@@ -182,7 +182,8 @@
       "Badge desaparece quando ExpeditionModal é fechado",
       "Badge posicionado no canto inferior esquerdo do tile"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-013-expedition-travel-time-preview.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-013-expedition-travel-time-preview.md",
+    "completed_at": "2026-03-11T12:44:00Z"
   },
   {
     "id": "F-043",
