@@ -299,7 +299,7 @@
     "id": "F-069",
     "name": "Badge de alvo da Horda no mapa",
     "description": "Em Territory.tsx, quando território do jogador é hordaPreviewTarget: badge 💀 + 'Alvo da Horda' (text-red-500 bg-red-950/70 border-red-600, animate-pulse duration-2000). Tooltip: 'A Horda mira este território — ele tem a defesa mais fraca. Reforce antes do próximo turno!'. Indicador só aparece durante Era da Invasão quando há ataque agendado.",
-    "status": "blocked",
+    "status": "passing",
     "priority": 16,
     "agent": "coder",
     "task": "vibe-code",
@@ -312,13 +312,14 @@
       "Indicador só aparece durante Era da Invasão",
       "Badge desaparece após resolução do ataque"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-021-horde-territory-indicator.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-021-horde-territory-indicator.md",
+    "completed_at": "2026-03-11T17:13:49.541Z"
   },
   {
     "id": "F-070",
     "name": "Info de território-alvo no modal da Horda e EraIndicator",
     "description": "Em InvasionInfoModal.tsx, adicionar linha quando há preview: 'Alvo atual: Território TX (defesa: Y)' + dica de reforço. Em EraIndicator.tsx, quando countdown Horda em 1 turno e há preview, adicionar indicador textual 'Alvo: TX' em cor vermelha abaixo do countdown. Informações consistentes entre mapa, modal e HUD.",
-    "status": "blocked",
+    "status": "pending",
     "priority": 17,
     "agent": "coder",
     "task": "vibe-code",

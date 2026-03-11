@@ -44,6 +44,8 @@ interface TerritoryProps {
   isAllied?: boolean;
   /** F-061: Real defense power of allied territory (visible by pact) */
   alliedDefensePower?: number | null;
+  /** F-069: This specific territory is the Horda's preview attack target (weakest player territory) */
+  isHordaPreviewTarget?: boolean;
   onClick?: () => void;
 }
 
@@ -99,6 +101,7 @@ export function Territory({
   hasIncomingAttack = false,
   isAllied = false,
   alliedDefensePower,
+  isHordaPreviewTarget = false,
   onClick,
 }: TerritoryProps) {
   const ResourceIcon = RESOURCE_ICONS[bonusResource as keyof typeof RESOURCE_ICONS] || Wheat;
@@ -161,6 +164,25 @@ export function Territory({
               Alvo da Horda
             </p>
             <p className="text-slate-300">Alvo da Horda — este clã tem mais territórios</p>
+          </div>
+        </div>
+      )}
+
+      {/* F-069: Horda preview target badge — shown during INVASION era for the weakest player territory */}
+      {isHordaPreviewTarget && isPlayerOwned && currentEra === "INVASION" && (
+        <div className="absolute top-1 left-1 group/hordapreview z-10">
+          <div className={cn(
+            "flex items-center gap-0.5 px-1 py-0.5 rounded border text-[9px] leading-none font-semibold",
+            "text-red-500 bg-red-950/70 border-red-600 animate-pulse"
+          )}>
+            <span>💀</span>
+            <span>Alvo da Horda</span>
+          </div>
+          <div className="absolute left-0 top-6 invisible group-hover/hordapreview:visible z-20
+            bg-slate-900 border border-red-600/60 rounded p-2 text-xs text-slate-200
+            whitespace-nowrap shadow-lg min-w-[260px]">
+            <p className="font-bold text-red-400 mb-0.5">💀 Alvo da Horda</p>
+            <p className="text-slate-300">A Horda mira este território — ele tem a defesa mais fraca. Reforce antes do próximo turno!</p>
           </div>
         </div>
       )}

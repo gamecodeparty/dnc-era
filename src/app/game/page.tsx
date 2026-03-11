@@ -187,6 +187,7 @@ export default function GamePage() {
     marketTradesUsed,
     marketTrade,
     diplomacy,
+    hordaPreview,
   } = useGameStore();
 
   const player = getPlayerClan();
@@ -780,6 +781,22 @@ export default function GamePage() {
                           text-slate-200 whitespace-nowrap shadow-lg pointer-events-none min-w-[200px]">
                           <p className="font-bold text-red-300 mb-0.5">Ataque iminente!</p>
                           <p>Expedição inimiga detectada — chegará no próximo turno. Reforce a defesa!</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* F-069: Horda preview target badge — shown during INVASION era for weakest player territory */}
+                    {isPlayer && currentEra === "INVASION" && hordaPreview?.targetTerritoryId === territory.id && (
+                      <div className="absolute bottom-0.5 left-0.5 z-10 group/hordapreview">
+                        <div className="flex items-center gap-0.5 px-1 py-0.5 rounded border text-[7px] sm:text-[9px] leading-none font-semibold text-red-500 bg-red-950/70 border-red-600 animate-pulse">
+                          <span>💀</span>
+                          <span className="hidden sm:inline">Alvo da Horda</span>
+                        </div>
+                        <div className="absolute left-0 bottom-5 invisible group-hover/hordapreview:visible z-30
+                          bg-slate-900 border border-red-600/60 rounded p-2 text-[10px] sm:text-xs
+                          text-slate-200 whitespace-nowrap shadow-lg pointer-events-none min-w-[240px]">
+                          <p className="font-bold text-red-400 mb-0.5">💀 Alvo da Horda</p>
+                          <p>A Horda mira este território — ele tem a defesa mais fraca. Reforce antes do próximo turno!</p>
                         </div>
                       </div>
                     )}

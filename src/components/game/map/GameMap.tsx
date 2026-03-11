@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Territory } from "./Territory";
-import type { TerritoryWithDetails } from "@/game/types";
+import type { TerritoryWithDetails, HordaPreview } from "@/game/types";
 import type { TerritoryIntel, IncomingAttack } from "@/stores/gameStore";
 
 const HINT_DISMISSED_KEY = "dnc-expedition-hint-dismissed";
@@ -87,6 +87,8 @@ interface GameMapProps {
   showBadges?: boolean;
   /** F-061: Diplomacy map — clanId -> relation, to show allied territory info */
   diplomacy?: Record<string, string>;
+  /** F-069: Horda preview for showing the weakest target territory badge */
+  hordaPreview?: HordaPreview | null;
   onTerritoryClick?: (territoryId: string) => void;
 }
 
@@ -102,6 +104,7 @@ export function GameMap({
   incomingAttacks = [],
   showBadges = true,
   diplomacy = {},
+  hordaPreview = null,
   onTerritoryClick,
 }: GameMapProps) {
   // Sort territories by position
@@ -164,6 +167,9 @@ export function GameMap({
           const isAllied = !isPlayerOwned && territory.ownerId !== null && diplomacy[territory.ownerId] === "TRUSTED";
           const alliedDefensePower = isAllied ? calcDefensePower(territory.units) : null;
 
+          // F-069: Horda preview target — weakest player territory highlighted 1 turn before attack
+          const isHordaPreviewTarget = isPlayerOwned && hordaPreview !== null && hordaPreview.targetTerritoryId === territory.id;
+
           return (
             <Territory
               key={territory.id}
@@ -192,6 +198,7 @@ export function GameMap({
               hasIncomingAttack={hasIncomingAttack}
               isAllied={isAllied}
               alliedDefensePower={alliedDefensePower}
+              isHordaPreviewTarget={isHordaPreviewTarget}
               onClick={() => onTerritoryClick?.(territory.id)}
             />
           );
