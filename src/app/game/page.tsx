@@ -173,6 +173,7 @@ export default function GamePage() {
     sendSpy,
     revealedTerritories,
     playerCards,
+    train,
   } = useGameStore();
 
   const player = getPlayerClan();
@@ -1053,6 +1054,11 @@ export default function GamePage() {
         onTrain={() => {
           if (selectedTerritory?.ownerId === "player") {
             window.location.href = `/game/territory/${selectedTerritory.id}`;
+          }
+        }}
+        onTrainUnit={(unitType) => {
+          if (selectedTerritory?.ownerId === "player") {
+            train(selectedTerritory.id, unitType as UnitType, 1);
           }
         }}
         onAttack={(territory) => {

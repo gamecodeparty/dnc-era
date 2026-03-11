@@ -7,9 +7,30 @@ import { MedievalButton } from "@/components/ui/medieval";
 import { useHaptic } from "@/hooks/useHaptic";
 import { UI } from "@/game/constants/balance";
 import { STRUCTURES, getStructureLabel } from "@/game/constants/structures";
-import { getProportionalCostWarnings, type CostWarning } from "@/stores/gameStore";
+import { getProportionalCostWarnings, UNIT_COSTS, type CostWarning } from "@/stores/gameStore";
 
 type ResourceCost = { grain?: number; wood?: number; gold?: number };
+
+const UNIT_PREREQS: Record<string, { structure: string; label: string }> = {
+  SOLDIER: { structure: "BARRACKS", label: "Quartel" },
+  ARCHER:  { structure: "BARRACKS", label: "Quartel" },
+  KNIGHT:  { structure: "STABLE",   label: "Estábulo" },
+  SPY:     { structure: "SHADOW_GUILD", label: "Guilda das Sombras" },
+};
+
+const UNIT_NAMES: Record<string, string> = {
+  SOLDIER: "Soldado",
+  ARCHER:  "Arqueiro",
+  KNIGHT:  "Cavaleiro",
+  SPY:     "Espião",
+};
+
+const UNIT_ICONS: Record<string, string> = {
+  SOLDIER: "🗡️",
+  ARCHER:  "🏹",
+  KNIGHT:  "🐴",
+  SPY:     "🕵️",
+};
 type Resources = { grain: number; wood: number; gold: number };
 
 function canAfford(cost: ResourceCost | undefined, resources: Resources | undefined): boolean {
@@ -66,8 +87,10 @@ interface TerritoryBottomSheetProps {
   onClose: () => void;
   /** Called when build action is selected */
   onBuild?: () => void;
-  /** Called when train action is selected */
+  /** Called when train action is selected (generic fallback) */
   onTrain?: () => void;
+  /** Called when train unit action is selected for a specific unit type */
+  onTrainUnit?: (unitType: string) => void;
   /** Called when attack action is selected (enemy territory only) */
   onAttack?: (territory: Territory) => void;
   /** Additional class names */
@@ -98,6 +121,7 @@ export function TerritoryBottomSheet({
   onClose,
   onBuild,
   onTrain,
+  onTrainUnit,
   onAttack,
   className = "",
 }: TerritoryBottomSheetProps) {
@@ -338,23 +362,52 @@ export function TerritoryBottomSheet({
                         </p>
                       )}
                     </div>
-                    <MedievalButton
-                      variant="secondary"
-                      size="sm"
-                      className="flex-1"
-                      onClick={handleTrain}
-                    >
-                      <Users className="w-4 h-4 mr-2" />
-                      Treinar
-                      {trainWarnings.length > 0 && (
-                        <span
-                          title={makeCostTooltip(trainWarnings)}
-                          className="ml-1.5 inline-flex items-center"
-                        >
-                          <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-                        </span>
-                      )}
-                    </MedievalButton>
+                    {/* Per-unit training section (F-034) */}
+                    <div className="flex-1 flex flex-col gap-1">
+                      <div className="text-xs text-medieval-text-muted font-semibold flex items-center gap-1 px-0.5">
+                        <Users className="w-3 h-3" />
+                        Treinar
+                      </div>
+                      {(["SOLDIER", "ARCHER", "KNIGHT", "SPY"] as const).map((unitType) => {
+                        const prereq = UNIT_PREREQS[unitType];
+                        const cost = UNIT_COSTS[unitType];
+                        const hasPrereq = structures.some((s) => s.type === prereq.structure);
+                        const unitCanAfford = canAfford(cost, playerResources);
+                        const unitDisabled = !hasPrereq || !unitCanAfford;
+                        const missingMsg = !hasPrereq
+                          ? `Requer: ${prereq.label}`
+                          : !unitCanAfford && playerResources
+                          ? getMissingLabel(cost, playerResources)
+                          : "";
+                        return (
+                          <div key={unitType} className="flex items-center gap-1.5">
+                            <span className="text-sm leading-none">{UNIT_ICONS[unitType]}</span>
+                            <span className="flex-1 text-xs text-medieval-text-secondary truncate">
+                              {UNIT_NAMES[unitType]}
+                            </span>
+                            {missingMsg && (
+                              <span className="text-[10px] text-red-400 leading-tight truncate max-w-[80px]" title={missingMsg}>
+                                {missingMsg}
+                              </span>
+                            )}
+                            <button
+                              disabled={unitDisabled}
+                              onClick={() => onTrainUnit ? onTrainUnit(unitType) : onTrain?.()}
+                              title={missingMsg || undefined}
+                              className={`
+                                px-2 py-0.5 rounded text-xs font-medium border transition-colors
+                                ${unitDisabled
+                                  ? "opacity-50 cursor-not-allowed bg-gray-700/50 border-gray-600/50 text-gray-400"
+                                  : "bg-medieval-primary/20 border-medieval-primary/40 text-medieval-primary hover:bg-medieval-primary/30"
+                                }
+                              `}
+                            >
+                              +1
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               )}

@@ -428,7 +428,7 @@ export function ExpeditionModal({
                       <button
                         onClick={() => handleUnitChange(type, -1)}
                         disabled={selected === 0}
-                        className="w-8 h-8 rounded bg-medieval-bg-deep flex items-center justify-center text-medieval-text-primary disabled:opacity-30"
+                        className="w-8 h-8 rounded bg-medieval-bg-deep flex items-center justify-center text-medieval-text-primary disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         -
                       </button>
@@ -438,7 +438,7 @@ export function ExpeditionModal({
                       <button
                         onClick={() => handleUnitChange(type, 1)}
                         disabled={selected >= available}
-                        className="w-8 h-8 rounded bg-medieval-bg-deep flex items-center justify-center text-medieval-text-primary disabled:opacity-30"
+                        className="w-8 h-8 rounded bg-medieval-bg-deep flex items-center justify-center text-medieval-text-primary disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         +
                       </button>

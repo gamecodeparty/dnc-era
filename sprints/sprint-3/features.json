@@ -22,7 +22,7 @@
     "id": "F-034",
     "name": "Desabilitar botões de treinamento sem recursos ou pré-requisito",
     "description": "Em TerritoryBottomSheet.tsx (seção de treinamento), aplicar mesma lógica canAfford para botões de treinar unidades (Soldado, Arqueiro, Cavaleiro, Espião). Desabilitar botão + tooltip 'Faltam: X ouro, Y grão' quando sem recursos. Verificar pré-requisito de estrutura (ex: Barracks para Soldado) — se ausente: tooltip 'Requer: Quartel'. Consistência visual com botões '+' no ExpeditionModal.",
-    "status": "pending",
+    "status": "passing",
     "priority": 2,
     "agent": "coder",
     "task": "vibe-code",
@@ -33,7 +33,8 @@
       "Botões '+' no ExpeditionModal seguem mesmo padrão visual de desabilitação",
       "Botão volta a funcionar quando jogador obtém recursos suficientes"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-011-build-menu-clarity.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-011-build-menu-clarity.md",
+    "completed_at": "2026-03-11T05:30:00Z"
   },
   {
     "id": "F-035",
