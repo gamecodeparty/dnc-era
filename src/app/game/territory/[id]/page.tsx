@@ -24,6 +24,7 @@ import {
   StructureType,
   UnitType,
 } from "@/stores/gameStore";
+import { STRUCTURES } from "@/game/constants/structures";
 
 // Medieval components
 import { MedievalButton } from "@/components/ui/medieval";
@@ -400,36 +401,41 @@ export default function TerritoryPage() {
                       <p className="text-xs text-medieval-text-muted mb-2 font-crimson">
                         {info.description}
                       </p>
-                      <div className="flex gap-3 text-xs">
-                        {cost.grain && (
-                          <span
-                            className={
-                              player.grain >= cost.grain ? "text-grain" : "text-medieval-accent"
-                            }
-                          >
-                            {cost.grain} graos
+                      {(() => {
+                        const structDef = STRUCTURES[type];
+                        if (structDef?.type === "production" && structDef.produces) {
+                          const resourceNames: Record<string, string> = { GRAIN: "Grão", WOOD: "Madeira", GOLD: "Ouro" };
+                          const producesName = resourceNames[structDef.produces] ?? structDef.produces;
+                          return (
+                            <p className="text-xs text-medieval-primary/70 italic mb-2">
+                              {info.name} produz {producesName} mas não custa {producesName} para construir
+                            </p>
+                          );
+                        }
+                        return null;
+                      })()}
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        {cost.grain ? (
+                          <span className={`flex items-center gap-1 ${player.grain >= cost.grain ? "text-amber-400" : "text-red-400"}`}>
+                            <Wheat className="w-3 h-3" />
+                            <span>Grão {cost.grain}</span>
+                            {player.grain < cost.grain && <span>(insuficiente)</span>}
                           </span>
-                        )}
-                        {cost.wood && (
-                          <span
-                            className={
-                              player.wood >= cost.wood
-                                ? "text-wood-light"
-                                : "text-medieval-accent"
-                            }
-                          >
-                            {cost.wood} madeira
+                        ) : null}
+                        {cost.wood ? (
+                          <span className={`flex items-center gap-1 ${player.wood >= cost.wood ? "text-emerald-400" : "text-red-400"}`}>
+                            <TreePine className="w-3 h-3" />
+                            <span>Madeira {cost.wood}</span>
+                            {player.wood < cost.wood && <span>(insuficiente)</span>}
                           </span>
-                        )}
-                        {cost.gold && (
-                          <span
-                            className={
-                              player.gold >= cost.gold ? "text-gold" : "text-medieval-accent"
-                            }
-                          >
-                            {cost.gold} ouro
+                        ) : null}
+                        {cost.gold ? (
+                          <span className={`flex items-center gap-1 ${player.gold >= cost.gold ? "text-yellow-400" : "text-red-400"}`}>
+                            <Coins className="w-3 h-3" />
+                            <span>Ouro {cost.gold}</span>
+                            {player.gold < cost.gold && <span>(insuficiente)</span>}
                           </span>
-                        )}
+                        ) : null}
                       </div>
                     </motion.div>
                   );
@@ -491,36 +497,28 @@ export default function TerritoryPage() {
                           Requer: {STRUCTURE_INFO[info.requires].name}
                         </p>
                       )}
-                      <div className="flex gap-3 text-xs">
-                        {cost.grain && (
-                          <span
-                            className={
-                              player.grain >= cost.grain ? "text-grain" : "text-medieval-accent"
-                            }
-                          >
-                            {cost.grain} graos
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        {cost.grain ? (
+                          <span className={`flex items-center gap-1 ${player.grain >= cost.grain ? "text-amber-400" : "text-red-400"}`}>
+                            <Wheat className="w-3 h-3" />
+                            <span>Grão {cost.grain}</span>
+                            {player.grain < cost.grain && <span>(insuficiente)</span>}
                           </span>
-                        )}
-                        {cost.wood && (
-                          <span
-                            className={
-                              player.wood >= cost.wood
-                                ? "text-wood-light"
-                                : "text-medieval-accent"
-                            }
-                          >
-                            {cost.wood} madeira
+                        ) : null}
+                        {cost.wood ? (
+                          <span className={`flex items-center gap-1 ${player.wood >= cost.wood ? "text-emerald-400" : "text-red-400"}`}>
+                            <TreePine className="w-3 h-3" />
+                            <span>Madeira {cost.wood}</span>
+                            {player.wood < cost.wood && <span>(insuficiente)</span>}
                           </span>
-                        )}
-                        {cost.gold && (
-                          <span
-                            className={
-                              player.gold >= cost.gold ? "text-gold" : "text-medieval-accent"
-                            }
-                          >
-                            {cost.gold} ouro
+                        ) : null}
+                        {cost.gold ? (
+                          <span className={`flex items-center gap-1 ${player.gold >= cost.gold ? "text-yellow-400" : "text-red-400"}`}>
+                            <Coins className="w-3 h-3" />
+                            <span>Ouro {cost.gold}</span>
+                            {player.gold < cost.gold && <span>(insuficiente)</span>}
                           </span>
-                        )}
+                        ) : null}
                       </div>
                     </motion.div>
                   );
