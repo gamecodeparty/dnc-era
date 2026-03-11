@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useGameStore, TURN_INTERVAL_MS, TOTAL_TURNS } from "@/stores/gameStore";
+import { useGameStore, TURN_INTERVAL_MS, TOTAL_TURNS, type UnitType } from "@/stores/gameStore";
 import {
   LogOut,
   Scroll,
@@ -200,7 +200,7 @@ export default function GamePage() {
   const handleSendExpedition = (
     fromTerritoryId: string,
     toTerritoryId: string,
-    units: { type: "SOLDIER" | "ARCHER" | "KNIGHT"; quantity: number }[]
+    units: { type: UnitType; quantity: number }[]
   ) => {
     const fromTerritory = territories.find((t) => t.id === fromTerritoryId);
     const toTerritory = territories.find((t) => t.id === toTerritoryId);
@@ -220,7 +220,7 @@ export default function GamePage() {
   const handleSendExploration = (
     fromTerritoryId: string,
     siteId: string,
-    units: { type: "SOLDIER" | "ARCHER" | "KNIGHT"; quantity: number }[]
+    units: { type: UnitType; quantity: number }[]
   ) => {
     const result = sendExploration(fromTerritoryId, siteId, units);
     if (result.success) {

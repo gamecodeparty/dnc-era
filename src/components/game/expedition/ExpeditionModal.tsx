@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { X, Swords, MapPin, Clock, Package, ChevronDown, ChevronUp, AlertTriangle, Shield } from "lucide-react";
+import { X, Swords, MapPin, Clock, Package, ChevronDown, ChevronUp, AlertTriangle, Shield, HelpCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MedievalButton } from "@/components/ui/medieval";
 import {
@@ -31,6 +31,8 @@ interface ExpeditionModalProps {
   attackerOrigin?: ClanOrigin;
   /** Defender clan origin for combat preview */
   defenderOrigin?: ClanOrigin;
+  /** Territory IDs revealed by SPY — undefined means no territories revealed (PRP-004 integration) */
+  revealedTerritories?: Set<string>;
   /** Called when expedition is sent */
   onSend: (
     fromTerritoryId: string,
@@ -52,12 +54,14 @@ const unitLabels: Record<UnitType, string> = {
   SOLDIER: "Soldados",
   ARCHER: "Arqueiros",
   KNIGHT: "Cavaleiros",
+  SPY: "Espioes",
 };
 
 const unitIcons: Record<UnitType, string> = {
   SOLDIER: "🗡️",
   ARCHER: "🏹",
   KNIGHT: "🐴",
+  SPY: "🕵️",
 };
 
 export function ExpeditionModal({
@@ -67,6 +71,7 @@ export function ExpeditionModal({
   currentEra,
   attackerOrigin,
   defenderOrigin,
+  revealedTerritories,
   onSend,
   onClose,
 }: ExpeditionModalProps) {
@@ -79,6 +84,7 @@ export function ExpeditionModal({
     SOLDIER: 0,
     ARCHER: 0,
     KNIGHT: 0,
+    SPY: 0,
   });
 
   // UI state
@@ -91,6 +97,7 @@ export function ExpeditionModal({
       SOLDIER: 0,
       ARCHER: 0,
       KNIGHT: 0,
+      SPY: 0,
     };
     for (const unit of fromTerritory.units) {
       if (unit.type in available) {
@@ -128,8 +135,8 @@ export function ExpeditionModal({
   // Combat preview (recalculates in real time as units are added/removed)
   const combatPreview = useMemo(() => {
     if (expeditionStats.totalUnits === 0) return null;
-    return calculateCombatPreview(expeditionStats.units, toTerritory, attackerOrigin, defenderOrigin);
-  }, [expeditionStats.units, expeditionStats.totalUnits, toTerritory, attackerOrigin, defenderOrigin]);
+    return calculateCombatPreview(expeditionStats.units, toTerritory, attackerOrigin, defenderOrigin, revealedTerritories);
+  }, [expeditionStats.units, expeditionStats.totalUnits, toTerritory, attackerOrigin, defenderOrigin, revealedTerritories]);
 
   // Handle unit quantity change
   const handleUnitChange = (type: UnitType, delta: number) => {
@@ -146,6 +153,7 @@ export function ExpeditionModal({
       SOLDIER: availableUnits.SOLDIER,
       ARCHER: availableUnits.ARCHER,
       KNIGHT: availableUnits.KNIGHT,
+      SPY: availableUnits.SPY,
     });
   };
 
@@ -155,6 +163,7 @@ export function ExpeditionModal({
       SOLDIER: 0,
       ARCHER: 0,
       KNIGHT: 0,
+      SPY: 0,
     });
   };
 
@@ -167,6 +176,7 @@ export function ExpeditionModal({
       SOLDIER: 0,
       ARCHER: 0,
       KNIGHT: 0,
+      SPY: 0,
     });
   };
 
@@ -410,9 +420,20 @@ export function ExpeditionModal({
                       <Swords className="w-3 h-3 text-era-war" /> {combatPreview.attackPower}
                     </span>
                     <span className="flex items-center gap-1">
-                      {combatPreview.defensePower} <Shield className="w-3 h-3 text-era-peace" />
+                      {combatPreview.isApproximate ? (
+                        <>
+                          <HelpCircle className="w-3 h-3 text-grain" />
+                          <span className="text-grain">~{combatPreview.defensePower}</span>
+                        </>
+                      ) : (
+                        combatPreview.defensePower
+                      )}
+                      <Shield className="w-3 h-3 text-era-peace" />
                     </span>
                   </div>
+                  {combatPreview.isApproximate && (
+                    <div className="text-xs text-grain/70 text-right">(sem reconhecimento)</div>
+                  )}
                   <div className="h-2.5 rounded-full overflow-hidden bg-era-peace/30 flex">
                     {(() => {
                       const total = combatPreview.attackPower + combatPreview.defensePower;

@@ -14,6 +14,7 @@ import {
   Check,
   Castle,
   Users,
+  Eye,
 } from "lucide-react";
 import {
   useGameStore,
@@ -58,12 +59,14 @@ const STRUCTURE_INFO: Record<
   BARRACKS: { name: "Quartel", description: "Treina Soldados e Arqueiros", icon: Sword },
   STABLE: { name: "Estabulo", description: "Treina Cavaleiros", icon: Shield },
   WALL: { name: "Muralha", description: "+20% defesa por nivel", icon: Castle },
+  SHADOW_GUILD: { name: "Guilda das Sombras", description: "Treina Espioes para revelar tropas inimigas", icon: Eye },
 };
 
 const UNIT_INFO: Record<UnitType, { name: string; requires: StructureType }> = {
   SOLDIER: { name: "Soldado", requires: "BARRACKS" },
   ARCHER: { name: "Arqueiro", requires: "BARRACKS" },
   KNIGHT: { name: "Cavaleiro", requires: "STABLE" },
+  SPY: { name: "Espiao", requires: "SHADOW_GUILD" },
 };
 
 export default function TerritoryPage() {
@@ -420,6 +423,9 @@ export default function TerritoryPage() {
               />
               <PanelContent className="space-y-3">
                 {(Object.keys(UNIT_INFO) as UnitType[]).map((type) => {
+                  // SPY só aparece quando SHADOW_GUILD está construída
+                  if (type === "SPY" && !hasStructure("SHADOW_GUILD")) return null;
+
                   const info = UNIT_INFO[type];
                   const cost = UNIT_COSTS[type];
                   const stats = UNIT_STATS[type];
@@ -501,6 +507,8 @@ export default function TerritoryPage() {
                   Construa um Quartel para Soldados e Arqueiros.
                   <br />
                   Construa um Estabulo para Cavaleiros.
+                  <br />
+                  Construa uma Guilda das Sombras para Espioes.
                 </p>
               </PanelContent>
             </ParchmentPanel>

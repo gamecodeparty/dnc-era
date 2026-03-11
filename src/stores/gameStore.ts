@@ -3,8 +3,8 @@ import { create } from "zustand";
 // Tipos
 export type Era = "PEACE" | "WAR" | "INVASION";
 export type ResourceType = "GRAIN" | "WOOD" | "GOLD";
-export type StructureType = "FARM" | "SAWMILL" | "MINE" | "BARRACKS" | "STABLE" | "WALL";
-export type UnitType = "SOLDIER" | "ARCHER" | "KNIGHT";
+export type StructureType = "FARM" | "SAWMILL" | "MINE" | "BARRACKS" | "STABLE" | "WALL" | "SHADOW_GUILD";
+export type UnitType = "SOLDIER" | "ARCHER" | "KNIGHT" | "SPY";
 export type DiplomacyRelation = "TRUSTED" | "NEUTRAL" | "HOSTILE";
 export type AIPersonality = "CONQUEROR" | "DEFENDER" | "OPPORTUNIST" | "MERCHANT";
 export type ClanOrigin = "FERRONATOS" | "VERDANEOS" | "UMBRAL";
@@ -120,6 +120,7 @@ export const STRUCTURE_COSTS: Record<StructureType, { grain?: number; wood?: num
   BARRACKS: { grain: 30, wood: 40 },
   STABLE: { grain: 50, wood: 60, gold: 30 },
   WALL: { wood: 50, gold: 20 },
+  SHADOW_GUILD: { wood: 20, gold: 30 },
 };
 
 export const STRUCTURE_PRODUCTION: Record<StructureType, { resource?: ResourceType; amount?: number }> = {
@@ -129,18 +130,21 @@ export const STRUCTURE_PRODUCTION: Record<StructureType, { resource?: ResourceTy
   BARRACKS: {},
   STABLE: {},
   WALL: {},
+  SHADOW_GUILD: {},
 };
 
 export const UNIT_COSTS: Record<UnitType, { grain?: number; wood?: number; gold?: number }> = {
   SOLDIER: { grain: 10, gold: 5 },
   ARCHER: { grain: 8, wood: 5, gold: 8 },
   KNIGHT: { grain: 20, gold: 25 },
+  SPY: { grain: 5, gold: 10 },
 };
 
 export const UNIT_STATS: Record<UnitType, { atk: number; def: number; speed: number; carryCapacity: number }> = {
   SOLDIER: { atk: 10, def: 8, speed: 1, carryCapacity: 20 },
   ARCHER: { atk: 12, def: 5, speed: 1, carryCapacity: 10 },
   KNIGHT: { atk: 20, def: 15, speed: 2, carryCapacity: 30 },
+  SPY: { atk: 0, def: 0, speed: 2, carryCapacity: 0 },
 };
 
 // Constantes de mapa (4 colunas x 3 linhas = 12 territórios)
@@ -638,12 +642,14 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     if (!territory || territory.ownerId !== "player") return false;
 
-    // Verifica se tem quartel/estabulo
+    // Verifica se tem quartel/estabulo/guilda
     const hasBarracks = territory.structures.some((s) => s.type === "BARRACKS");
     const hasStable = territory.structures.some((s) => s.type === "STABLE");
+    const hasShadowGuild = territory.structures.some((s) => s.type === "SHADOW_GUILD");
 
     if (unitType === "KNIGHT" && !hasStable) return false;
     if ((unitType === "SOLDIER" || unitType === "ARCHER") && !hasBarracks) return false;
+    if (unitType === "SPY" && !hasShadowGuild) return false;
 
     const cost = UNIT_COSTS[unitType];
     const totalCost = {
