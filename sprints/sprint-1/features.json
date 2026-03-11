@@ -189,7 +189,7 @@
     "id": "F-011",
     "name": "Expedição de espionagem (sendSpy)",
     "description": "Adicionar tipos SPY e RETURN_SPY ao enum/union de expedição em game/types/index.ts. Criar action sendSpy(fromTerritoryId, toTerritoryId) no gameStore com validação (>=1 SPY na origem), criação de expedição tipo SPY com travel time = distância Manhattan em turnos.",
-    "status": "pending",
+    "status": "passing",
     "priority": 11,
     "agent": "coder",
     "task": "vibe-code",
@@ -201,7 +201,8 @@
       "sendSpy(from, to) cria expedição SPY com travel time = distância Manhattan",
       "Validação impede envio sem SPY disponível no território de origem"
     ],
-    "prp_path": "sprints/sprint-1/3-prps/PRP-004-spy-system.md"
+    "prp_path": "sprints/sprint-1/3-prps/PRP-004-spy-system.md",
+    "completed_at": "2026-03-11T00:00:00Z"
   },
   {
     "id": "F-012",

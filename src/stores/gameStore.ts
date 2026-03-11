@@ -8,7 +8,7 @@ export type UnitType = "SOLDIER" | "ARCHER" | "KNIGHT" | "SPY";
 export type DiplomacyRelation = "TRUSTED" | "NEUTRAL" | "HOSTILE";
 export type AIPersonality = "CONQUEROR" | "DEFENDER" | "OPPORTUNIST" | "MERCHANT";
 export type ClanOrigin = "FERRONATOS" | "VERDANEOS" | "UMBRAL";
-export type ExpeditionType = "ATTACK" | "EXPLORE" | "RETURN_VICTORY" | "RETURN_DEFEAT" | "RETURN_EXPLORE" | "REINFORCE";
+export type ExpeditionType = "ATTACK" | "EXPLORE" | "RETURN_VICTORY" | "RETURN_DEFEAT" | "RETURN_EXPLORE" | "REINFORCE" | "SPY" | "RETURN_SPY";
 
 // Tipos de locais de exploracao
 export type ExplorationSiteType =
@@ -522,6 +522,10 @@ interface GameState {
     siteId: string,
     units: { type: UnitType; quantity: number }[]
   ) => { success: boolean; message: string; expeditionId?: string };
+  sendSpy: (
+    fromTerritoryId: string,
+    toTerritoryId: string
+  ) => { success: boolean; message: string; expeditionId?: string };
   processTurn: () => void;
   resetGame: () => void;
   pauseTimer: () => void;
@@ -779,6 +783,73 @@ export const useGameStore = create<GameState>((set, get) => ({
     return {
       success: true,
       message: `Expedicao enviada! Chegada em ${travelTime} turno(s).`,
+      expeditionId,
+    };
+  },
+
+  sendSpy: (fromTerritoryId, toTerritoryId) => {
+    const state = get();
+
+    const from = state.territories.find((t) => t.id === fromTerritoryId);
+    const to = state.territories.find((t) => t.id === toTerritoryId);
+
+    if (!from || !to) return { success: false, message: "Territorio invalido" };
+    if (from.ownerId !== "player") return { success: false, message: "Voce so pode enviar de seus territorios" };
+    if (to.ownerId === "player") return { success: false, message: "Nao pode espionar a si mesmo" };
+
+    // Validar que território de origem tem pelo menos 1 SPY disponível
+    const spiesAvailable = from.units.find((u) => u.type === "SPY");
+    if (!spiesAvailable || spiesAvailable.quantity < 1) {
+      return { success: false, message: "Nenhum Espiao disponivel neste territorio" };
+    }
+
+    // Travel time = distância Manhattan em turnos
+    const distance = getDistance(from.position, to.position);
+    const travelTime = Math.max(1, distance);
+
+    const expeditionId = `spy-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const expedition: Expedition = {
+      id: expeditionId,
+      ownerId: "player",
+      ownerName: "Voce",
+      fromTerritoryId,
+      toTerritoryId,
+      fromPosition: from.position,
+      toPosition: to.position,
+      units: [{ type: "SPY", quantity: 1 }],
+      carriedResources: { grain: 0, wood: 0, gold: 0 },
+      turnsRemaining: travelTime,
+      totalTurns: travelTime,
+      departedTurn: state.currentTurn,
+      type: "SPY",
+    };
+
+    // Remover 1 SPY do território de origem
+    set((state) => ({
+      territories: state.territories.map((t) => {
+        if (t.id === fromTerritoryId) {
+          const newUnits = t.units.map((u) => {
+            if (u.type === "SPY") return { ...u, quantity: u.quantity - 1 };
+            return u;
+          }).filter((u) => u.quantity > 0);
+          return { ...t, units: newUnits };
+        }
+        return t;
+      }),
+      expeditions: [...state.expeditions, expedition],
+      events: [
+        {
+          turn: state.currentTurn,
+          message: `Espiao enviado para territorio ${to.position + 1}. Chegada em ${travelTime} turno(s).`,
+          type: "info" as const,
+        },
+        ...state.events.slice(0, 9),
+      ],
+    }));
+
+    return {
+      success: true,
+      message: `Espiao enviado! Chegada em ${travelTime} turno(s).`,
       expeditionId,
     };
   },

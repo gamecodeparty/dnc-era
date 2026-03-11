@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Swords, Clock, MapPin, X, ChevronDown, ChevronUp, Package, ArrowRight, ArrowLeft, Trophy, Skull, Compass } from "lucide-react";
+import { Swords, Clock, MapPin, X, ChevronDown, ChevronUp, Package, ArrowRight, ArrowLeft, Trophy, Skull, Compass, Eye } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MedievalButton } from "@/components/ui/medieval";
 import { Expedition, ExpeditionType } from "@/stores/gameStore";
@@ -28,6 +28,8 @@ const expeditionTypeLabels: Record<ExpeditionType, string> = {
   REINFORCE: "Reforco",
   EXPLORE: "Explorando",
   RETURN_EXPLORE: "Retornando (Exploracao)",
+  SPY: "Espionagem",
+  RETURN_SPY: "Espiao Retornando",
 };
 
 const expeditionTypeIcons: Record<ExpeditionType, React.ReactNode> = {
@@ -37,6 +39,8 @@ const expeditionTypeIcons: Record<ExpeditionType, React.ReactNode> = {
   REINFORCE: <ArrowRight className="w-4 h-4 text-medieval-primary" />,
   EXPLORE: <Compass className="w-4 h-4 text-era-peace" />,
   RETURN_EXPLORE: <Compass className="w-4 h-4 text-gold" />,
+  SPY: <Eye className="w-4 h-4 text-medieval-primary" />,
+  RETURN_SPY: <Eye className="w-4 h-4 text-gold" />,
 };
 
 export function ExpeditionsPanel({
@@ -196,7 +200,7 @@ function ExpeditionCard({ expedition, onCancel, canCancel = false, isEnemy = fal
       expedition.carriedResources.gold >
     0;
 
-  const isReturning = expedition.type === "RETURN_VICTORY" || expedition.type === "RETURN_DEFEAT" || expedition.type === "RETURN_EXPLORE";
+  const isReturning = expedition.type === "RETURN_VICTORY" || expedition.type === "RETURN_DEFEAT" || expedition.type === "RETURN_EXPLORE" || expedition.type === "RETURN_SPY";
 
   return (
     <div
