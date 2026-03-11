@@ -4,23 +4,13 @@ import { useGameStore } from "@/stores/gameStore";
 /**
  * Hook de timer de turno.
  * Deve ser chamado APENAS em /game/page.tsx.
- * Chama resumeTimer() no mount e pauseTimer() no unmount,
- * garantindo que sub-páginas não avancem o timer.
+ * Roda o interval de tick continuamente — não pausa ao navegar entre páginas.
+ * O timer pode ser pausado pelo store (ex: ao fim do jogo) via timerPaused.
  */
 export function useTurnTimer() {
-  const { timeRemaining, timerPaused, gameOver, tickTimer, pauseTimer, resumeTimer } =
-    useGameStore();
+  const { timeRemaining, timerPaused, gameOver, tickTimer } = useGameStore();
 
-  // Resume ao montar /game, pausa ao desmontar (navegar para sub-páginas)
-  useEffect(() => {
-    resumeTimer();
-    return () => {
-      pauseTimer();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Drive do tick — interval rodando apenas enquanto hook está montado
+  // Drive do tick — interval rodando continuamente
   useEffect(() => {
     if (gameOver) return;
     const interval = setInterval(() => tickTimer(), 1000);

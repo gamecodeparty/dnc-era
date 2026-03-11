@@ -190,7 +190,7 @@
     "id": "F-035",
     "name": "Remover pause/resume por navegação",
     "description": "Em useTurnTimer.ts: remover pauseTimer() no unmount do componente e resumeTimer() no mount. Manter apenas o interval de tick. NÃO remover timerPaused/pauseTimer()/resumeTimer() do store (podem ter usos válidos como pause quando jogo acaba). Apenas desacoplar da navegação entre páginas. Arquivo: src/hooks/useTurnTimer.ts",
-    "status": "pending",
+    "status": "passing",
     "priority": 11,
     "agent": "coder",
     "task": "vibe-code",
@@ -200,7 +200,8 @@
       "Timer continua pausando quando jogo termina (se implementado)",
       "Hook simplificado sem lógica de mount/unmount para pause"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-2/worktree/sprints/sprint-2/3-prps/PRP-010-turn-timer-config.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-2/worktree/sprints/sprint-2/3-prps/PRP-010-turn-timer-config.md",
+    "completed_at": "2026-03-11T03:25:21Z"
   },
   {
     "id": "F-034",
