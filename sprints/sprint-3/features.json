@@ -75,7 +75,7 @@
     "id": "F-037",
     "name": "Banner proeminente de sugestão de cartas no ExpeditionModal",
     "description": "Em ExpeditionModal.tsx, quando jogador tem cartas de combate disponíveis E está criando expedição de ATTACK, exibir banner proeminente ACIMA da seção de seleção de unidades. Banner mostra cada carta compatível com nome, efeito resumido e botão 'Usar'. Botão 'Ignorar cartas' colapsa o banner. Borda dourada com pulse sutil (bg-amber-900/30 border-amber-500). Filtro: ATTACK mostra cartas combat/aggression, SPY mostra espionage, EXPLORE/REINFORCE não mostra banner.",
-    "status": "pending",
+    "status": "passing",
     "priority": 5,
     "agent": "coder",
     "task": "vibe-code",
@@ -87,7 +87,8 @@
       "Banner NÃO aparece para expedições de EXPLORE ou REINFORCE",
       "Banner filtra cartas corretamente por tipo de expedição (ATTACK vs SPY)"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-012-cards-contextual-highlight.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-012-cards-contextual-highlight.md",
+    "completed_at": "2026-03-11T05:45:00Z"
   },
   {
     "id": "F-038",
