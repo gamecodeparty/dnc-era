@@ -137,6 +137,10 @@ export default function GamePage() {
   const { data: session } = useSession();
   const [selectedTerritoryId, setSelectedTerritoryId] = useState<string | null>(null);
 
+  // Troop badge toggle (F-048) — default ON during WAR/INVASION, OFF during PEACE
+  const [showTroopBadges, setShowTroopBadges] = useState<boolean>(() => currentEra !== "PEACE");
+  const [troopBadgesManuallySet, setTroopBadgesManuallySet] = useState(false);
+
   // Mobile state
   const [activeTab, setActiveTab] = useState<TabId | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -208,6 +212,13 @@ export default function GamePage() {
     SPY_SUCCESS_CHANCE_BASE + (isUmbral ? SPY_UMBRAL_BONUS : 0)
   );
   const spySuccessPercent = Math.round(spySuccessChance * 100);
+
+  // Auto-update troop badge visibility when era changes (unless manually set)
+  useEffect(() => {
+    if (!troopBadgesManuallySet) {
+      setShowTroopBadges(currentEra !== "PEACE");
+    }
+  }, [currentEra, troopBadgesManuallySet]);
 
   // Timer de turno — gerenciado pelo hook (resume no mount, pausa no unmount)
   useTurnTimer();
@@ -628,10 +639,25 @@ export default function GamePage() {
 
           {/* Main map area - Full width on mobile, center column on desktop */}
           <motion.div className="lg:col-span-6" variants={staggerItem}>
-            <div className="mb-2 sm:mb-4 text-center">
+            <div className="mb-2 sm:mb-4 flex items-center justify-between px-1">
               <p className="text-xs sm:text-sm text-medieval-text-muted font-crimson">
                 Toque em um territorio para ver detalhes
               </p>
+              <button
+                onClick={() => {
+                  setShowTroopBadges((prev) => !prev);
+                  setTroopBadgesManuallySet(true);
+                }}
+                className={`flex items-center gap-1 px-2 py-1 rounded border text-[10px] sm:text-xs font-semibold transition-colors ${
+                  showTroopBadges
+                    ? "bg-era-war/20 border-era-war/50 text-era-war"
+                    : "bg-medieval-bg-card/50 border-medieval-primary/20 text-medieval-text-muted"
+                }`}
+                title="Mostrar/esconder badges de tropas no mapa"
+              >
+                <Swords className="w-3 h-3" />
+                Tropas: {showTroopBadges ? "ON" : "OFF"}
+              </button>
             </div>
 
             {/* Mapa 4x3 - Touch friendly on mobile */}
@@ -779,8 +805,8 @@ export default function GamePage() {
                               <Coins className="w-3 h-3 sm:w-4 sm:h-4 text-gold" />
                             )}
                           </div>
-                          {/* Defense power badge (F-046) */}
-                          {isPlayer && (() => {
+                          {/* Defense power badge (F-046) — controlled by troop badge toggle (F-048) */}
+                          {showTroopBadges && isPlayer && (() => {
                             const dp = calcDefensePower(territory.units);
                             const color = dp === 0 ? "text-red-400" : dp >= avgPlayerDefensePower ? "text-green-400" : "text-yellow-400";
                             return (
@@ -790,7 +816,7 @@ export default function GamePage() {
                               </div>
                             );
                           })()}
-                          {!isPlayer && !isNeutral && (() => {
+                          {showTroopBadges && !isPlayer && !isNeutral && (() => {
                             if (isRevealed && revealedData) {
                               const dp = calcDefensePower(revealedData.units);
                               return (

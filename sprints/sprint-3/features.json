@@ -288,7 +288,7 @@
     "id": "F-048",
     "name": "Toggle de visibilidade dos badges de tropas no HUD",
     "description": "Em page.tsx ou componente de HUD, adicionar toggle '⚔ Tropas: ON/OFF' para mostrar/esconder badges de tropas no mapa. Default: ON durante Era da Guerra/Invasão, OFF durante Era da Paz. Estado persistido durante a partida (não entre partidas).",
-    "status": "pending",
+    "status": "passing",
     "priority": 16,
     "agent": "coder",
     "task": "vibe-code",
@@ -301,7 +301,8 @@
       "Default OFF durante Era da Paz",
       "Toggle muda imediatamente a visibilidade de todos os badges no mapa"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-015-troop-overview-map-badges.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-015-troop-overview-map-badges.md",
+    "completed_at": "2026-03-11T14:00:00Z"
   },
   {
     "id": "F-049",
