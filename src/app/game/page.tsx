@@ -72,6 +72,9 @@ import { ExpeditionHint } from "@/components/game/map/GameMap";
 // Results screen
 import { GameResultsScreen } from "@/components/game/results/GameResultsScreen";
 
+// Tips
+import { TipBanner } from "@/components/game/hud/TipBanner";
+
 // Timer hook
 import { useTurnTimer } from "@/hooks/useTurnTimer";
 
@@ -433,6 +436,9 @@ export default function GamePage() {
       </div>
 
       {/* FX Layers are now handled by GameAnimationProvider in layout */}
+
+      {/* Tips overlay — fixed positioning, does not affect game layout */}
+      <TipBanner />
 
       {/* Mobile Header - only visible on mobile */}
       <MobileGameHeader

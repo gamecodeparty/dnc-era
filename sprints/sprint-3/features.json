@@ -417,7 +417,7 @@
     "id": "F-055",
     "name": "Integração do sistema de dicas no layout do jogo",
     "description": "Em /src/app/game/page.tsx, adicionar useTips() hook e renderizar TipBanner no layout: const { currentTip, dismissTip } = useTips(); renderizar <TipBanner tip={currentTip} onDismiss={() => dismissTip(currentTip.id)} /> acima do conteúdo do jogo. Dicas não bloqueiam interação com o jogo (banner é overlay). Fluxo de jogo normal não é afetado.",
-    "status": "pending",
+    "status": "passing",
     "priority": 23,
     "agent": "coder",
     "task": "vibe-code",
@@ -431,6 +431,7 @@
       "Fluxo de jogo normal não é afetado pela presença de dicas",
       "Dicas corretas aparecem nos momentos certos conforme triggers do useTips"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-017-contextual-tips-system.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-3/worktree/sprints/sprint-3/3-prps/PRP-017-contextual-tips-system.md",
+    "completed_at": "2026-03-11T14:30:00Z"
   }
 ]
