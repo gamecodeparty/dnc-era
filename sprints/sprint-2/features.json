@@ -1,0 +1,271 @@
+[
+  {
+    "id": "F-020",
+    "name": "Botão Atacar no TerritoryBottomSheet",
+    "description": "Adicionar botão 'Atacar' (vermelho, ícone espada) no TerritoryBottomSheet quando território selecionado pertence a inimigo. Condições: Era == WAR ou INVASION, território de outro clã, jogador tem ≥1 território com unidades militares. Desabilitado (cinza + tooltip) na Era da Paz ('Ataques disponíveis na Era da Guerra') ou sem tropas ('Recrute unidades para atacar'). Ao clicar, emitir callback onAttack(territory) ao componente pai. Arquivo: src/components/game/mobile/TerritoryBottomSheet.tsx",
+    "status": "pending",
+    "priority": 1,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Botão aparece em territórios inimigos durante Era da Guerra/Invasão",
+      "Botão desabilitado com tooltip na Era da Paz",
+      "Botão desabilitado com tooltip se jogador sem tropas",
+      "Clique no botão dispara callback onAttack(territory)"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-2/worktree/sprints/sprint-2/3-prps/PRP-006-attack-ui-pvp.md"
+  },
+  {
+    "id": "F-021",
+    "name": "Fluxo de ataque via ExpeditionModal",
+    "description": "Conectar botão Atacar ao ExpeditionModal em modo ataque. Em page.tsx (ou componente gerenciador do mapa): adicionar estado attackTarget: Territory | null. Ao receber onAttack(territory): fechar bottom sheet, definir attackTarget, abrir ExpeditionModal com toTerritory = alvo e modo ATTACK. fromTerritory = território do jogador mais próximo com unidades. Jogador seleciona unidades (controles +/- existentes). Preview de combate atualiza em tempo real (já implementado). Confirmar chama sendExpedition() com tipo ATTACK. Arquivos: src/app/(game)/page.tsx, src/components/game/expedition/ExpeditionModal.tsx",
+    "status": "pending",
+    "priority": 2,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": ["F-020"],
+    "tests": [
+      "Clicar 'Atacar' no bottom sheet abre ExpeditionModal pré-configurado",
+      "Território de origem pré-selecionado automaticamente (mais próximo com unidades)",
+      "Preview de combate funciona com unidades selecionadas",
+      "Confirmar ataque chama sendExpedition() com tipo ATTACK"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-2/worktree/sprints/sprint-2/3-prps/PRP-006-attack-ui-pvp.md"
+  },
+  {
+    "id": "F-022",
+    "name": "Indicador visual de territórios atacáveis no mapa",
+    "description": "Em Territory.tsx: durante Era da Guerra/Invasão, territórios inimigos exibem borda com animação pulse vermelha suave (animate-pulse com ring-red-500/30). Apenas se jogador tem tropas disponíveis em algum território. Não aparece na Era da Paz. Arquivo: src/components/game/map/Territory.tsx",
+    "status": "pending",
+    "priority": 3,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Territórios inimigos têm borda pulsante vermelha durante Era da Guerra/Invasão",
+      "Indicador não aparece se jogador não tem tropas",
+      "Indicador não aparece na Era da Paz"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-2/worktree/sprints/sprint-2/3-prps/PRP-006-attack-ui-pvp.md"
+  },
+  {
+    "id": "F-023",
+    "name": "Feedback pós-ataque no log de eventos",
+    "description": "Em gameStore.ts: quando expedição ATTACK é resolvida em processTurn(), adicionar evento detalhado no log. Vitória: 'Você atacou [território] de [clã]. VITÓRIA! Conquistou o território. Saqueou: +X grão, +Y madeira, +Z ouro. Perdas: N unidades.' Derrota: 'Você atacou [território] de [clã]. DERROTA. Perdeu N soldados, M arqueiros.' Incluir campos de CombatResult no evento. Estilo visual: vitória (verde), derrota (vermelho). Arquivo: src/stores/gameStore.ts",
+    "status": "pending",
+    "priority": 4,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": ["F-021"],
+    "tests": [
+      "Resultado de ataque aparece como evento detalhado no log",
+      "Evento inclui resultado (vitória/derrota), recursos saqueados (se vitória), e perdas",
+      "Estilo visual distingue vitória (verde) de derrota (vermelho)"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-2/worktree/sprints/sprint-2/3-prps/PRP-006-attack-ui-pvp.md"
+  },
+  {
+    "id": "F-024",
+    "name": "Painel de cartas no ExpeditionModal",
+    "description": "Em ExpeditionModal.tsx: adicionar seção 'Cartas Disponíveis' entre seleção de unidades e preview. Listar apenas cartas na mão com contexto de ataque: combat (Reforços), espionage (Informante), aggression (Sabotagem). Cada carta: nome, efeito resumido, botão 'Ativar'. Ativar marca selectedCard no estado local. Apenas 1 carta por ataque. Preview recalcula bônus: Reforços attackPower*1.5, Informante remove '~' da defesa. Sem cartas: 'Sem cartas de combate disponíveis'. Cartas economia/defesa NÃO listadas. Arquivo: src/components/game/expedition/ExpeditionModal.tsx",
+    "status": "pending",
+    "priority": 5,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": ["F-021"],
+    "tests": [
+      "Seção lista cartas relevantes do jogador ao abrir modal de ataque",
+      "Ativar Reforços aumenta attackPower em 50% no preview",
+      "Ativar Informante remove aproximação '~' da defesa no preview",
+      "Apenas 1 carta ativa por ataque",
+      "Cartas irrelevantes (economia, defesa) não listadas"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-2/worktree/sprints/sprint-2/3-prps/PRP-007-cards-in-combat.md"
+  },
+  {
+    "id": "F-025",
+    "name": "Consumo de carta ao confirmar ataque",
+    "description": "Em gameStore.ts: modificar sendExpedition() para aceitar cardType: CardType | null opcional. Se carta fornecida: remover da mão (decrementar quantidade), armazenar cardBonus na expedição. Reforços: attackerCardBonus = 0.5 (passado a executeCombat). Informante: revelar unidades do território alvo. Sabotagem: flag para destruir estrutura após vitória. Em types/index.ts: adicionar campo opcional cardType ao tipo Expedition. Ataque sem carta funciona normalmente (retrocompatível). Arquivos: src/stores/gameStore.ts, src/game/types/index.ts",
+    "status": "pending",
+    "priority": 6,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": ["F-024"],
+    "tests": [
+      "Confirmar ataque com carta ativa remove carta da mão",
+      "Bônus da carta aplicado no cálculo de combate real (não só preview)",
+      "Tipo Expedition aceita cardType opcional",
+      "Ataque sem carta funciona normalmente (retrocompatível)"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-2/worktree/sprints/sprint-2/3-prps/PRP-007-cards-in-combat.md"
+  },
+  {
+    "id": "F-026",
+    "name": "Banner de onboarding de expedições no mapa",
+    "description": "Criar componente ExpeditionHint em GameMap.tsx. Aparece quando: turno >= 3, jogador nunca enviou expedição (expeditions.length === 0), existe ≥1 território neutro. Banner flutuante na parte inferior do mapa (acima do bottom nav) com texto explicativo e botão 'Entendi'. Animação fade-in (Framer Motion). 'Entendi' dispensa permanentemente via localStorage key 'dnc-expedition-hint-dismissed'. Desaparece ao enviar primeira expedição. Não bloqueia gameplay. Arquivo: src/components/game/map/GameMap.tsx",
+    "status": "pending",
+    "priority": 7,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Banner aparece no turno 3 se jogador nunca fez expedição",
+      "'Entendi' dispensa permanentemente (persiste entre sessões via localStorage)",
+      "Banner desaparece ao enviar primeira expedição",
+      "Não aparece se não há territórios neutros",
+      "Não bloqueia gameplay"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-2/worktree/sprints/sprint-2/3-prps/PRP-008-expedition-onboarding.md"
+  },
+  {
+    "id": "F-027",
+    "name": "Indicador visual de expedição em territórios neutros",
+    "description": "Em Territory.tsx: territórios neutros (sem dono) exibem ícone pequeno de bússola/mapa no canto do tile indicando expedição disponível. Tooltip no hover: 'Envie tropas para explorar este local'. Apenas se jogador tem unidades em algum território. Não interfere com outros ícones do tile. Arquivo: src/components/game/map/Territory.tsx",
+    "status": "pending",
+    "priority": 8,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Territórios neutros mostram ícone de expedição",
+      "Tooltip aparece no hover",
+      "Ícone não aparece se jogador não tem unidades",
+      "Indicador não interfere com outros ícones do tile"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-2/worktree/sprints/sprint-2/3-prps/PRP-008-expedition-onboarding.md"
+  },
+  {
+    "id": "F-028",
+    "name": "Evento HINT no log do turno 3",
+    "description": "Em gameStore.ts: no turno 3, se jogador não enviou expedições, adicionar evento ao log. Tipo: HINT. Texto: 'Seus batedores reportam locais inexplorados no mapa. Envie tropas a um território neutro para iniciar uma Expedição.' Estilo visual diferenciado (cor dourada/amber para hints). Tipo HINT adicionado ao enum de tipos de evento (se não existir). Arquivo: src/stores/gameStore.ts",
+    "status": "pending",
+    "priority": 9,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Evento HINT aparece no log no turno 3 se sem expedições",
+      "Estilo visual distinto do log normal (cor amber)",
+      "Evento não aparece se jogador já enviou expedição",
+      "Tipo HINT adicionado ao enum de tipos de evento"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-2/worktree/sprints/sprint-2/3-prps/PRP-008-expedition-onboarding.md"
+  },
+  {
+    "id": "F-033",
+    "name": "Constante configurável TURN_DURATION_MS",
+    "description": "Em balance.ts: localizar constante do timer (atualmente 10s) e renomear/ajustar para TURN_DURATION_MS com valor 30_000 (30s). Comentário documentando valores recomendados: Debug 10_000, Playtesting 30_000, Produção 600_000–1_800_000. Todos os consumidores do timer devem usar esta constante (não hardcoded). Arquivo: src/game/constants/balance.ts",
+    "status": "pending",
+    "priority": 10,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Timer usa constante de balance.ts (não hardcoded em componentes/hooks)",
+      "Valor default é 30s (30_000ms)",
+      "Alterar a constante altera o timer em todo o jogo"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-2/worktree/sprints/sprint-2/3-prps/PRP-010-turn-timer-config.md"
+  },
+  {
+    "id": "F-035",
+    "name": "Remover pause/resume por navegação",
+    "description": "Em useTurnTimer.ts: remover pauseTimer() no unmount do componente e resumeTimer() no mount. Manter apenas o interval de tick. NÃO remover timerPaused/pauseTimer()/resumeTimer() do store (podem ter usos válidos como pause quando jogo acaba). Apenas desacoplar da navegação entre páginas. Arquivo: src/hooks/useTurnTimer.ts",
+    "status": "pending",
+    "priority": 11,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Timer NÃO pausa ao navegar entre páginas do jogo",
+      "Timer continua pausando quando jogo termina (se implementado)",
+      "Hook simplificado sem lógica de mount/unmount para pause"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-2/worktree/sprints/sprint-2/3-prps/PRP-010-turn-timer-config.md"
+  },
+  {
+    "id": "F-034",
+    "name": "Formatação adaptativa e urgência visual no HUD timer",
+    "description": "No componente de HUD que exibe o timer: formatação adaptativa — ≤60s exibir segundos ('0:45'), >60s minutos:segundos ('9:45'), >60min horas:minutos ('1:30:00'). Urgência visual percentual: últimos 20% texto amarelo, últimos 10% texto vermelho com pulse. Funciona proporcionalmente a qualquer valor de TURN_DURATION_MS. Arquivo: componente de timer no HUD (EraIndicator ou similar)",
+    "status": "pending",
+    "priority": 12,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": ["F-033"],
+    "tests": [
+      "Timer exibe formato mm:ss quando duração > 60s",
+      "Urgência amarela nos últimos 20% do tempo",
+      "Urgência vermelha com pulse nos últimos 10%",
+      "Urgência funciona com qualquer valor de TURN_DURATION_MS"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-2/worktree/sprints/sprint-2/3-prps/PRP-010-turn-timer-config.md"
+  },
+  {
+    "id": "F-029",
+    "name": "Labels 'Produz X / Desbloqueia Y' no menu de construção",
+    "description": "Em TerritoryBottomSheet.tsx: para cada estrutura no menu de construção, adicionar label abaixo do nome. Farm: 'Produz: Grão (+X/turno)', Sawmill: 'Produz: Madeira (+X/turno)', Mine: 'Produz: Ouro (+X/turno)', Barracks: 'Desbloqueia: Soldado, Arqueiro', Stable: 'Desbloqueia: Cavaleiro', Wall: 'Defesa: +20% por nível', Tavern: 'Gera cartas a cada X turnos', Shadow Guild: 'Desbloqueia: Espião'. Buscar dados de structures.ts (não hardcoded). Arquivo: src/components/game/mobile/TerritoryBottomSheet.tsx",
+    "status": "pending",
+    "priority": 13,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Cada estrutura exibe o que produz/desbloqueia abaixo do nome",
+      "Informações visíveis sem hover em mobile (labels diretos)",
+      "Dados vêm de structures.ts (não hardcoded no componente)"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-2/worktree/sprints/sprint-2/3-prps/PRP-009-cost-clarity-warnings.md"
+  },
+  {
+    "id": "F-030",
+    "name": "Nomes e ícones nos custos de construção",
+    "description": "Em TerritoryBottomSheet.tsx: substituir display numérico puro por ícone + nome do recurso + quantidade. Cores consistentes: Grão = amber, Madeira = emerald, Ouro = gold. Recurso insuficiente: custo em vermelho com texto '(insuficiente)'. Para estruturas de produção (Farm, Sawmill, Mine): tooltip 'Serraria produz Madeira mas não custa Madeira para construir'. Arquivo: src/components/game/mobile/TerritoryBottomSheet.tsx",
+    "status": "pending",
+    "priority": 14,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Custos exibem nome do recurso + ícone + quantidade",
+      "Cores consistentes por tipo de recurso (amber, emerald, gold)",
+      "Recurso insuficiente: vermelho com '(insuficiente)'",
+      "Tooltip de diferenciação 'produz vs consome' em estruturas de produção"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-2/worktree/sprints/sprint-2/3-prps/PRP-009-cost-clarity-warnings.md"
+  },
+  {
+    "id": "F-031",
+    "name": "Modal de confirmação de custo proporcional",
+    "description": "Em gameStore.ts: criar função getProportionalCostWarnings(cost, resources) que retorna warnings quando custo > 80% do estoque. Em TerritoryBottomSheet.tsx: ao clicar 'Construir' ou 'Treinar', calcular warnings. Se warnings > 0: modal de confirmação com percentuais por recurso (fundo amber, ícone ⚠, 'Cancelar' proeminente, 'Confirmar' neutro). Se warnings === 0: executar ação diretamente. Funciona para construção E treino. Arquivos: src/stores/gameStore.ts, src/components/game/mobile/TerritoryBottomSheet.tsx",
+    "status": "pending",
+    "priority": 15,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": [],
+    "tests": [
+      "Modal aparece quando custo > 80% de qualquer recurso",
+      "Percentual exato por recurso afetado exibido",
+      "Cancelar retorna sem penalidade",
+      "Custo ≤ 80%: ação executa diretamente (sem modal)",
+      "Funciona para construção E treino de unidades"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-2/worktree/sprints/sprint-2/3-prps/PRP-009-cost-clarity-warnings.md"
+  },
+  {
+    "id": "F-032",
+    "name": "Indicador ⚠ inline no botão de construção",
+    "description": "Em TerritoryBottomSheet.tsx: antes de abrir o modal, indicar visualmente no botão — se custo > 80% de algum recurso, exibir ícone ⚠ ao lado do botão 'Construir'/'Treinar'. Tooltip: 'Custo elevado — usa X% do seu estoque de [recurso]'. Funciona para construção e treino. Arquivo: src/components/game/mobile/TerritoryBottomSheet.tsx",
+    "status": "pending",
+    "priority": 16,
+    "agent": "coder",
+    "task": "vibe-code",
+    "dependencies": ["F-031"],
+    "tests": [
+      "Ícone ⚠ visível no botão quando custo > 80% de algum recurso",
+      "Tooltip indica qual recurso e percentual",
+      "Funciona para construção e treino"
+    ],
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-2/worktree/sprints/sprint-2/3-prps/PRP-009-cost-clarity-warnings.md"
+  }
+]
