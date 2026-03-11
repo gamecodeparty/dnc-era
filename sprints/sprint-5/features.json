@@ -80,7 +80,7 @@
     "id": "F-085",
     "name": "Cálculo de produção total por turno no gameStore",
     "description": "Adicionar função/selector no gameStore.ts que soma produção de todas as estruturas do jogador em todos os territórios, usando PRODUCTION_PER_LEVEL de balance.ts. Incluir bônus de território (bonusResource) e bônus de facção (origin). Valor deve atualizar imediatamente ao construir/perder estrutura ou território.",
-    "status": "pending",
+    "status": "passing",
     "priority": 5,
     "agent": "coder",
     "task": "vibe-code",
@@ -91,13 +91,14 @@
       "Bônus de facção (origin) aplicados no cálculo",
       "Valor atualiza imediatamente ao construir/perder estrutura ou território"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-027-production-hud-panel.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-027-production-hud-panel.md",
+    "completed_at": "2026-03-11T19:25:00.000Z"
   },
   {
     "id": "F-086",
     "name": "Exibir produção por turno no ResourcePanel",
     "description": "Em ResourcePanel.tsx, componente pai passa valores de produção calculados por F-085. Exibir '+X' em verde (text-green-400) quando produção > 0, e '±0' em cinza (text-slate-500) quando produção = 0. Valores refletem cálculo do gameStore.",
-    "status": "blocked",
+    "status": "pending",
     "priority": 6,
     "agent": "coder",
     "task": "vibe-code",

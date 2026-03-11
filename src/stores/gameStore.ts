@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { TURN_DURATION_MS, MARKET, TERRITORY_ADJACENCY, STRUCTURE_COSTS } from "@/game/constants/balance";
+import { TURN_DURATION_MS, MARKET, TERRITORY_ADJACENCY, STRUCTURE_COSTS, PRODUCTION_PER_LEVEL, TERRITORY_BONUS_MULTIPLIER, ORIGIN_BONUSES } from "@/game/constants/balance";
 
 // Tipos
 export type Era = "PEACE" | "WAR" | "INVASION";
@@ -190,6 +190,98 @@ export function getProportionalCostWarnings(
   return warnings;
 }
 
+
+export interface ProductionBreakdownItem {
+  territoryId: string;
+  territoryPosition: number;
+  structureType: StructureType;
+  structureLevel: number;
+  baseGrain: number;
+  baseWood: number;
+  baseGold: number;
+  bonusGrain: number;
+  bonusWood: number;
+  bonusGold: number;
+}
+
+export interface ProductionResult {
+  grain: number;
+  wood: number;
+  gold: number;
+  breakdown: ProductionBreakdownItem[];
+}
+
+/** Calcula a produção total de recursos por turno do jogador.
+ *  Usa PRODUCTION_PER_LEVEL de balance.ts como fonte canônica.
+ *  Inclui bônus de território (bonusResource) e bônus de facção (origin).
+ */
+export function calculateTotalProduction(
+  playerClan: Clan,
+  playerTerritories: Territory[]
+): ProductionResult {
+  let grain = 0;
+  let wood = 0;
+  let gold = 0;
+  const breakdown: ProductionBreakdownItem[] = [];
+
+  for (const territory of playerTerritories) {
+    for (const structure of territory.structures) {
+      const levelIndex = structure.level - 1;
+      let baseGrain = 0;
+      let baseWood = 0;
+      let baseGold = 0;
+      let bonusGrain = 0;
+      let bonusWood = 0;
+      let bonusGold = 0;
+
+      if (structure.type === "FARM") {
+        const base = PRODUCTION_PER_LEVEL.FARM[levelIndex] ?? 0;
+        baseGrain = base;
+        if (territory.bonusResource === "GRAIN") {
+          bonusGrain = Math.floor(base * (TERRITORY_BONUS_MULTIPLIER - 1));
+        }
+      } else if (structure.type === "SAWMILL") {
+        const base = PRODUCTION_PER_LEVEL.SAWMILL[levelIndex] ?? 0;
+        baseWood = base;
+        if (territory.bonusResource === "WOOD") {
+          bonusWood = Math.floor(base * (TERRITORY_BONUS_MULTIPLIER - 1));
+        }
+      } else if (structure.type === "MINE") {
+        const base = PRODUCTION_PER_LEVEL.MINE[levelIndex] ?? 0;
+        baseGold = base;
+        if (territory.bonusResource === "GOLD") {
+          bonusGold = Math.floor(base * (TERRITORY_BONUS_MULTIPLIER - 1));
+        }
+      }
+
+      if (baseGrain + baseWood + baseGold > 0) {
+        breakdown.push({
+          territoryId: territory.id,
+          territoryPosition: territory.position,
+          structureType: structure.type,
+          structureLevel: structure.level,
+          baseGrain,
+          baseWood,
+          baseGold,
+          bonusGrain,
+          bonusWood,
+          bonusGold,
+        });
+        grain += baseGrain + bonusGrain;
+        wood += baseWood + bonusWood;
+        gold += baseGold + bonusGold;
+      }
+    }
+  }
+
+  // Apply origin bonus (Verdaneos: +20% grain production)
+  if (playerClan.origin === "VERDANEOS") {
+    const verdaneosBonus = Math.floor(grain * ORIGIN_BONUSES.VERDANEOS.value);
+    grain += verdaneosBonus;
+  }
+
+  return { grain, wood, gold, breakdown };
+}
 
 export const STRUCTURE_PRODUCTION: Record<StructureType, { resource?: ResourceType; amount?: number }> = {
   FARM: { resource: "GRAIN", amount: 10 },
@@ -591,6 +683,7 @@ interface GameState {
   getIncomingAttacks: (territoryId: string) => Expedition[];
   getExplorationSites: () => ExplorationSite[];
   getExplorationSite: (id: string) => ExplorationSite | undefined;
+  getPlayerProduction: () => ProductionResult;
 
   // Acoes
   build: (territoryId: string, structureType: StructureType) => boolean;
@@ -700,6 +793,13 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   getExplorationSite: (id: string) => {
     return get().explorationSites.find((s) => s.id === id);
+  },
+
+  getPlayerProduction: () => {
+    const state = get();
+    const playerClan = state.clans.find((c) => c.isPlayer)!;
+    const playerTerritories = state.territories.filter((t) => t.ownerId === "player");
+    return calculateTotalProduction(playerClan, playerTerritories);
   },
 
   build: (territoryId, structureType) => {
