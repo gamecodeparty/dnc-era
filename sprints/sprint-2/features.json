@@ -207,7 +207,7 @@
     "id": "F-034",
     "name": "Formatação adaptativa e urgência visual no HUD timer",
     "description": "No componente de HUD que exibe o timer: formatação adaptativa — ≤60s exibir segundos ('0:45'), >60s minutos:segundos ('9:45'), >60min horas:minutos ('1:30:00'). Urgência visual percentual: últimos 20% texto amarelo, últimos 10% texto vermelho com pulse. Funciona proporcionalmente a qualquer valor de TURN_DURATION_MS. Arquivo: componente de timer no HUD (EraIndicator ou similar)",
-    "status": "pending",
+    "status": "passing",
     "priority": 12,
     "agent": "coder",
     "task": "vibe-code",
@@ -220,7 +220,8 @@
       "Urgência vermelha com pulse nos últimos 10%",
       "Urgência funciona com qualquer valor de TURN_DURATION_MS"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-2/worktree/sprints/sprint-2/3-prps/PRP-010-turn-timer-config.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-2/worktree/sprints/sprint-2/3-prps/PRP-010-turn-timer-config.md",
+    "completed_at": "2026-03-11T03:30:00Z"
   },
   {
     "id": "F-029",

@@ -91,8 +91,12 @@ const eraBackgrounds: Record<EraType, string> = {
 
 function formatTime(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+  }
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
@@ -200,6 +204,13 @@ export default function GamePage() {
 
   const selectedTerritory = territories.find((t) => t.id === selectedTerritoryId);
   const timerProgress = ((TURN_DURATION_MS - timeRemaining) / TURN_DURATION_MS) * 100;
+  const timerPct = TURN_DURATION_MS > 0 ? timeRemaining / TURN_DURATION_MS : 1;
+  const timerUrgencyClass =
+    timerPct <= 0.1
+      ? "text-red-500 animate-pulse"
+      : timerPct <= 0.2
+      ? "text-yellow-400"
+      : "text-medieval-primary";
 
   // Calcula producao
   let grainProd = 0, woodProd = 0, goldProd = 0;
@@ -452,7 +463,7 @@ export default function GamePage() {
         era={currentEra as EraType}
         currentTurn={currentTurn}
         totalTurns={TOTAL_TURNS}
-        timeRemaining={timeRemaining}
+        timeRemaining={Math.floor(timeRemaining / 1000)}
         turnIntervalMs={TURN_DURATION_MS}
         onMenuClick={() => setIsDrawerOpen(true)}
         className="lg:hidden"
@@ -491,7 +502,7 @@ export default function GamePage() {
                 <Clock className="w-4 h-4 text-medieval-primary" />
                 <div className="w-20">
                   <div className="text-xs text-medieval-text-muted">Proximo</div>
-                  <div className="text-lg font-mono text-medieval-primary">
+                  <div className={`text-lg font-mono ${timerUrgencyClass}`}>
                     {formatTime(timeRemaining)}
                   </div>
                 </div>
