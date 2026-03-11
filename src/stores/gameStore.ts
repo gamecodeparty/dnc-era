@@ -1,6 +1,5 @@
 import { create } from "zustand";
-import { TURN_DURATION_MS, MARKET, TERRITORY_ADJACENCY } from "@/game/constants/balance";
-import { STRUCTURES } from "@/game/constants/structures";
+import { TURN_DURATION_MS, MARKET, TERRITORY_ADJACENCY, STRUCTURE_COSTS } from "@/game/constants/balance";
 
 // Tipos
 export type Era = "PEACE" | "WAR" | "INVASION";
@@ -711,7 +710,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (territory.structures.length >= 4) return false;
     if (territory.structures.some((s) => s.type === structureType)) return false;
 
-    const cost = STRUCTURES[structureType].costPerLevel[0];
+    const currentLevel = territory.structures.find((s: Structure) => s.type === structureType)?.level ?? 0;
+    const cost = STRUCTURE_COSTS[structureType as StructureType][currentLevel];
     if (!state.canAfford(cost)) return false;
 
     set((state) => ({
@@ -719,7 +719,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         c.isPlayer
           ? {
               ...c,
-              grain: c.grain - (cost.grain || 0),
+              grain: c.grain - ((cost as { grain?: number; wood?: number; gold?: number }).grain || 0),
               wood: c.wood - (cost.wood || 0),
               gold: c.gold - (cost.gold || 0),
             }

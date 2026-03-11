@@ -20,7 +20,7 @@
     "id": "F-082",
     "name": "Atualizar buildStructure para usar balance.ts",
     "description": "Em gameStore.ts, a função buildStructure deve importar STRUCTURE_COSTS de @/game/constants/balance e indexar pelo nível correto da estrutura (currentLevel = territory.structures[type]?.level ?? 0, cost = STRUCTURE_COSTS[type][currentLevel]). Atualizar também getResourceWarnings se referenciar STRUCTURE_COSTS local.",
-    "status": "pending",
+    "status": "passing",
     "priority": 2,
     "agent": "coder",
     "task": "vibe-code",
@@ -33,7 +33,8 @@
       "Construção de Muralha Nv1 consome 25 madeira + 10 ouro (não 50 madeira)",
       "Projeto compila sem erros"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-026-structure-costs-consolidation.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-026-structure-costs-consolidation.md",
+    "completed_at": "2026-03-11T19:15:00Z"
   },
   {
     "id": "F-083",
