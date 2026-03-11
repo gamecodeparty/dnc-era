@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Territory } from "./Territory";
 import type { TerritoryWithDetails, HordaPreview } from "@/game/types";
 import type { TerritoryIntel, IncomingAttack } from "@/stores/gameStore";
+import { TERRITORY_ADJACENCY } from "@/game/constants/balance";
 
 const HINT_DISMISSED_KEY = "dnc-expedition-hint-dismissed";
 
@@ -92,6 +93,30 @@ interface GameMapProps {
   onTerritoryClick?: (territoryId: string) => void;
 }
 
+// Precomputed deduplicated adjacency pairs (id < neighbor → no duplicates)
+const ADJACENCY_LINES: [number, number][] = [];
+for (const [posStr, neighbors] of Object.entries(TERRITORY_ADJACENCY)) {
+  const pos = Number(posStr);
+  for (const neighbor of neighbors) {
+    if (pos < neighbor) ADJACENCY_LINES.push([pos, neighbor]);
+  }
+}
+
+const GRID_COLS = 3;
+const GRID_ROWS = 4;
+const GRID_GAP = 12; // gap-3 = 0.75rem = 12px
+
+function getCellCenter(pos: number, w: number, h: number) {
+  const col = pos % GRID_COLS;
+  const row = Math.floor(pos / GRID_COLS);
+  const cellW = (w - (GRID_COLS - 1) * GRID_GAP) / GRID_COLS;
+  const cellH = (h - (GRID_ROWS - 1) * GRID_GAP) / GRID_ROWS;
+  return {
+    x: col * (cellW + GRID_GAP) + cellW / 2,
+    y: row * (cellH + GRID_GAP) + cellH / 2,
+  };
+}
+
 export function GameMap({
   territories,
   playerClanId,
@@ -107,6 +132,24 @@ export function GameMap({
   hordaPreview = null,
   onTerritoryClick,
 }: GameMapProps) {
+  const gridWrapperRef = useRef<HTMLDivElement>(null);
+  const [gridDims, setGridDims] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    const el = gridWrapperRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      if (entry) {
+        setGridDims({
+          width: entry.contentRect.width,
+          height: entry.contentRect.height,
+        });
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   // Sort territories by position
   const sortedTerritories = [...territories].sort(
     (a, b) => a.position - b.position
@@ -136,7 +179,35 @@ export function GameMap({
 
   return (
     <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
-      <div className="grid grid-cols-3 gap-3">
+      <div ref={gridWrapperRef} className="relative">
+        {/* SVG adjacency lines — rendered below territory cells */}
+        {gridDims.width > 0 && (
+          <svg
+            className="absolute inset-0 pointer-events-none"
+            width={gridDims.width}
+            height={gridDims.height}
+            style={{ zIndex: -1 }}
+            aria-hidden="true"
+          >
+            {ADJACENCY_LINES.map(([a, b]) => {
+              const ca = getCellCenter(a, gridDims.width, gridDims.height);
+              const cb = getCellCenter(b, gridDims.width, gridDims.height);
+              return (
+                <line
+                  key={`${a}-${b}`}
+                  x1={ca.x}
+                  y1={ca.y}
+                  x2={cb.x}
+                  y2={cb.y}
+                  stroke="#475569"
+                  strokeOpacity={0.3}
+                  strokeWidth={1.5}
+                />
+              );
+            })}
+          </svg>
+        )}
+        <div className="grid grid-cols-3 gap-3">
         {sortedTerritories.map((territory) => {
           const unitsCount = territory.units.reduce(
             (sum, u) => sum + u.quantity,
@@ -203,6 +274,7 @@ export function GameMap({
             />
           );
         })}
+        </div>
       </div>
 
       {/* Map legend */}

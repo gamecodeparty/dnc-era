@@ -211,7 +211,7 @@
     "id": "F-092",
     "name": "Linhas de conexão entre territórios adjacentes",
     "description": "Em GameMap.tsx, adicionar camada SVG sobreposta ao grid que renderiza linhas entre centros de territórios adjacentes usando TERRITORY_ADJACENCY de balance.ts. Linhas com cor sutil (stroke slate-600, opacity 0.3). Deduplicar pares (id < neighbor). Responsivo ao redimensionamento.",
-    "status": "pending",
+    "status": "passing",
     "priority": 12,
     "agent": "coder",
     "task": "vibe-code",
@@ -223,7 +223,8 @@
       "Sem linhas diagonais",
       "Linhas acompanham redimensionamento da grid"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-029-territory-adjacency-visualization.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-5/worktree/sprints/sprint-5/3-prps/PRP-029-territory-adjacency-visualization.md",
+    "completed_at": "2026-03-11T00:00:00Z"
   },
   {
     "id": "F-093",
