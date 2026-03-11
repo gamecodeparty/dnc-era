@@ -259,8 +259,8 @@ export function GameMap({
           const isAllied = !isPlayerOwned && territory.ownerId !== null && diplomacy[territory.ownerId] === "TRUSTED";
           const alliedDefensePower = isAllied ? calcDefensePower(territory.units) : null;
 
-          // F-069: Horda preview target — weakest player territory highlighted 1 turn before attack
-          const isHordaPreviewTarget = isPlayerOwned && hordaPreview !== null && hordaPreview.targetTerritoryId === territory.id;
+          // F-069/F-100: Horda preview target — specific weakest player territory highlighted 1 turn before attack
+          const isHordaPreviewTarget = isPlayerOwned && hordaPreview !== null && hordaPreview.targetTerritoryPosition === territory.position;
 
           const isAdjacentToSelected = adjacentToActive.has(territory.position);
 

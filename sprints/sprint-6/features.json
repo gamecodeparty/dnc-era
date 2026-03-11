@@ -136,7 +136,7 @@
     "id": "F-100",
     "name": "Badge pulsante território-alvo Horda no mapa",
     "description": "Em /src/components/game/map/Territory.tsx, quando hordaPreview.targetTerritoryPosition === territory.position e turnsUntilAttack === 1, exibir badge pulsante '💀 Alvo da Horda' com animate-pulse e borda border-red-500. Tooltip ao hover explicando a situação. Estender lógica existente de ícone caveira (linhas 158-197) para usar posição específica do hordaPreview. Badge desaparece após ataque processado.",
-    "status": "pending",
+    "status": "passing",
     "priority": 8,
     "agent": "coder",
     "task": "vibe-code",
@@ -150,7 +150,8 @@
       "Badge aparece apenas quando turnsUntilAttack === 1",
       "Badge desaparece após o ataque da Horda ser processado"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-031-horda-territory-target-display.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-031-horda-territory-target-display.md",
+    "completed_at": "2026-03-11T21:50:00.000Z"
   },
   {
     "id": "F-102",
