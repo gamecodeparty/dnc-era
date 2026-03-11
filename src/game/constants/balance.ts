@@ -37,7 +37,7 @@ export const NEUTRAL_TERRITORIES = 2;
 export const PRODUCTION_PER_LEVEL = {
   FARM: [10, 15, 20],      // Grain production
   SAWMILL: [8, 12, 16],    // Wood production
-  MINE: [5, 8, 11],        // Gold production
+  MINE: [7, 11, 15],        // Gold production
 } as const;
 
 // Territory bonus multiplier
@@ -167,12 +167,16 @@ export const ORIGIN_BONUSES = {
     value: 0.20, // +20% attack and defense
   },
   VERDANEOS: {
-    type: "grain_production" as const,
-    value: 0.20, // +20% grain from farms
+    type: "all_production" as const,
+    value: 0.15, // +15% all resource production (grain, wood, gold)
   },
   UMBRAL: {
     type: "spy_efficiency" as const,
     value: 0.30, // +30% spy effectiveness
+    secondary: {
+      type: "fog_of_war_reduction" as const,
+      value: 0.50, // reduces fog margin by 50% (±20% → ±10%)
+    },
   },
 } as const;
 

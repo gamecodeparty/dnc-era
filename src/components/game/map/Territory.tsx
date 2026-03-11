@@ -147,6 +147,7 @@ export const Territory = memo(function Territory({
         isAttackable && !isSelected && "ring-2 ring-red-500/30 animate-pulse",
         isUndefendedAlert && !isSelected && "ring-2 ring-red-500/40 animate-pulse",
         isPlayerHordaTarget && !isSelected && "ring-2 ring-red-600 ring-offset-1 ring-offset-slate-900 animate-pulse border-red-600",
+        isHordaPreviewTarget && isPlayerOwned && !isSelected && "ring-2 ring-red-500 ring-offset-1 ring-offset-slate-900 animate-pulse border-red-500",
         isPlayerOwned && "shadow-md"
       )}
     >
@@ -182,13 +183,13 @@ export const Territory = memo(function Territory({
         <div className="absolute top-1 left-1 group/hordapreview z-10">
           <div className={cn(
             "flex items-center gap-0.5 px-1 py-0.5 rounded border text-[9px] leading-none font-semibold",
-            "text-red-500 bg-red-950/70 border-red-600 animate-pulse"
+            "text-red-500 bg-red-950/70 border-red-500 animate-pulse"
           )}>
             <span>💀</span>
             <span>Alvo da Horda</span>
           </div>
           <div className="absolute left-0 top-6 invisible group-hover/hordapreview:visible z-20
-            bg-slate-900 border border-red-600/60 rounded p-2 text-xs text-slate-200
+            bg-slate-900 border border-red-500/60 rounded p-2 text-xs text-slate-200
             whitespace-nowrap shadow-lg min-w-[260px]">
             <p className="font-bold text-red-400 mb-0.5">💀 Alvo da Horda</p>
             <p className="text-slate-300">A Horda mira este território — ele tem a defesa mais fraca. Reforce antes do próximo turno!</p>

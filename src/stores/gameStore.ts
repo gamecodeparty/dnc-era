@@ -150,6 +150,8 @@ export interface IncomingAttack {
 export interface HordaPreview {
   targetClanId: string;
   targetTerritoryId: string;
+  targetTerritoryPosition: number; // F-098: posição do território-alvo (0-based)
+  targetDefensePower: number;      // F-098: poder defensivo atual do território-alvo
   arrivesTurn: number;
   strength: number;
 }
@@ -276,10 +278,12 @@ export function calculateTotalProduction(
     }
   }
 
-  // Apply origin bonus (Verdaneos: +20% grain production)
+  // Apply origin bonus (Verdaneos: +15% all production)
   if (playerClan.origin === "VERDANEOS") {
-    const verdaneosBonus = Math.floor(grain * ORIGIN_BONUSES.VERDANEOS.value);
-    grain += verdaneosBonus;
+    const bonus = ORIGIN_BONUSES.VERDANEOS.value;
+    grain += Math.floor(grain * bonus);
+    wood += Math.floor(wood * bonus);
+    gold += Math.floor(gold * bonus);
   }
 
   return { grain, wood, gold, breakdown };
@@ -688,7 +692,7 @@ interface GameState {
   getPlayerProduction: () => ProductionResult;
 
   // Acoes
-  build: (territoryId: string, structureType: StructureType) => boolean;
+  build: (territoryId: string, structureType: StructureType, confirmed?: boolean) => boolean | { needsConfirmation: true; reason: "no_production" };
   train: (territoryId: string, unitType: UnitType, quantity: number) => boolean;
   sendExpedition: (
     fromTerritoryId: string,
@@ -716,6 +720,7 @@ interface GameState {
   resumeTimer: () => void;
   tickTimer: () => void;
   markInvasionModalShown: () => void;
+  autoDistributeTroops: () => void;
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -804,7 +809,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     return calculateTotalProduction(playerClan, playerTerritories);
   },
 
-  build: (territoryId, structureType) => {
+  build: (territoryId, structureType, confirmed = false) => {
     const state = get();
     const territory = state.territories.find((t) => t.id === territoryId);
 
@@ -815,6 +820,19 @@ export const useGameStore = create<GameState>((set, get) => ({
     const currentLevel = territory.structures.find((s: Structure) => s.type === structureType)?.level ?? 0;
     const cost = STRUCTURE_COSTS[structureType as StructureType][currentLevel];
     if (!state.canAfford(cost)) return false;
+
+    if (!confirmed) {
+      const isSpecialStructure = (["SHADOW_GUILD", "TAVERN"] as StructureType[]).includes(structureType);
+      if (isSpecialStructure) {
+        const playerTerritories = state.territories.filter((t) => t.ownerId === "player");
+        const hasProductionStructure = playerTerritories.some((t) =>
+          t.structures.some((s) => (["FARM", "SAWMILL", "MINE"] as StructureType[]).includes(s.type))
+        );
+        if (!hasProductionStructure) {
+          return { needsConfirmation: true, reason: "no_production" as const };
+        }
+      }
+    }
 
     set((state) => ({
       clans: state.clans.map((c) =>
@@ -2245,6 +2263,8 @@ export const useGameStore = create<GameState>((set, get) => ({
           hordaPreview = {
             targetClanId,
             targetTerritoryId: weakestTerritory.id,
+            targetTerritoryPosition: weakestTerritory.position, // F-098
+            targetDefensePower: weakestDefense === Infinity ? 0 : weakestDefense, // F-098
             arrivesTurn: nextHordaTurn,
             strength,
           };
@@ -2375,6 +2395,58 @@ export const useGameStore = create<GameState>((set, get) => ({
     } else {
       set({ timeRemaining: state.timeRemaining - 1000 });
     }
+  },
+
+  autoDistributeTroops: () => {
+    const state = get();
+    const playerTerritories = state.territories.filter((t) => t.ownerId === "player");
+    if (playerTerritories.length <= 1) return;
+
+    // Agregar tropas estacionadas (territory.units já exclui tropas em expedições ativas)
+    const totalUnits: Record<UnitType, number> = { SOLDIER: 0, ARCHER: 0, KNIGHT: 0, SPY: 0 };
+    for (const territory of playerTerritories) {
+      for (const unit of territory.units) {
+        totalUnits[unit.type] = (totalUnits[unit.type] ?? 0) + unit.quantity;
+      }
+    }
+
+    const n = playerTerritories.length;
+
+    // Ordenar territórios por número de estruturas (mais estruturas = prioridade para remainder)
+    const sortedByStructures = [...playerTerritories].sort(
+      (a, b) => b.structures.length - a.structures.length
+    );
+
+    // Distribuição base (floor)
+    const baseDistribution: Record<string, Unit[]> = {};
+    for (const territory of playerTerritories) {
+      baseDistribution[territory.id] = (Object.entries(totalUnits) as [UnitType, number][])
+        .filter(([, count]) => count > 0 && Math.floor(count / n) > 0)
+        .map(([type, count]) => ({ type, quantity: Math.floor(count / n) }));
+    }
+
+    // Distribuir remainder para territórios com mais estruturas
+    for (const [unitType, count] of Object.entries(totalUnits) as [UnitType, number][]) {
+      const remainder = count % n;
+      for (let i = 0; i < remainder; i++) {
+        const territory = sortedByStructures[i];
+        if (!territory) break;
+        const existing = baseDistribution[territory.id]?.find((u) => u.type === unitType);
+        if (existing) {
+          existing.quantity += 1;
+        } else {
+          baseDistribution[territory.id] = baseDistribution[territory.id] ?? [];
+          baseDistribution[territory.id].push({ type: unitType, quantity: 1 });
+        }
+      }
+    }
+
+    set((state) => ({
+      territories: state.territories.map((t) => {
+        if (t.ownerId !== "player") return t;
+        return { ...t, units: baseDistribution[t.id] ?? [] };
+      }),
+    }));
   },
 }));
 

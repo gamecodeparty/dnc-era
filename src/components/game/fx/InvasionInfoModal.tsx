@@ -76,14 +76,17 @@ export function InvasionInfoModal({ isVisible, onClose, hordaTarget }: InvasionI
               Quanto mais territórios você tem, mais a Horda o perseguirá.
             </p>
 
-            {/* F-070: Horda target territory info */}
+            {/* F-099: Alvo previsto — só aparece quando turnsUntilAttack === 1 (hordaTarget não-nulo) */}
             {hordaTarget && (
-              <div className="mb-5 p-3 rounded border border-red-800/60 bg-red-950/30">
-                <p className="text-white/90 font-crimson text-sm font-semibold mb-1.5">
-                  ☠ Alvo atual: Território T{hordaTarget.position + 1} (defesa: {hordaTarget.defensePower})
+              <div className="mb-5 p-3 rounded border border-red-700/70 bg-red-950/40 space-y-2">
+                <p className="text-white/95 font-crimson text-sm font-semibold">
+                  ⚔️ Alvo Previsto: Território {hordaTarget.position + 1}
                 </p>
-                <p className="text-yellow-400/80 font-crimson text-xs">
-                  💡 Reforce este território ou a Horda pode mudar para outro alvo.
+                <p className="text-white/80 font-crimson text-sm">
+                  🛡️ Defesa atual: {hordaTarget.defensePower} poder
+                </p>
+                <p className="text-yellow-400/90 font-crimson text-sm">
+                  ⚠️ Reforce este território — ou a Horda pode mudar para outro alvo mais fraco
                 </p>
               </div>
             )}

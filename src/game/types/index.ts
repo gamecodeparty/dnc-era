@@ -163,15 +163,18 @@ export interface CardDefinition {
 // ORIGINS
 // ==============================================================================
 
+export interface OriginBonus {
+  type: "military_strength" | "grain_production" | "all_production" | "spy_efficiency" | "fog_of_war_reduction";
+  value: number;
+  secondary?: OriginBonus;
+}
+
 export interface OriginDefinition {
   id: ClanOrigin;
   name: string;
   description: string;
   specialization: string;
-  bonus: {
-    type: "military_strength" | "grain_production" | "spy_efficiency";
-    value: number;
-  };
+  bonus: OriginBonus;
   color: string;
   bonusLabel: string;
   bonusIcon: string;
@@ -230,6 +233,8 @@ export interface TerritoryIntel {
 export interface HordaPreview {
   targetClanId: string;
   targetTerritoryId: string;
+  targetTerritoryPosition: number; // F-098: posição do território-alvo (0-based)
+  targetDefensePower: number;      // F-098: poder defensivo atual do território-alvo
   arrivesTurn: number;
   strength: number;
 }

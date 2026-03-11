@@ -32,8 +32,8 @@ export const ORIGINS: Record<string, OriginDefinition> = {
     },
     color: "#22c55e", // Green
     bonusIcon: "🌾",
-    bonusLabel: "+20% produção de grão",
-    bonusTooltip: "Fazendas Verdaneas produzem 20% mais grão por turno — sustento garantido mesmo em tempos de guerra.",
+    bonusLabel: "+15% produção de todos os recursos",
+    bonusTooltip: "Verdâneos produzem 15% mais grão, madeira e ouro em todas as estruturas de produção.",
   },
   UMBRAL: {
     id: "UMBRAL",
@@ -47,8 +47,8 @@ export const ORIGINS: Record<string, OriginDefinition> = {
     },
     color: "#8b5cf6", // Purple
     bonusIcon: "🗡",
-    bonusLabel: "+30% eficiência de espiões",
-    bonusTooltip: "Espiões Umbral têm 30% mais chance de sucesso em missões de reconhecimento e sabotagem.",
+    bonusLabel: "+30% eficiência de espiões | Estimativas 50% mais precisas",
+    bonusTooltip: "Umbral tem 30% mais chance de sucesso em espionagem e estimativas de força inimiga com margem de erro reduzida (±10% vs ±20%).",
   },
 } as const;
 
