@@ -110,6 +110,12 @@ export type CombatOutcome =
   | "DRAW"
   | "DEFEAT";
 
+export type CombatPreviewOutcome =
+  | "decisive_victory"
+  | "victory"
+  | "uncertain"
+  | "defeat";
+
 export interface CombatResult {
   outcome: CombatOutcome;
   attackerLosses: UnitGroup[];
@@ -121,11 +127,14 @@ export interface CombatResult {
 }
 
 export interface CombatPreview {
-  attackerPower: number;
-  defenderPower: number;
+  attackPower: number;
+  defensePower: number;
+  ratio: number;
+  outcome: CombatPreviewOutcome;
   attackerModifiers: string[];
   defenderModifiers: string[];
-  estimatedOutcome: CombatOutcome;
+  /** True when defender territory is AI-owned and not in revealedTerritories — defense value is approximate */
+  isApproximate: boolean;
 }
 
 // ==============================================================================

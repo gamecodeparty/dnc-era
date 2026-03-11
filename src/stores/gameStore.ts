@@ -3,12 +3,12 @@ import { create } from "zustand";
 // Tipos
 export type Era = "PEACE" | "WAR" | "INVASION";
 export type ResourceType = "GRAIN" | "WOOD" | "GOLD";
-export type StructureType = "FARM" | "SAWMILL" | "MINE" | "BARRACKS" | "STABLE" | "WALL";
-export type UnitType = "SOLDIER" | "ARCHER" | "KNIGHT";
+export type StructureType = "FARM" | "SAWMILL" | "MINE" | "BARRACKS" | "STABLE" | "WALL" | "SHADOW_GUILD";
+export type UnitType = "SOLDIER" | "ARCHER" | "KNIGHT" | "SPY";
 export type DiplomacyRelation = "TRUSTED" | "NEUTRAL" | "HOSTILE";
 export type AIPersonality = "CONQUEROR" | "DEFENDER" | "OPPORTUNIST" | "MERCHANT";
 export type ClanOrigin = "FERRONATOS" | "VERDANEOS" | "UMBRAL";
-export type ExpeditionType = "ATTACK" | "EXPLORE" | "RETURN_VICTORY" | "RETURN_DEFEAT" | "RETURN_EXPLORE" | "REINFORCE";
+export type ExpeditionType = "ATTACK" | "EXPLORE" | "RETURN_VICTORY" | "RETURN_DEFEAT" | "RETURN_EXPLORE" | "REINFORCE" | "SPY" | "RETURN_SPY";
 
 // Tipos de locais de exploracao
 export type ExplorationSiteType =
@@ -87,6 +87,19 @@ export interface GameEvent {
   turn: number;
   message: string;
   type: "info" | "success" | "warning" | "danger";
+  // Optional COMBAT fields (F-015)
+  eventKind?: "COMBAT";
+  result?: "victory" | "defeat" | "draw";
+  attackerClanId?: string;
+  attackerClanName?: string;
+  defenderClanId?: string;
+  defenderClanName?: string;
+  territoryId?: string;
+  territoryName?: string;
+  attackerLosses?: number;
+  defenderLosses?: number;
+  territoryConquered?: boolean;
+  isPlayerInvolved?: boolean;
 }
 
 export interface Expedition {
@@ -109,7 +122,17 @@ export interface Expedition {
   type: ExpeditionType;
 }
 
+export interface RevealedTerritory {
+  units: Unit[];
+  structures: Structure[];
+  revealedAt: number;  // turno em que foi revelado
+  expiresAt: number;   // revealedAt + 5
+}
+
 // Constantes
+export const SPY_SUCCESS_CHANCE_BASE = 0.7;   // 70% base
+export const SPY_UMBRAL_BONUS = 0.3;           // +30% para Umbral = 100%
+export const SPY_REVEAL_DURATION = 5;          // expira após 5 turnos
 export const TURN_INTERVAL_MS = 10 * 1000; // 10 segundos para teste
 export const TOTAL_TURNS = 50;
 
@@ -120,6 +143,7 @@ export const STRUCTURE_COSTS: Record<StructureType, { grain?: number; wood?: num
   BARRACKS: { grain: 30, wood: 40 },
   STABLE: { grain: 50, wood: 60, gold: 30 },
   WALL: { wood: 50, gold: 20 },
+  SHADOW_GUILD: { wood: 20, gold: 30 },
 };
 
 export const STRUCTURE_PRODUCTION: Record<StructureType, { resource?: ResourceType; amount?: number }> = {
@@ -129,18 +153,21 @@ export const STRUCTURE_PRODUCTION: Record<StructureType, { resource?: ResourceTy
   BARRACKS: {},
   STABLE: {},
   WALL: {},
+  SHADOW_GUILD: {},
 };
 
 export const UNIT_COSTS: Record<UnitType, { grain?: number; wood?: number; gold?: number }> = {
   SOLDIER: { grain: 10, gold: 5 },
   ARCHER: { grain: 8, wood: 5, gold: 8 },
   KNIGHT: { grain: 20, gold: 25 },
+  SPY: { grain: 5, gold: 10 },
 };
 
 export const UNIT_STATS: Record<UnitType, { atk: number; def: number; speed: number; carryCapacity: number }> = {
   SOLDIER: { atk: 10, def: 8, speed: 1, carryCapacity: 20 },
   ARCHER: { atk: 12, def: 5, speed: 1, carryCapacity: 10 },
   KNIGHT: { atk: 20, def: 15, speed: 2, carryCapacity: 30 },
+  SPY: { atk: 0, def: 0, speed: 2, carryCapacity: 0 },
 };
 
 // Constantes de mapa (4 colunas x 3 linhas = 12 territórios)
@@ -350,6 +377,95 @@ export function getDefensePower(units: Unit[], wallLevel: number = 0): number {
   return Math.floor(power * (1 + wallLevel * 0.2));
 }
 
+export type CombatPreviewOutcome = "decisive_victory" | "victory" | "uncertain" | "defeat";
+
+export interface CombatPreview {
+  attackPower: number;
+  defensePower: number;
+  ratio: number;
+  outcome: CombatPreviewOutcome;
+  attackerModifiers: string[];
+  defenderModifiers: string[];
+  /** True when defender territory is AI-owned and not in revealedTerritories — defense value is approximate */
+  isApproximate: boolean;
+}
+
+const FACTION_MILITARY_BONUS = 0.20; // FERRONATOS: +20% attack and defense
+const WALL_DEFENSE_BONUS_PER_LEVEL = 0.20; // +20% defense per wall level
+const DECISIVE_VICTORY_RATIO = 1.5;
+
+export function calculateCombatPreview(
+  attackingUnits: Unit[],
+  defenderTerritory: Territory,
+  attackerOrigin: ClanOrigin | undefined,
+  defenderOrigin: ClanOrigin | undefined,
+  revealedTerritories?: Set<string>
+): CombatPreview {
+  const attackerModifiers: string[] = [];
+  const defenderModifiers: string[] = [];
+
+  // Calculate raw attack power
+  let attackPower = 0;
+  for (const unit of attackingUnits) {
+    attackPower += unit.quantity * UNIT_STATS[unit.type].atk;
+  }
+
+  // Faction attack bonus (Ferronatos: +20% military)
+  if (attackerOrigin === "FERRONATOS") {
+    attackPower *= 1 + FACTION_MILITARY_BONUS;
+    attackerModifiers.push(`Ferronatos: +${FACTION_MILITARY_BONUS * 100}% atk`);
+  }
+
+  // Calculate raw defense power from defending units
+  let defensePower = 0;
+  for (const unit of defenderTerritory.units) {
+    defensePower += unit.quantity * UNIT_STATS[unit.type as UnitType].def;
+  }
+
+  // Wall defense bonus
+  const wall = defenderTerritory.structures.find((s) => s.type === "WALL");
+  if (wall) {
+    const wallBonus = wall.level * WALL_DEFENSE_BONUS_PER_LEVEL;
+    defensePower *= 1 + wallBonus;
+    defenderModifiers.push(`Muralha Nv${wall.level}: +${wallBonus * 100}% def`);
+  }
+
+  // Faction defense bonus (Ferronatos: +20% military)
+  if (defenderOrigin === "FERRONATOS") {
+    defensePower *= 1 + FACTION_MILITARY_BONUS;
+    defenderModifiers.push(`Ferronatos: +${FACTION_MILITARY_BONUS * 100}% def`);
+  }
+
+  attackPower = Math.floor(attackPower);
+  defensePower = Math.floor(defensePower);
+
+  // Fog-of-war: AI territory not revealed by SPY gets approximate defense value
+  const isAiOwned = defenderTerritory.ownerId !== null && defenderTerritory.ownerId !== "player";
+  const isRevealed = revealedTerritories ? revealedTerritories.has(defenderTerritory.id) : false;
+  const isApproximate = isAiOwned && !isRevealed;
+
+  if (isApproximate) {
+    // Apply ±20% margin of error: show a rounded approximation
+    const FOG_MARGIN = 0.2;
+    defensePower = Math.floor(defensePower * (1 + FOG_MARGIN));
+  }
+
+  const ratio = defensePower > 0 ? Math.round((attackPower / defensePower) * 100) / 100 : 10;
+
+  let outcome: CombatPreviewOutcome;
+  if (ratio > DECISIVE_VICTORY_RATIO) {
+    outcome = "decisive_victory";
+  } else if (ratio > 1.0) {
+    outcome = "victory";
+  } else if (ratio > 0.7) {
+    outcome = "uncertain";
+  } else {
+    outcome = "defeat";
+  }
+
+  return { attackPower, defensePower, ratio, outcome, attackerModifiers, defenderModifiers, isApproximate };
+}
+
 // Estado inicial
 function createInitialTerritories(): Territory[] {
   const bonuses: ResourceType[] = ["GRAIN", "WOOD", "GOLD", "GRAIN", "WOOD", "GOLD", "GRAIN", "WOOD", "GOLD", "GRAIN", "WOOD", "GOLD"];
@@ -397,6 +513,9 @@ interface GameState {
   diplomacy: DiplomacyState;
   expeditions: Expedition[];
   explorationSites: ExplorationSite[];
+  timerPaused: boolean;
+  timeRemaining: number;
+  revealedTerritories: Record<string, RevealedTerritory>;
 
   // Getters
   getPlayerClan: () => Clan;
@@ -427,8 +546,15 @@ interface GameState {
     siteId: string,
     units: { type: UnitType; quantity: number }[]
   ) => { success: boolean; message: string; expeditionId?: string };
+  sendSpy: (
+    fromTerritoryId: string,
+    toTerritoryId: string
+  ) => { success: boolean; message: string; expeditionId?: string };
   processTurn: () => void;
   resetGame: () => void;
+  pauseTimer: () => void;
+  resumeTimer: () => void;
+  tickTimer: () => void;
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -442,6 +568,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   diplomacy: createInitialDiplomacy(),
   expeditions: [],
   explorationSites: createRandomExplorationSites(),
+  timerPaused: false,
+  timeRemaining: TURN_INTERVAL_MS,
+  revealedTerritories: {},
 
   getPlayerClan: () => {
     return get().clans.find((c) => c.isPlayer)!;
@@ -542,12 +671,14 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     if (!territory || territory.ownerId !== "player") return false;
 
-    // Verifica se tem quartel/estabulo
+    // Verifica se tem quartel/estabulo/guilda
     const hasBarracks = territory.structures.some((s) => s.type === "BARRACKS");
     const hasStable = territory.structures.some((s) => s.type === "STABLE");
+    const hasShadowGuild = territory.structures.some((s) => s.type === "SHADOW_GUILD");
 
     if (unitType === "KNIGHT" && !hasStable) return false;
     if ((unitType === "SOLDIER" || unitType === "ARCHER") && !hasBarracks) return false;
+    if (unitType === "SPY" && !hasShadowGuild) return false;
 
     const cost = UNIT_COSTS[unitType];
     const totalCost = {
@@ -677,6 +808,73 @@ export const useGameStore = create<GameState>((set, get) => ({
     return {
       success: true,
       message: `Expedicao enviada! Chegada em ${travelTime} turno(s).`,
+      expeditionId,
+    };
+  },
+
+  sendSpy: (fromTerritoryId, toTerritoryId) => {
+    const state = get();
+
+    const from = state.territories.find((t) => t.id === fromTerritoryId);
+    const to = state.territories.find((t) => t.id === toTerritoryId);
+
+    if (!from || !to) return { success: false, message: "Territorio invalido" };
+    if (from.ownerId !== "player") return { success: false, message: "Voce so pode enviar de seus territorios" };
+    if (to.ownerId === "player") return { success: false, message: "Nao pode espionar a si mesmo" };
+
+    // Validar que território de origem tem pelo menos 1 SPY disponível
+    const spiesAvailable = from.units.find((u) => u.type === "SPY");
+    if (!spiesAvailable || spiesAvailable.quantity < 1) {
+      return { success: false, message: "Nenhum Espiao disponivel neste territorio" };
+    }
+
+    // Travel time = distância Manhattan em turnos
+    const distance = getDistance(from.position, to.position);
+    const travelTime = Math.max(1, distance);
+
+    const expeditionId = `spy-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const expedition: Expedition = {
+      id: expeditionId,
+      ownerId: "player",
+      ownerName: "Voce",
+      fromTerritoryId,
+      toTerritoryId,
+      fromPosition: from.position,
+      toPosition: to.position,
+      units: [{ type: "SPY", quantity: 1 }],
+      carriedResources: { grain: 0, wood: 0, gold: 0 },
+      turnsRemaining: travelTime,
+      totalTurns: travelTime,
+      departedTurn: state.currentTurn,
+      type: "SPY",
+    };
+
+    // Remover 1 SPY do território de origem
+    set((state) => ({
+      territories: state.territories.map((t) => {
+        if (t.id === fromTerritoryId) {
+          const newUnits = t.units.map((u) => {
+            if (u.type === "SPY") return { ...u, quantity: u.quantity - 1 };
+            return u;
+          }).filter((u) => u.quantity > 0);
+          return { ...t, units: newUnits };
+        }
+        return t;
+      }),
+      expeditions: [...state.expeditions, expedition],
+      events: [
+        {
+          turn: state.currentTurn,
+          message: `Espiao enviado para territorio ${to.position + 1}. Chegada em ${travelTime} turno(s).`,
+          type: "info" as const,
+        },
+        ...state.events.slice(0, 9),
+      ],
+    }));
+
+    return {
+      success: true,
+      message: `Espiao enviado! Chegada em ${travelTime} turno(s).`,
       expeditionId,
     };
   },
@@ -901,6 +1099,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   processTurn: () => {
     const state = get();
 
+    if (state.timerPaused) return;
     if (state.gameOver) return;
     if (state.currentTurn >= TOTAL_TURNS) {
       set({ gameOver: true, winner: "player" });
@@ -947,6 +1146,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const returnedTroops: { territoryId: string; units: Unit[]; resources: { grain: number; wood: number; gold: number } }[] = [];
     const lootedClans: { clanId: string; grain: number; wood: number; gold: number }[] = [];
     const exploredSites: { siteId: string; turn: number }[] = [];
+    const spyReveals: { territoryId: string; units: Unit[]; structures: Structure[]; revealedAt: number; expiresAt: number }[] = [];
 
     for (const exp of state.expeditions) {
       const newTurnsRemaining = exp.turnsRemaining - 1;
@@ -1012,10 +1212,26 @@ export const useGameStore = create<GameState>((set, get) => ({
                 type: "RETURN_VICTORY",
               });
 
+              const origCount = exp.units.reduce((s: number, u: Unit) => s + u.quantity, 0);
+              const survivorCount = survivors.reduce((s: number, u: Unit) => s + u.quantity, 0);
+              const atkLosses = origCount - survivorCount;
+              const defLosses = targetTerritory.units.reduce((s: number, u: Unit) => s + u.quantity, 0);
               expeditionEvents.push({
                 turn: newTurn,
                 message: `VITORIA! Territorio ${targetTerritory.position + 1} conquistado! Tropas retornando com saque.`,
                 type: "success",
+                eventKind: "COMBAT",
+                result: "victory",
+                attackerClanId: exp.ownerId,
+                attackerClanName: exp.ownerName,
+                defenderClanId: targetTerritory.ownerId ?? "neutral",
+                defenderClanName: targetTerritory.ownerName,
+                territoryId: targetTerritory.id,
+                territoryName: `Territorio ${targetTerritory.position + 1}`,
+                attackerLosses: atkLosses,
+                defenderLosses: defLosses,
+                territoryConquered: true,
+                isPlayerInvolved: true,
               });
             } else {
               // Derrota - calcular perdas (60-80%)
@@ -1045,10 +1261,26 @@ export const useGameStore = create<GameState>((set, get) => ({
                 });
               }
 
+              const defOrigCount = exp.units.reduce((s: number, u: Unit) => s + u.quantity, 0);
+              const defSurvivorCount = survivors.reduce((s: number, u: Unit) => s + u.quantity, 0);
+              const defAtkLosses = defOrigCount - defSurvivorCount;
+              const defDefLosses = Math.floor(attackPower / 10);
               expeditionEvents.push({
                 turn: newTurn,
                 message: `DERROTA! Ataque ao territorio ${targetTerritory.position + 1} falhou! Sobreviventes em fuga.`,
                 type: "danger",
+                eventKind: "COMBAT",
+                result: "defeat",
+                attackerClanId: exp.ownerId,
+                attackerClanName: exp.ownerName,
+                defenderClanId: targetTerritory.ownerId ?? "neutral",
+                defenderClanName: targetTerritory.ownerName,
+                territoryId: targetTerritory.id,
+                territoryName: `Territorio ${targetTerritory.position + 1}`,
+                attackerLosses: defAtkLosses,
+                defenderLosses: defDefLosses,
+                territoryConquered: false,
+                isPlayerInvolved: true,
               });
             }
           }
@@ -1193,6 +1425,74 @@ export const useGameStore = create<GameState>((set, get) => ({
               type: "info",
             });
           }
+        } else if (exp.type === "SPY") {
+          // Espião chegou ao território alvo — resolver espionagem
+          const targetTerritory = state.territories.find((t) => t.id === exp.toTerritoryId);
+          if (targetTerritory) {
+            // Calcular chance de sucesso
+            const spyOwnerClan = state.clans.find((c) => c.id === exp.ownerId);
+            const isUmbral = spyOwnerClan?.origin === "UMBRAL";
+            const successChance = isUmbral
+              ? SPY_SUCCESS_CHANCE_BASE + SPY_UMBRAL_BONUS  // 100%
+              : SPY_SUCCESS_CHANCE_BASE;                     // 70%
+
+            const roll = Math.random();
+            const spySuccess = roll < successChance;
+
+            if (spySuccess) {
+              // Sucesso: revelar território
+              spyReveals.push({
+                territoryId: exp.toTerritoryId,
+                units: [...targetTerritory.units],
+                structures: [...targetTerritory.structures],
+                revealedAt: newTurn,
+                expiresAt: newTurn + SPY_REVEAL_DURATION,
+              });
+
+              // Criar expedição de retorno para o espião
+              const returnTime = exp.totalTurns;
+              updatedExpeditions.push({
+                id: `spy-ret-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                ownerId: exp.ownerId,
+                ownerName: exp.ownerName,
+                fromTerritoryId: exp.toTerritoryId,
+                toTerritoryId: exp.fromTerritoryId,
+                fromPosition: exp.toPosition,
+                toPosition: exp.fromPosition,
+                units: [{ type: "SPY", quantity: 1 }],
+                carriedResources: { grain: 0, wood: 0, gold: 0 },
+                turnsRemaining: returnTime,
+                totalTurns: returnTime,
+                departedTurn: newTurn,
+                type: "RETURN_SPY",
+              });
+
+              expeditionEvents.push({
+                turn: newTurn,
+                message: `Espiao infiltrado com sucesso! Territorio ${targetTerritory.position + 1} revelado por ${SPY_REVEAL_DURATION} turnos.`,
+                type: "success",
+              });
+            } else {
+              // Falha: espião capturado
+              expeditionEvents.push({
+                turn: newTurn,
+                message: `Espiao capturado no territorio ${targetTerritory.position + 1}! Missao fracassou.`,
+                type: "danger",
+              });
+            }
+          }
+        } else if (exp.type === "RETURN_SPY") {
+          // Espião retornando para casa
+          returnedTroops.push({
+            territoryId: exp.toTerritoryId,
+            units: exp.units,
+            resources: exp.carriedResources,
+          });
+          expeditionEvents.push({
+            turn: newTurn,
+            message: `Espiao retornou com informacoes do territorio inimigo.`,
+            type: "info",
+          });
         }
       } else {
         // Expedição ainda em trânsito
@@ -1257,7 +1557,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const aiActions = processAI(updatedTerritories, updatedClans, newEra);
 
     aiActions.forEach((action) => {
-      newEvents.push({ turn: newTurn, message: action.message, type: "warning" });
+      newEvents.push({ turn: newTurn, message: action.message, type: "warning", ...(action.combatData ?? {}) });
       if (action.territories) updatedTerritories = action.territories;
       if (action.clans) updatedClans = action.clans;
     });
@@ -1323,6 +1623,24 @@ export const useGameStore = create<GameState>((set, get) => ({
       );
     }
 
+    // Atualizar revealedTerritories: aplicar novas revelações e remover expiradas
+    let updatedRevealedTerritories: Record<string, RevealedTerritory> = {};
+    // Manter entradas não expiradas
+    for (const [territoryId, revealed] of Object.entries(state.revealedTerritories) as [string, RevealedTerritory][]) {
+      if (revealed.expiresAt > newTurn) {
+        updatedRevealedTerritories[territoryId] = revealed;
+      }
+    }
+    // Adicionar novas revelações
+    for (const reveal of spyReveals) {
+      updatedRevealedTerritories[reveal.territoryId] = {
+        units: reveal.units,
+        structures: reveal.structures,
+        revealedAt: reveal.revealedAt,
+        expiresAt: reveal.expiresAt,
+      };
+    }
+
     // Atualiza estado
     set((state) => ({
       currentTurn: newTurn,
@@ -1340,6 +1658,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       ),
       expeditions: updatedExpeditions,
       explorationSites: updatedExplorationSites,
+      revealedTerritories: updatedRevealedTerritories,
       events: [...allEvents, ...state.events.slice(0, 10 - allEvents.length)],
     }));
 
@@ -1365,13 +1684,42 @@ export const useGameStore = create<GameState>((set, get) => ({
       diplomacy: createInitialDiplomacy(),
       expeditions: [],
       explorationSites: createRandomExplorationSites(),
+      timerPaused: false,
+      timeRemaining: TURN_INTERVAL_MS,
+      revealedTerritories: {},
     });
+  },
+
+  pauseTimer: () => {
+    set({ timerPaused: true });
+  },
+
+  resumeTimer: () => {
+    set({ timerPaused: false });
+  },
+
+  tickTimer: () => {
+    const state = get();
+    if (state.timerPaused || state.gameOver) return;
+    if (state.timeRemaining <= 1000) {
+      set({ timeRemaining: TURN_INTERVAL_MS });
+      get().processTurn();
+    } else {
+      set({ timeRemaining: state.timeRemaining - 1000 });
+    }
   },
 }));
 
 // IA simples
+type AIAction = {
+  message: string;
+  territories?: Territory[];
+  clans?: Clan[];
+  combatData?: Omit<GameEvent, "turn" | "message" | "type">;
+};
+
 function processAI(territories: Territory[], clans: Clan[], era: Era) {
-  const actions: { message: string; territories?: Territory[]; clans?: Clan[] }[] = [];
+  const actions: AIAction[] = [];
 
   const aiIds = ["ai1", "ai2", "ai3", "ai4"];
   let updatedTerritories = [...territories];
@@ -1418,7 +1766,23 @@ function processAI(territories: Territory[], clans: Clan[], era: Era) {
         updatedTerritories = updatedTerritories.map((t) =>
           t.id === target.id ? { ...t, ownerId: aiId, ownerName: clan.name } : t
         );
-        actions.push({ message: `${clan.name} conquistou territorio ${target.position + 1}!` });
+        actions.push({
+          message: `${clan.name} conquistou territorio ${target.position + 1}!`,
+          combatData: {
+            eventKind: "COMBAT",
+            result: "victory",
+            attackerClanId: aiId,
+            attackerClanName: clan.name,
+            defenderClanId: target.ownerId ?? "neutral",
+            defenderClanName: target.ownerName,
+            territoryId: target.id,
+            territoryName: `Territorio ${target.position + 1}`,
+            attackerLosses: 0,
+            defenderLosses: target.units.reduce((s, u) => s + u.quantity, 0),
+            territoryConquered: true,
+            isPlayerInvolved: false,
+          },
+        });
       }
     }
   });

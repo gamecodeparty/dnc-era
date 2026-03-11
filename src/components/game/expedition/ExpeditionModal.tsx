@@ -1,19 +1,22 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { X, Swords, MapPin, Clock, Package, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
+import { X, Swords, MapPin, Clock, Package, ChevronDown, ChevronUp, AlertTriangle, Shield, HelpCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MedievalButton } from "@/components/ui/medieval";
 import {
   Territory,
   Unit,
   UnitType,
+  ClanOrigin,
   UNIT_STATS,
   getDistance,
   getTravelTime,
   getCarryCapacity,
   getAttackPower,
+  calculateCombatPreview,
 } from "@/stores/gameStore";
+import type { CombatPreviewOutcome } from "@/game/types";
 
 interface ExpeditionModalProps {
   /** Origin territory */
@@ -24,6 +27,12 @@ interface ExpeditionModalProps {
   playerTerritories: Territory[];
   /** Current game era */
   currentEra: "PEACE" | "WAR" | "INVASION";
+  /** Attacker clan origin for combat preview */
+  attackerOrigin?: ClanOrigin;
+  /** Defender clan origin for combat preview */
+  defenderOrigin?: ClanOrigin;
+  /** Territory IDs revealed by SPY — undefined means no territories revealed (PRP-004 integration) */
+  revealedTerritories?: Set<string>;
   /** Called when expedition is sent */
   onSend: (
     fromTerritoryId: string,
@@ -34,16 +43,25 @@ interface ExpeditionModalProps {
   onClose: () => void;
 }
 
+const outcomeConfig: Record<CombatPreviewOutcome, { label: string; colorClass: string; borderClass: string; bgClass: string }> = {
+  decisive_victory: { label: "Vitória Decisiva", colorClass: "text-clan-verdaneos", borderClass: "border-clan-verdaneos/30", bgClass: "bg-clan-verdaneos/10" },
+  victory: { label: "Vitória", colorClass: "text-era-peace", borderClass: "border-era-peace/30", bgClass: "bg-era-peace/10" },
+  uncertain: { label: "Incerto", colorClass: "text-grain", borderClass: "border-grain/30", bgClass: "bg-grain/10" },
+  defeat: { label: "Derrota", colorClass: "text-era-war", borderClass: "border-era-war/30", bgClass: "bg-era-war/10" },
+};
+
 const unitLabels: Record<UnitType, string> = {
   SOLDIER: "Soldados",
   ARCHER: "Arqueiros",
   KNIGHT: "Cavaleiros",
+  SPY: "Espioes",
 };
 
 const unitIcons: Record<UnitType, string> = {
   SOLDIER: "🗡️",
   ARCHER: "🏹",
   KNIGHT: "🐴",
+  SPY: "🕵️",
 };
 
 export function ExpeditionModal({
@@ -51,6 +69,9 @@ export function ExpeditionModal({
   toTerritory,
   playerTerritories,
   currentEra,
+  attackerOrigin,
+  defenderOrigin,
+  revealedTerritories,
   onSend,
   onClose,
 }: ExpeditionModalProps) {
@@ -63,6 +84,7 @@ export function ExpeditionModal({
     SOLDIER: 0,
     ARCHER: 0,
     KNIGHT: 0,
+    SPY: 0,
   });
 
   // UI state
@@ -75,6 +97,7 @@ export function ExpeditionModal({
       SOLDIER: 0,
       ARCHER: 0,
       KNIGHT: 0,
+      SPY: 0,
     };
     for (const unit of fromTerritory.units) {
       if (unit.type in available) {
@@ -109,6 +132,12 @@ export function ExpeditionModal({
     };
   }, [selectedUnits, fromTerritory.position, toTerritory.position]);
 
+  // Combat preview (recalculates in real time as units are added/removed)
+  const combatPreview = useMemo(() => {
+    if (expeditionStats.totalUnits === 0) return null;
+    return calculateCombatPreview(expeditionStats.units, toTerritory, attackerOrigin, defenderOrigin, revealedTerritories);
+  }, [expeditionStats.units, expeditionStats.totalUnits, toTerritory, attackerOrigin, defenderOrigin, revealedTerritories]);
+
   // Handle unit quantity change
   const handleUnitChange = (type: UnitType, delta: number) => {
     setSelectedUnits((prev) => {
@@ -124,6 +153,7 @@ export function ExpeditionModal({
       SOLDIER: availableUnits.SOLDIER,
       ARCHER: availableUnits.ARCHER,
       KNIGHT: availableUnits.KNIGHT,
+      SPY: availableUnits.SPY,
     });
   };
 
@@ -133,6 +163,7 @@ export function ExpeditionModal({
       SOLDIER: 0,
       ARCHER: 0,
       KNIGHT: 0,
+      SPY: 0,
     });
   };
 
@@ -145,6 +176,7 @@ export function ExpeditionModal({
       SOLDIER: 0,
       ARCHER: 0,
       KNIGHT: 0,
+      SPY: 0,
     });
   };
 
@@ -364,6 +396,71 @@ export function ExpeditionModal({
                 </div>
               )}
             </div>
+
+            {/* Combat preview panel */}
+            {combatPreview && (
+              <div className={`p-3 rounded-lg border space-y-2 ${outcomeConfig[combatPreview.outcome].borderClass} ${outcomeConfig[combatPreview.outcome].bgClass}`}>
+                {/* Outcome header */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Swords className={`w-4 h-4 ${outcomeConfig[combatPreview.outcome].colorClass}`} />
+                    <span className={`font-cinzel text-sm font-bold ${outcomeConfig[combatPreview.outcome].colorClass}`}>
+                      {outcomeConfig[combatPreview.outcome].label}
+                    </span>
+                  </div>
+                  <span className="text-xs text-medieval-text-muted">
+                    ratio {combatPreview.ratio}x
+                  </span>
+                </div>
+
+                {/* Power bar */}
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs text-medieval-text-muted">
+                    <span className="flex items-center gap-1">
+                      <Swords className="w-3 h-3 text-era-war" /> {combatPreview.attackPower}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      {combatPreview.isApproximate ? (
+                        <>
+                          <HelpCircle className="w-3 h-3 text-grain" />
+                          <span className="text-grain">~{combatPreview.defensePower}</span>
+                        </>
+                      ) : (
+                        combatPreview.defensePower
+                      )}
+                      <Shield className="w-3 h-3 text-era-peace" />
+                    </span>
+                  </div>
+                  {combatPreview.isApproximate && (
+                    <div className="text-xs text-grain/70 text-right">(sem reconhecimento)</div>
+                  )}
+                  <div className="h-2.5 rounded-full overflow-hidden bg-era-peace/30 flex">
+                    {(() => {
+                      const total = combatPreview.attackPower + combatPreview.defensePower;
+                      const atkPct = total > 0 ? Math.round((combatPreview.attackPower / total) * 100) : 50;
+                      return (
+                        <div
+                          className="h-full bg-era-war transition-all duration-300 rounded-l-full"
+                          style={{ width: `${atkPct}%` }}
+                        />
+                      );
+                    })()}
+                  </div>
+                </div>
+
+                {/* Active modifiers */}
+                {(combatPreview.attackerModifiers.length > 0 || combatPreview.defenderModifiers.length > 0) && (
+                  <div className="text-xs space-y-0.5 pt-0.5 border-t border-white/5">
+                    {combatPreview.attackerModifiers.map((m, i) => (
+                      <div key={i} className="text-era-war/80">⚔ {m}</div>
+                    ))}
+                    {combatPreview.defenderModifiers.map((m, i) => (
+                      <div key={i} className="text-era-peace/80">🛡 {m}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Expedition stats */}
             {expeditionStats.totalUnits > 0 && (

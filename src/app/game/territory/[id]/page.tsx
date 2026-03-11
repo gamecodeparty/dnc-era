@@ -14,6 +14,7 @@ import {
   Check,
   Castle,
   Users,
+  Eye,
 } from "lucide-react";
 import {
   useGameStore,
@@ -58,12 +59,14 @@ const STRUCTURE_INFO: Record<
   BARRACKS: { name: "Quartel", description: "Treina Soldados e Arqueiros", icon: Sword },
   STABLE: { name: "Estabulo", description: "Treina Cavaleiros", icon: Shield },
   WALL: { name: "Muralha", description: "+20% defesa por nivel", icon: Castle },
+  SHADOW_GUILD: { name: "Guilda das Sombras", description: "Treina Espioes para revelar tropas inimigas", icon: Eye },
 };
 
 const UNIT_INFO: Record<UnitType, { name: string; requires: StructureType }> = {
   SOLDIER: { name: "Soldado", requires: "BARRACKS" },
   ARCHER: { name: "Arqueiro", requires: "BARRACKS" },
   KNIGHT: { name: "Cavaleiro", requires: "STABLE" },
+  SPY: { name: "Espiao", requires: "SHADOW_GUILD" },
 };
 
 export default function TerritoryPage() {
@@ -244,6 +247,30 @@ export default function TerritoryPage() {
                 }
               />
               <PanelContent>
+                {/* Slot bar: 4 squares, filled = structure, empty = available */}
+                <div className="flex gap-2 mb-4">
+                  {Array.from({ length: 4 }).map((_, i) => {
+                    const structure = territory.structures[i];
+                    if (structure) {
+                      const info = STRUCTURE_INFO[structure.type];
+                      return (
+                        <div key={i} className="relative group flex-1">
+                          <div className="h-10 rounded border-2 border-medieval-primary/60 bg-medieval-primary/20 flex items-center justify-center cursor-default">
+                            <info.icon className="w-4 h-4 text-medieval-primary" />
+                          </div>
+                          {/* Tooltip */}
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-medieval-bg-deep border border-medieval-primary/40 rounded text-xs text-medieval-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                            {info.name}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div key={i} className="flex-1 h-10 rounded border-2 border-dashed border-medieval-text-muted/30 bg-medieval-bg-deep/20" />
+                    );
+                  })}
+                </div>
+
                 {territory.structures.length > 0 ? (
                   <AnimatedList className="space-y-2">
                     {territory.structures.map((s, i) => {
@@ -351,6 +378,14 @@ export default function TerritoryPage() {
                           <span className="text-xs text-era-peace flex items-center gap-1">
                             <Check className="w-3 h-3" /> Construido
                           </span>
+                        ) : isFull ? (
+                          <MedievalButton
+                            size="sm"
+                            variant="ghost"
+                            disabled
+                          >
+                            Sem slots disponíveis
+                          </MedievalButton>
                         ) : (
                           <MedievalButton
                             size="sm"
@@ -400,13 +435,6 @@ export default function TerritoryPage() {
                   );
                 })}
 
-                {isFull && (
-                  <div className="text-center py-2">
-                    <p className="text-medieval-primary text-sm font-cinzel">
-                      Territorio cheio! (4/4)
-                    </p>
-                  </div>
-                )}
               </PanelContent>
             </ParchmentPanel>
           </motion.div>
@@ -420,6 +448,9 @@ export default function TerritoryPage() {
               />
               <PanelContent className="space-y-3">
                 {(Object.keys(UNIT_INFO) as UnitType[]).map((type) => {
+                  // SPY só aparece quando SHADOW_GUILD está construída
+                  if (type === "SPY" && !hasStructure("SHADOW_GUILD")) return null;
+
                   const info = UNIT_INFO[type];
                   const cost = UNIT_COSTS[type];
                   const stats = UNIT_STATS[type];
@@ -501,6 +532,8 @@ export default function TerritoryPage() {
                   Construa um Quartel para Soldados e Arqueiros.
                   <br />
                   Construa um Estabulo para Cavaleiros.
+                  <br />
+                  Construa uma Guilda das Sombras para Espioes.
                 </p>
               </PanelContent>
             </ParchmentPanel>

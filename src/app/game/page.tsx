@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useGameStore, TURN_INTERVAL_MS, TOTAL_TURNS } from "@/stores/gameStore";
+import { useGameStore, TURN_INTERVAL_MS, TOTAL_TURNS, SPY_SUCCESS_CHANCE_BASE, SPY_UMBRAL_BONUS, type UnitType } from "@/stores/gameStore";
 import {
   LogOut,
   Scroll,
@@ -24,6 +24,7 @@ import {
   Skull,
   ChevronRight,
   Compass,
+  Eye,
 } from "lucide-react";
 
 // Medieval components
@@ -62,6 +63,12 @@ import { PWAInstallPrompt, PWAInstallBanner } from "@/components/pwa";
 
 // Expedition components
 import { ExpeditionModal, ExplorationModal, ExpeditionsPanel } from "@/components/game/expedition";
+
+// Tutorial components
+import { TutorialOverlay } from "@/components/game/tutorial";
+
+// Timer hook
+import { useTurnTimer } from "@/hooks/useTurnTimer";
 
 // Animations
 import {
@@ -120,7 +127,6 @@ function getEraInfo(era: EraType) {
 export default function GamePage() {
   const { data: session } = useSession();
   const [selectedTerritoryId, setSelectedTerritoryId] = useState<string | null>(null);
-  const [timeToNextTurn, setTimeToNextTurn] = useState(TURN_INTERVAL_MS);
 
   // Mobile state
   const [activeTab, setActiveTab] = useState<TabId | null>(null);
@@ -133,6 +139,9 @@ export default function GamePage() {
   // Exploration modal state
   const [selectedExplorationSiteId, setSelectedExplorationSiteId] = useState<string | null>(null);
 
+  // Spy modal state
+  const [showSpyModal, setShowSpyModal] = useState(false);
+
   // Animation context - all animations are handled by the provider
   const { triggerCombatFeedback, triggerBuildComplete, triggerAchievement } = useGameAnimationContext();
 
@@ -140,43 +149,46 @@ export default function GamePage() {
     currentTurn,
     currentEra,
     territories,
+    clans,
     events,
     gameOver,
     winner,
+    timeRemaining,
     getPlayerClan,
     getPlayerTerritories,
-    processTurn,
     resetGame,
     sendExpedition,
     cancelExpedition,
     expeditions,
     explorationSites,
     sendExploration,
+    sendSpy,
+    revealedTerritories,
   } = useGameStore();
 
   const player = getPlayerClan();
   const playerTerritories = getPlayerTerritories();
   const eraInfo = getEraInfo(currentEra as EraType);
 
-  // Timer para proximo turno
-  useEffect(() => {
-    if (gameOver) return;
+  // SPY helpers
+  const playerHasSpy = playerTerritories.some((t) =>
+    t.units.some((u) => u.type === "SPY" && u.quantity > 0)
+  );
+  const spyOriginTerritory = playerTerritories.find((t) =>
+    t.units.some((u) => u.type === "SPY" && u.quantity > 0)
+  );
+  const isUmbral = player?.origin === "UMBRAL";
+  const spySuccessChance = Math.min(
+    1,
+    SPY_SUCCESS_CHANCE_BASE + (isUmbral ? SPY_UMBRAL_BONUS : 0)
+  );
+  const spySuccessPercent = Math.round(spySuccessChance * 100);
 
-    const interval = setInterval(() => {
-      setTimeToNextTurn((prev) => {
-        if (prev <= 1000) {
-          processTurn();
-          return TURN_INTERVAL_MS;
-        }
-        return prev - 1000;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [gameOver, processTurn]);
+  // Timer de turno — gerenciado pelo hook (resume no mount, pausa no unmount)
+  useTurnTimer();
 
   const selectedTerritory = territories.find((t) => t.id === selectedTerritoryId);
-  const timerProgress = ((TURN_INTERVAL_MS - timeToNextTurn) / TURN_INTERVAL_MS) * 100;
+  const timerProgress = ((TURN_INTERVAL_MS - timeRemaining) / TURN_INTERVAL_MS) * 100;
 
   // Calcula producao
   let grainProd = 0, woodProd = 0, goldProd = 0;
@@ -198,6 +210,13 @@ export default function GamePage() {
     setExpeditionOrigin(originTerritory.id);
   };
 
+  // Send spy to selected territory
+  const handleSendSpy = () => {
+    if (!selectedTerritoryId || !spyOriginTerritory) return;
+    sendSpy(spyOriginTerritory.id, selectedTerritoryId);
+    setShowSpyModal(false);
+  };
+
   // Close expedition modal
   const handleCloseExpedition = () => {
     setExpeditionTarget(null);
@@ -208,7 +227,7 @@ export default function GamePage() {
   const handleSendExpedition = (
     fromTerritoryId: string,
     toTerritoryId: string,
-    units: { type: "SOLDIER" | "ARCHER" | "KNIGHT"; quantity: number }[]
+    units: { type: UnitType; quantity: number }[]
   ) => {
     const fromTerritory = territories.find((t) => t.id === fromTerritoryId);
     const toTerritory = territories.find((t) => t.id === toTerritoryId);
@@ -228,7 +247,7 @@ export default function GamePage() {
   const handleSendExploration = (
     fromTerritoryId: string,
     siteId: string,
-    units: { type: "SOLDIER" | "ARCHER" | "KNIGHT"; quantity: number }[]
+    units: { type: UnitType; quantity: number }[]
   ) => {
     const result = sendExploration(fromTerritoryId, siteId, units);
     if (result.success) {
@@ -296,9 +315,7 @@ export default function GamePage() {
 
   const mobileEvents = events.slice(0, 10).map((e, i) => ({
     id: `event-${i}`,
-    type: e.type,
-    message: e.message,
-    turn: e.turn,
+    ...e,
   }));
 
   // Game Over / Victory Screen
@@ -411,7 +428,7 @@ export default function GamePage() {
         era={currentEra as EraType}
         currentTurn={currentTurn}
         totalTurns={TOTAL_TURNS}
-        timeToNextTurn={timeToNextTurn}
+        timeRemaining={timeRemaining}
         turnIntervalMs={TURN_INTERVAL_MS}
         onMenuClick={() => setIsDrawerOpen(true)}
         className="lg:hidden"
@@ -451,7 +468,7 @@ export default function GamePage() {
                 <div className="w-20">
                   <div className="text-xs text-medieval-text-muted">Proximo</div>
                   <div className="text-lg font-mono text-medieval-primary">
-                    {formatTime(timeToNextTurn)}
+                    {formatTime(timeRemaining)}
                   </div>
                 </div>
                 <Progress value={timerProgress} className="w-16 h-2" />
@@ -476,6 +493,15 @@ export default function GamePage() {
           </div>
         </div>
       </header>
+
+      {/* Tutorial Overlay - visible on desktop and mobile */}
+      <div className="relative z-20">
+        <TutorialOverlay
+          currentTurn={currentTurn}
+          territories={territories}
+          currentEra={currentEra}
+        />
+      </div>
 
       {/* Main content */}
       <motion.div
@@ -625,6 +651,9 @@ export default function GamePage() {
                   ? "bg-medieval-bg-card/50 border-medieval-text-muted/30"
                   : "bg-medieval-accent/20 border-medieval-accent";
 
+                const revealedData = revealedTerritories[territory.id];
+                const isRevealed = !!revealedData;
+
                 return (
                   <motion.div
                     key={territory.id}
@@ -661,6 +690,23 @@ export default function GamePage() {
                       <div className="absolute -top-1 -right-1 z-10">
                         <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-era-peace flex items-center justify-center animate-pulse">
                           <Compass className="w-3 h-3 sm:w-4 sm:h-4 text-medieval-bg-deep" />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Revealed territory badge */}
+                    {isRevealed && !hasExplorationSite && (
+                      <div className="absolute -top-1 -left-1 z-10 group/spy">
+                        <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-purple-600 flex items-center justify-center shadow">
+                          <Eye className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" />
+                        </div>
+                        <div className="absolute left-0 top-6 invisible group-hover/spy:visible z-30
+                          bg-slate-900 border border-purple-500/60 rounded p-2 text-[10px] sm:text-xs
+                          text-slate-200 whitespace-nowrap shadow-lg pointer-events-none">
+                          <p className="font-bold text-purple-300 mb-0.5">Espionado</p>
+                          <p>Tropas: {revealedData.units.reduce((s, u) => s + u.quantity, 0)}</p>
+                          <p>Estruturas: {revealedData.structures.length}</p>
+                          <p className="text-slate-400 mt-0.5">Expira turno {revealedData.expiresAt}</p>
                         </div>
                       </div>
                     )}
@@ -818,17 +864,29 @@ export default function GamePage() {
                       </MedievalButton>
                     </Link>
                   ) : (
-                    <MedievalButton
-                      variant="danger"
-                      className="w-full"
-                      disabled={
-                        currentEra === "PEACE" ||
-                        !playerTerritories.some((t) => t.units.length > 0)
-                      }
-                      onClick={() => handleAttack(selectedTerritory.id)}
-                    >
-                      {currentEra === "PEACE" ? "Bloqueado na Paz" : "Atacar"}
-                    </MedievalButton>
+                    <div className="space-y-2">
+                      <MedievalButton
+                        variant="danger"
+                        className="w-full"
+                        disabled={
+                          currentEra === "PEACE" ||
+                          !playerTerritories.some((t) => t.units.length > 0)
+                        }
+                        onClick={() => handleAttack(selectedTerritory.id)}
+                      >
+                        {currentEra === "PEACE" ? "Bloqueado na Paz" : "Atacar"}
+                      </MedievalButton>
+                      {playerHasSpy && (
+                        <MedievalButton
+                          variant="secondary"
+                          className="w-full"
+                          icon={<Eye className="w-4 h-4 text-purple-400" />}
+                          onClick={() => setShowSpyModal(true)}
+                        >
+                          Enviar Espião
+                        </MedievalButton>
+                      )}
+                    </div>
                   )}
                 </PanelContent>
               </ParchmentPanel>
@@ -860,23 +918,40 @@ export default function GamePage() {
               <PanelContent>
                 <div className="space-y-1 text-xs max-h-48 overflow-y-auto">
                   <AnimatedList>
-                    {events.slice(0, 10).map((event, i) => (
-                      <AnimatedListItem
-                        key={i}
-                        className={`py-1.5 border-b border-medieval-primary/10 last:border-0 ${
-                          event.type === "success"
-                            ? "text-era-peace"
-                            : event.type === "danger"
-                            ? "text-medieval-accent"
-                            : event.type === "warning"
-                            ? "text-gold"
-                            : "text-medieval-text-secondary"
-                        }`}
-                      >
-                        <span className="text-medieval-text-muted">[{event.turn}]</span>{" "}
-                        {event.message}
-                      </AnimatedListItem>
-                    ))}
+                    {events.slice(0, 10).map((event, i) => {
+                      const isAICombat = event.eventKind === "COMBAT" && event.isPlayerInvolved === false;
+                      return (
+                        <AnimatedListItem
+                          key={i}
+                          className={`py-1.5 border-b border-medieval-primary/10 last:border-0 ${
+                            isAICombat
+                              ? "text-sky-400"
+                              : event.type === "success"
+                              ? "text-era-peace"
+                              : event.type === "danger"
+                              ? "text-medieval-accent"
+                              : event.type === "warning"
+                              ? "text-gold"
+                              : "text-medieval-text-secondary"
+                          }`}
+                        >
+                          <span className="text-medieval-text-muted">[{event.turn}]</span>{" "}
+                          {isAICombat ? (
+                            <>
+                              ⚔ {event.attackerClanName} vs {event.defenderClanName}
+                              {event.territoryName ? ` (${event.territoryName})` : ""}
+                              {event.result === "victory" ? ` → ${event.attackerClanName} venceu` : ""}
+                              {event.territoryConquered ? ". Conquistado!" : ""}
+                              {event.defenderLosses !== undefined ? (
+                                <span className="text-slate-500"> ~{event.defenderLosses} baixas</span>
+                              ) : null}
+                            </>
+                          ) : (
+                            event.message
+                          )}
+                        </AnimatedListItem>
+                      );
+                    })}
                   </AnimatedList>
                 </div>
               </PanelContent>
@@ -959,6 +1034,9 @@ export default function GamePage() {
           toTerritory={territories.find((t) => t.id === expeditionTarget)!}
           playerTerritories={playerTerritories}
           currentEra={currentEra}
+          attackerOrigin={player?.origin}
+          defenderOrigin={clans.find((c) => c.id === territories.find((t) => t.id === expeditionTarget)?.ownerId)?.origin}
+          revealedTerritories={new Set(Object.keys(revealedTerritories))}
           onSend={handleSendExpedition}
           onClose={handleCloseExpedition}
         />
@@ -974,6 +1052,59 @@ export default function GamePage() {
           onSend={handleSendExploration}
           onClose={() => setSelectedExplorationSiteId(null)}
         />
+      )}
+
+      {/* Spy Modal */}
+      {showSpyModal && selectedTerritory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-medieval-bg-panel border border-purple-500/40 rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-purple-600/30 flex items-center justify-center">
+                <Eye className="w-5 h-5 text-purple-400" />
+              </div>
+              <h2 className="text-lg font-cinzel font-bold text-medieval-text-primary">
+                Enviar Espião
+              </h2>
+            </div>
+            <p className="text-medieval-text-secondary font-crimson mb-2">
+              Enviar espião para{" "}
+              <span className="text-medieval-primary font-semibold">
+                Território {selectedTerritory.position + 1}
+              </span>
+              ?
+            </p>
+            <div className="flex items-center gap-2 mb-4 p-3 rounded-lg bg-purple-900/20 border border-purple-500/30">
+              <Eye className="w-4 h-4 text-purple-400 flex-shrink-0" />
+              <p className="text-sm text-purple-300">
+                Chance de sucesso:{" "}
+                <span className="font-bold text-purple-200">{spySuccessPercent}%</span>
+                {isUmbral && (
+                  <span className="ml-1 text-xs text-purple-400">(bônus Umbral)</span>
+                )}
+              </p>
+            </div>
+            <p className="text-xs text-medieval-text-muted mb-5">
+              Em caso de captura, o espião é perdido. Se bem-sucedido, revela tropas e
+              estruturas por 5 turnos.
+            </p>
+            <div className="flex gap-3">
+              <MedievalButton
+                variant="ghost"
+                className="flex-1"
+                onClick={() => setShowSpyModal(false)}
+              >
+                Cancelar
+              </MedievalButton>
+              <MedievalButton
+                variant="primary"
+                className="flex-1"
+                onClick={handleSendSpy}
+              >
+                Enviar
+              </MedievalButton>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

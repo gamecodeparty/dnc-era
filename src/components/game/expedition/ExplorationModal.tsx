@@ -38,12 +38,14 @@ const unitLabels: Record<UnitType, string> = {
   SOLDIER: "Soldados",
   ARCHER: "Arqueiros",
   KNIGHT: "Cavaleiros",
+  SPY: "Espioes",
 };
 
 const unitIcons: Record<UnitType, string> = {
   SOLDIER: "🗡️",
   ARCHER: "🏹",
   KNIGHT: "🐴",
+  SPY: "🕵️",
 };
 
 const siteIcons: Record<string, string> = {
@@ -85,6 +87,7 @@ export function ExplorationModal({
     SOLDIER: 0,
     ARCHER: 0,
     KNIGHT: 0,
+    SPY: 0,
   });
 
   // UI state
@@ -104,6 +107,7 @@ export function ExplorationModal({
       SOLDIER: 0,
       ARCHER: 0,
       KNIGHT: 0,
+      SPY: 0,
     };
     if (!fromTerritory) return available;
     for (const unit of fromTerritory.units) {
@@ -157,6 +161,7 @@ export function ExplorationModal({
       SOLDIER: availableUnits.SOLDIER,
       ARCHER: availableUnits.ARCHER,
       KNIGHT: availableUnits.KNIGHT,
+      SPY: availableUnits.SPY,
     });
   };
 
@@ -166,6 +171,7 @@ export function ExplorationModal({
       SOLDIER: 0,
       ARCHER: 0,
       KNIGHT: 0,
+      SPY: 0,
     });
   };
 
@@ -177,6 +183,7 @@ export function ExplorationModal({
       SOLDIER: 0,
       ARCHER: 0,
       KNIGHT: 0,
+      SPY: 0,
     });
   };
 

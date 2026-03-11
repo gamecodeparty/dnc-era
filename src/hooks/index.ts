@@ -17,3 +17,6 @@ export { useReducedMotion } from "./useReducedMotion";
 // PWA hooks
 export { usePWAInstall } from "./usePWAInstall";
 export { useHaptic, triggerHaptic } from "./useHaptic";
+
+// Timer hook
+export { useTurnTimer } from "./useTurnTimer";

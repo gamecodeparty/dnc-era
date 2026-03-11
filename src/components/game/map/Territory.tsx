@@ -1,7 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Wheat, Trees, Coins, Swords, Home } from "lucide-react";
+import { Wheat, Trees, Coins, Swords, Home, Eye } from "lucide-react";
+import { UI } from "@/game/constants/balance";
 
 interface TerritoryProps {
   id: string;
@@ -14,6 +15,9 @@ interface TerritoryProps {
   unitsCount: number;
   isPlayerOwned: boolean;
   isSelected?: boolean;
+  isRevealed?: boolean;
+  revealedUnitsCount?: number;
+  revealedStructuresCount?: number;
   onClick?: () => void;
 }
 
@@ -52,6 +56,9 @@ export function Territory({
   unitsCount,
   isPlayerOwned,
   isSelected = false,
+  isRevealed = false,
+  revealedUnitsCount,
+  revealedStructuresCount,
   onClick,
 }: TerritoryProps) {
   const ResourceIcon = RESOURCE_ICONS[bonusResource as keyof typeof RESOURCE_ICONS] || Wheat;
@@ -83,6 +90,22 @@ export function Territory({
         {position + 1}
       </span>
 
+      {/* Revealed indicator */}
+      {isRevealed && (
+        <div className="absolute top-1 right-1 group/spy z-10">
+          <div className="w-5 h-5 rounded-full bg-purple-500/80 flex items-center justify-center">
+            <Eye className="w-3 h-3 text-white" />
+          </div>
+          <div className="absolute right-0 top-6 invisible group-hover/spy:visible z-20
+            bg-slate-900 border border-purple-500/50 rounded p-2 text-xs text-slate-200
+            whitespace-nowrap shadow-lg min-w-[140px]">
+            <p className="font-bold text-purple-300 mb-1">Informações reveladas</p>
+            <p>Tropas: {revealedUnitsCount ?? 0}</p>
+            <p>Estruturas: {revealedStructuresCount ?? 0}</p>
+          </div>
+        </div>
+      )}
+
       {/* Resource bonus icon */}
       <ResourceIcon className={cn("w-6 h-6", resourceColor)} />
 
@@ -93,12 +116,22 @@ export function Territory({
 
       {/* Stats row */}
       <div className="flex items-center gap-2 text-xs">
-        {structuresCount > 0 && (
-          <div className="flex items-center gap-0.5 text-slate-400">
-            <Home className="w-3 h-3" />
-            <span>{structuresCount}</span>
-          </div>
-        )}
+        <div className={cn(
+          "flex items-center gap-0.5 relative group/slots",
+          structuresCount <= 2 ? "text-green-400" :
+          structuresCount === 3 ? "text-yellow-400" :
+          "text-red-400"
+        )}>
+          <Home className="w-3 h-3" />
+          <span>{structuresCount}/{UI.MAX_STRUCTURE_SLOTS}</span>
+          {structuresCount >= UI.MAX_STRUCTURE_SLOTS && (
+            <div className="absolute bottom-5 left-1/2 -translate-x-1/2 invisible group-hover/slots:visible z-20
+              bg-slate-900 border border-red-500/50 rounded p-1.5 text-xs text-red-300
+              whitespace-nowrap shadow-lg">
+              {UI.MAX_STRUCTURE_SLOTS}/{UI.MAX_STRUCTURE_SLOTS} cheio — demolir para construir
+            </div>
+          )}
+        </div>
         {unitsCount > 0 && (
           <div className="flex items-center gap-0.5 text-red-400">
             <Swords className="w-3 h-3" />

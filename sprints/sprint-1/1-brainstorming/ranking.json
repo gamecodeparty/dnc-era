@@ -1,0 +1,239 @@
+{
+  "wave": 1,
+  "sprint": 1,
+  "decision": "go",
+  "decision_rationale": "Temos 6 discoveries com score ≥7 não implementadas (D-001, D-002, D-003, D-004, D-005, D-006), representando oportunidades concretas e de alto impacto. D-001 (combate às cegas, score 10) afeta 6/6 agentes; D-004 (sem tutorial, score 9) causa eliminação precoce em 33% dos jogadores; D-002 (timer, score 8) gera frustração em 5/6 agentes. Essas descobertas são implementáveis e críticas para evitar abandono do jogo. Wave 1 naturalmente tem tendência GO (primeiras waves têm valor intrínseco). Decidimos continuar para Sprint 2 com foco em: (1) Preview de combate, (2) Tutorial contextual nos primeiros 3 turnos, (3) Pausa de timer durante navegação.",
+  "discoveries": [
+    {
+      "id": "D-001",
+      "type": "pain",
+      "category": "mecanica",
+      "description": "Combate às cegas — atacar não mostra preview de poder de ataque vs defesa antes de confirmar. Toda batalha é caixa preta.",
+      "score": 10,
+      "frequency": "6/6",
+      "discovered_at": 1,
+      "last_reclassified_at": 1,
+      "implemented_at": null
+    },
+    {
+      "id": "D-002",
+      "type": "pain",
+      "category": "interface",
+      "description": "Timer não para durante navegação — 10s avança em /game/territory, /game/cards, /game/army. Ações compostas custam turnos.",
+      "score": 8,
+      "frequency": "5/6",
+      "discovered_at": 1,
+      "last_reclassified_at": 1,
+      "implemented_at": null
+    },
+    {
+      "id": "D-003",
+      "type": "pain",
+      "category": "mecanica",
+      "description": "Facção Umbral sem espiões — bônus '+30% eficiência de espiões' prometido na seleção. Unidade SPY não existe no client. Promessa falsa.",
+      "score": 8,
+      "frequency": "1/6",
+      "discovered_at": 1,
+      "last_reclassified_at": 1,
+      "implemented_at": null
+    },
+    {
+      "id": "D-004",
+      "type": "pain",
+      "category": "interface",
+      "description": "Sem tutorial contextual — 'Como Jogar' existe em página separada mas sem tooltips inline, missões guia ou onboarding. Clicar no tutorial custa turnos.",
+      "score": 9,
+      "frequency": "3/6",
+      "discovered_at": 1,
+      "last_reclassified_at": 1,
+      "implemented_at": null
+    },
+    {
+      "id": "D-005",
+      "type": "pain",
+      "category": "interface",
+      "description": "Batalhas AI sem resultado — evento mostra 'AI3 atacou AI2' sem resultado (vencedor, baixas). Impossibilita estratégia reativa.",
+      "score": 7,
+      "frequency": "4/6",
+      "discovered_at": 1,
+      "last_reclassified_at": 1,
+      "implemented_at": null
+    },
+    {
+      "id": "D-006",
+      "type": "pain",
+      "category": "interface",
+      "description": "Limite de 4 estruturas não comunicado — descoberto apenas ao tentar exceder. Erro de planejamento irreversível sem demolição.",
+      "score": 7,
+      "frequency": "3/6",
+      "discovered_at": 1,
+      "last_reclassified_at": 1,
+      "implemented_at": null
+    },
+    {
+      "id": "D-007",
+      "type": "pain",
+      "category": "mecanica",
+      "description": "Resultado de exploração pouco claro — retorno mostra recursos mas sem indicar sucesso/parcial/falha. Probabilidades invisíveis.",
+      "score": 6,
+      "frequency": "3/6",
+      "discovered_at": 1,
+      "last_reclassified_at": 1,
+      "implemented_at": null
+    },
+    {
+      "id": "D-008",
+      "type": "pain",
+      "category": "interface",
+      "description": "Cartas desconectadas do fluxo — ativar cartas de combate exige: /game/cards → ativar → voltar → atacar. Sem integração no modal.",
+      "score": 5,
+      "frequency": "3/6",
+      "discovered_at": 1,
+      "last_reclassified_at": 1,
+      "implemented_at": null
+    },
+    {
+      "id": "D-009",
+      "type": "pain",
+      "category": "agencia",
+      "description": "Diplomacia sem controle — propor paz é pura sorte (acceptChance por personalidade). Sem gift-giving, negociação gradual ou influência ativa.",
+      "score": 5,
+      "frequency": "3/6",
+      "discovered_at": 1,
+      "last_reclassified_at": 1,
+      "implemented_at": null
+    },
+    {
+      "id": "D-010",
+      "type": "pain",
+      "category": "mecanica",
+      "description": "Bônus de facção server-only — Verdaneos, Ferronatos, Áureos existem no servidor mas jogo usa Zustand client-side. Seleção é flavor sem mecânica.",
+      "score": 4,
+      "frequency": "2/6",
+      "discovered_at": 1,
+      "last_reclassified_at": 1,
+      "implemented_at": null
+    },
+    {
+      "id": "D-011",
+      "type": "pain",
+      "category": "diversao",
+      "description": "Tela de vitória sem narrativa — exibe 'Você sobreviveu! Recursos finais: X' sem explicar por que venceu. Vitória emocionalmente vazia.",
+      "score": 4,
+      "frequency": "1/6",
+      "discovered_at": 1,
+      "last_reclassified_at": 1,
+      "implemented_at": null
+    },
+    {
+      "id": "D-012",
+      "type": "pain",
+      "category": "interface",
+      "description": "Sem countdown de era — não há 'Era da Guerra em X turnos' no HUD. Novatos não sabem quanto dura a Paz.",
+      "score": 6,
+      "frequency": "2/6",
+      "discovered_at": 1,
+      "last_reclassified_at": 1,
+      "implemented_at": null
+    },
+    {
+      "id": "D-013",
+      "type": "pain",
+      "category": "agencia",
+      "description": "Sabotagem cega — destrói estrutura aleatória. Jogador não pode escolher qual estrutura destruir.",
+      "score": 3,
+      "frequency": "1/6",
+      "discovered_at": 1,
+      "last_reclassified_at": 1,
+      "implemented_at": null
+    },
+    {
+      "id": "D-014",
+      "type": "pain",
+      "category": "bugs",
+      "description": "Population zerada — campo population sempre retorna 0 no client (TODO). Afeta pontuação exibida.",
+      "score": 2,
+      "frequency": "2/6",
+      "discovered_at": 1,
+      "last_reclassified_at": 1,
+      "implemented_at": null
+    },
+    {
+      "id": "D-015",
+      "type": "pain",
+      "category": "mecanica",
+      "description": "AI mesma facção HOSTILE — lore indica aliança entre membros, mas relação diplomática ignora facção. Começa HOSTILE.",
+      "score": 3,
+      "frequency": "1/6",
+      "discovered_at": 1,
+      "last_reclassified_at": 1,
+      "implemented_at": null
+    },
+    {
+      "id": "G-001",
+      "type": "gain",
+      "category": "diversao",
+      "description": "Transição de Era — mudança Peace→War com evento, background visual e carta. Momento dramático unanimemente elogiado.",
+      "score": 10,
+      "frequency": "6/6",
+      "discovered_at": 1,
+      "last_reclassified_at": 1,
+      "implemented_at": null
+    },
+    {
+      "id": "G-002",
+      "type": "gain",
+      "category": "mecanica",
+      "description": "Wall como MVP — defesa passiva barata e eficaz. Decisão estratégica clara com recompensa tangível.",
+      "score": 9,
+      "frequency": "4/6",
+      "discovered_at": 1,
+      "last_reclassified_at": 1,
+      "implemented_at": null
+    },
+    {
+      "id": "G-003",
+      "type": "gain",
+      "category": "mecanica",
+      "description": "Horda anti-snowball — Horda prioriza clã com mais territórios. Mecanismo elegante de rubber-band sem injustiça.",
+      "score": 8,
+      "frequency": "3/6",
+      "discovered_at": 1,
+      "last_reclassified_at": 1,
+      "implemented_at": null
+    },
+    {
+      "id": "G-004",
+      "type": "gain",
+      "category": "diversao",
+      "description": "Narrativas de exploração — textos atmosféricos ('A neblina envolve...', 'Armadilhas mágicas...') consistentemente elogiados como imersivos.",
+      "score": 7,
+      "frequency": "3/6",
+      "discovered_at": 1,
+      "last_reclassified_at": 1,
+      "implemented_at": null
+    },
+    {
+      "id": "G-005",
+      "type": "gain",
+      "category": "interface",
+      "description": "Clareza visual do mapa — cores de propriedade (seu/inimigo/neutro) intuitivas sem necessidade de leitura.",
+      "score": 9,
+      "frequency": "6/6",
+      "discovered_at": 1,
+      "last_reclassified_at": 1,
+      "implemented_at": null
+    },
+    {
+      "id": "G-006",
+      "type": "gain",
+      "category": "diversao",
+      "description": "Feedback de conquista — 'VITÓRIA! +X grain, +Y wood, +Z gold' cria loop de reward positivo imediato.",
+      "score": 7,
+      "frequency": "3/6",
+      "discovered_at": 1,
+      "last_reclassified_at": 1,
+      "implemented_at": null
+    }
+  ]
+}
