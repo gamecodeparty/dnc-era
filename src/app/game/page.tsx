@@ -723,6 +723,20 @@ export default function GamePage() {
                       </div>
                     )}
 
+                    {/* Expedition available indicator */}
+                    {isNeutral && playerHasTroops && !hasExplorationSite && (
+                      <div className="absolute bottom-0.5 right-0.5 z-10 group/exp">
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-amber-500/80 flex items-center justify-center">
+                          <Compass className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
+                        </div>
+                        <div className="absolute right-0 bottom-5 invisible group-hover/exp:visible z-30
+                          bg-slate-900 border border-amber-500/60 rounded p-2 text-[10px] sm:text-xs
+                          text-slate-200 whitespace-nowrap shadow-lg pointer-events-none">
+                          Envie tropas para explorar este local
+                        </div>
+                      </div>
+                    )}
+
                     {/* Revealed territory badge */}
                     {isRevealed && !hasExplorationSite && (
                       <div className="absolute -top-1 -left-1 z-10 group/spy">

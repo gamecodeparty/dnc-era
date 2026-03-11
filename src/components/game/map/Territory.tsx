@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Wheat, Trees, Coins, Swords, Home, Eye } from "lucide-react";
+import { Wheat, Trees, Coins, Swords, Home, Eye, Compass } from "lucide-react";
 import { UI } from "@/game/constants/balance";
 
 interface TerritoryProps {
@@ -19,6 +19,7 @@ interface TerritoryProps {
   revealedUnitsCount?: number;
   revealedStructuresCount?: number;
   isAttackable?: boolean;
+  isExpeditionAvailable?: boolean;
   onClick?: () => void;
 }
 
@@ -61,6 +62,7 @@ export function Territory({
   revealedUnitsCount,
   revealedStructuresCount,
   isAttackable = false,
+  isExpeditionAvailable = false,
   onClick,
 }: TerritoryProps) {
   const ResourceIcon = RESOURCE_ICONS[bonusResource as keyof typeof RESOURCE_ICONS] || Wheat;
@@ -105,6 +107,20 @@ export function Territory({
             <p className="font-bold text-purple-300 mb-1">Informações reveladas</p>
             <p>Tropas: {revealedUnitsCount ?? 0}</p>
             <p>Estruturas: {revealedStructuresCount ?? 0}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Expedition available indicator */}
+      {isExpeditionAvailable && !isRevealed && (
+        <div className="absolute bottom-1 right-1 group/exp z-10">
+          <div className="w-4 h-4 rounded-full bg-amber-500/80 flex items-center justify-center">
+            <Compass className="w-2.5 h-2.5 text-white" />
+          </div>
+          <div className="absolute right-0 bottom-5 invisible group-hover/exp:visible z-20
+            bg-slate-900 border border-amber-500/50 rounded p-2 text-xs text-slate-200
+            whitespace-nowrap shadow-lg min-w-[180px]">
+            Envie tropas para explorar este local
           </div>
         </div>
       )}

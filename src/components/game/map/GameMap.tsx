@@ -98,10 +98,12 @@ export function GameMap({
             0
           );
           const isEnemy = territory.ownerId !== null && territory.ownerId !== playerClanId;
+          const isNeutral = territory.ownerId === null;
           const isAttackable =
             isEnemy &&
             playerHasTroops &&
             (currentEra === "WAR" || currentEra === "INVASION");
+          const isExpeditionAvailable = isNeutral && playerHasTroops;
 
           return (
             <Territory
@@ -117,6 +119,7 @@ export function GameMap({
               isPlayerOwned={territory.ownerId === playerClanId}
               isSelected={territory.id === selectedTerritoryId}
               isAttackable={isAttackable}
+              isExpeditionAvailable={isExpeditionAvailable}
               onClick={() => onTerritoryClick?.(territory.id)}
             />
           );

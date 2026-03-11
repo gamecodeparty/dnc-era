@@ -137,7 +137,7 @@
     "id": "F-027",
     "name": "Indicador visual de expedição em territórios neutros",
     "description": "Em Territory.tsx: territórios neutros (sem dono) exibem ícone pequeno de bússola/mapa no canto do tile indicando expedição disponível. Tooltip no hover: 'Envie tropas para explorar este local'. Apenas se jogador tem unidades em algum território. Não interfere com outros ícones do tile. Arquivo: src/components/game/map/Territory.tsx",
-    "status": "pending",
+    "status": "passing",
     "priority": 8,
     "agent": "coder",
     "task": "vibe-code",
@@ -148,7 +148,8 @@
       "Ícone não aparece se jogador não tem unidades",
       "Indicador não interfere com outros ícones do tile"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-2/worktree/sprints/sprint-2/3-prps/PRP-008-expedition-onboarding.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-2/worktree/sprints/sprint-2/3-prps/PRP-008-expedition-onboarding.md",
+    "completed_at": "2026-03-11T03:13:42Z"
   },
   {
     "id": "F-028",
