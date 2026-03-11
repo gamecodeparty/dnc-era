@@ -173,6 +173,10 @@ export const ORIGIN_BONUSES = {
   UMBRAL: {
     type: "spy_efficiency" as const,
     value: 0.30, // +30% spy effectiveness
+    secondary: {
+      type: "fog_of_war_reduction" as const,
+      value: 0.50, // reduces fog margin by 50% (±20% → ±10%)
+    },
   },
 } as const;
 

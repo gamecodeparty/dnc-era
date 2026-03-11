@@ -485,16 +485,19 @@ export function classifyThreat(attackPower: number, defensePower: number): Threa
  * Calcula a escala de ameaça para exibição ao jogador, aplicando fog of war (±20%).
  * Se o jogador tiver espião ativo no território de origem (hasActiveSpy = true),
  * retorna o valor exato sem fog of war.
+ * Facção Umbral tem margem reduzida (±10% vs ±20% padrão) — bônus passivo de fog_of_war_reduction.
  *
  * @param actualAttackPower - poder de ataque real da expedição inimiga
  * @param defensePower      - poder de defesa do território alvo
  * @param hasActiveSpy      - true se há espião ativo revelando o valor exato
+ * @param clanOrigin        - origem do clã do jogador (opcional; UMBRAL recebe ±10%)
  * @returns { scale, estimatedPower, isExact }
  */
 export function estimateThreatForDisplay(
   actualAttackPower: number,
   defensePower: number,
   hasActiveSpy: boolean,
+  clanOrigin?: string,
 ): { scale: ThreatScale; estimatedPower: number; isExact: boolean } {
   if (hasActiveSpy) {
     return {
@@ -503,8 +506,10 @@ export function estimateThreatForDisplay(
       isExact: true,
     };
   }
-  // Fog of war: ±20% de erro na estimativa
-  const fogFactor = 1 + (Math.random() * 0.4 - 0.2);
+  // Umbral: ±10% (fog_of_war_reduction: 0.50 reduz margem pela metade)
+  // Outras facções: ±20%
+  const fogMargin = clanOrigin === "UMBRAL" ? 0.10 : 0.20;
+  const fogFactor = 1 + (Math.random() * fogMargin * 2 - fogMargin);
   const estimatedPower = Math.round(actualAttackPower * fogFactor);
   return {
     scale: classifyThreat(estimatedPower, defensePower),

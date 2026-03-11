@@ -98,7 +98,7 @@
     "id": "F-108",
     "name": "Buff Umbral fog of war reduzido",
     "description": "Em /src/game/constants/balance.ts, adicionar campo secondary ao bônus Umbral: { type: 'spy_efficiency', value: 0.30, secondary: { type: 'fog_of_war_reduction', value: 0.50 } }. Em /src/game/engine/GameEngine.ts, onde estimativa de força inimiga é calculada, aplicar margem ±10% para Umbral (vs ±20% padrão). Estender tipo OriginBonus em /src/game/types/index.ts para suportar campo secondary.",
-    "status": "pending",
+    "status": "passing",
     "priority": 6,
     "agent": "coder",
     "task": "vibe-code",
@@ -109,7 +109,8 @@
       "Estimativas mais precisas aplicam desde T1 (bônus passivo, sem custo)",
       "AI Umbral funciona corretamente com estimativas mais precisas"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-035-faction-balance-diversity.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-6/worktree/sprints/sprint-6/3-prps/PRP-035-faction-balance-diversity.md",
+    "completed_at": "2026-03-11T21:40:00.000Z"
   },
   {
     "id": "F-099",
@@ -212,7 +213,7 @@
     "id": "F-109",
     "name": "Atualizar textos facção e ClanPanel",
     "description": "Em /src/game/constants/origins.ts, atualizar labels: Verdâneos bonusLabel '+15% produção de todos os recursos', Umbral bonusLabel '+30% eficiência de espiões | Estimativas 50% mais precisas'. Atualizar tooltips explicativos. Em /src/components/game/sidebar/ClanPanel.tsx, verificar que renderiza corretamente os novos labels (Umbral com dois bônus separados por ' | ' ou em linhas separadas). Ferronatos não é alterado.",
-    "status": "blocked",
+    "status": "pending",
     "priority": 12,
     "agent": "coder",
     "task": "vibe-code",

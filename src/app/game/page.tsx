@@ -827,7 +827,7 @@ export default function GamePage() {
                       const hasActiveSpy = territories.some(
                         (t) => t.ownerId === attack.sourceClanId && !!revealedTerritories[t.id]
                       );
-                      const { scale, estimatedPower, isExact } = estimateThreatForDisplay(attack.attackPower, defPower, hasActiveSpy);
+                      const { scale, estimatedPower, isExact } = estimateThreatForDisplay(attack.attackPower, defPower, hasActiveSpy, player?.origin);
                       const THREAT_CONFIG = {
                         LOW:      { icon: "⚔️",    color: "text-yellow-400", bg: "bg-yellow-900/60", border: "border-yellow-500/60", label: "Expedição pequena detectada",   pulse: false },
                         MEDIUM:   { icon: "⚔️⚔️",  color: "text-orange-400", bg: "bg-orange-900/60", border: "border-orange-500/60", label: "Expedição média detectada",      pulse: false },
