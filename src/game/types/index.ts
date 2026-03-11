@@ -217,6 +217,17 @@ export interface TerritoryIntel {
 }
 
 // ==============================================================================
+// HORDA PREVIEW
+// ==============================================================================
+
+export interface HordaPreview {
+  targetClanId: string;
+  targetTerritoryId: string;
+  arrivesTurn: number;
+  strength: number;
+}
+
+// ==============================================================================
 // INCOMING ATTACK
 // ==============================================================================
 
@@ -237,6 +248,7 @@ export interface GameState {
   territories: TerritoryWithDetails[];
   events: GameEvent[];
   diplomacy: DiplomacyRelation[];
+  hordaPreview: HordaPreview | null;
 }
 
 export interface TerritoryWithDetails extends Territory {
@@ -326,4 +338,5 @@ export interface TurnResult {
   hordeStrength?: number;
   gameEnded?: boolean;
   winner?: string;
+  hordaPreview?: HordaPreview | null;
 }

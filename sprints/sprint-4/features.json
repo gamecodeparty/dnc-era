@@ -281,7 +281,7 @@
     "id": "F-068",
     "name": "Cálculo de HordaPreview no GameEngine",
     "description": "Em types/index.ts, adicionar interface HordaPreview { targetClanId, targetTerritoryId, arrivesTurn, strength }. Em GameEngine.ts, no turno T-1 antes do ataque da Horda, calcular território-alvo provisório: território do clã-alvo com menor defensePower (empate: menos estruturas). Preview calculado em T-1 mas ataque real recalculado em T — se jogador reforçar entre T-1 e T, Horda pode mudar de alvo. Preview mostra intenção atual, não garantia.",
-    "status": "pending",
+    "status": "passing",
     "priority": 15,
     "agent": "coder",
     "task": "vibe-code",
@@ -292,7 +292,8 @@
       "Território mais fraco do clã-alvo selecionado como alvo provisório",
       "Preview é provisório — ataque real pode mudar se jogador reforçar"
     ],
-    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-021-horde-territory-indicator.md"
+    "prp_path": "D:/sources/_unowned/agentic-workflow/context/workspaces/dnc-era/wave-4/worktree/sprints/sprint-4/3-prps/PRP-021-horde-territory-indicator.md",
+    "completed_at": "2026-03-11T17:15:00Z"
   },
   {
     "id": "F-069",

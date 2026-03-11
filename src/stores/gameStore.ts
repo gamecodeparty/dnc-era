@@ -145,6 +145,13 @@ export interface IncomingAttack {
   arrivesTurn: number;
 }
 
+export interface HordaPreview {
+  targetClanId: string;
+  targetTerritoryId: string;
+  arrivesTurn: number;
+  strength: number;
+}
+
 // Constantes
 export const SPY_SUCCESS_CHANCE_BASE = 0.7;   // 70% base
 export const SPY_UMBRAL_BONUS = 0.3;           // +30% para Umbral = 100%
@@ -580,6 +587,7 @@ interface GameState {
   allianceTurnFormed: Record<string, number>; // clanId -> turn when TRUSTED was formed
   allianceHealth: Record<string, number>; // clanId -> alliance health (0-100)
   allianceBreakAlerts: Array<{ clanId: string; clanName: string }>; // F-064: clans that broke alliance this turn
+  hordaPreview: HordaPreview | null; // F-068: provisional Horda target for next attack (T-1 preview)
 
   // Getters
   getPlayerClan: () => Clan;
@@ -646,6 +654,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   allianceTurnFormed: {},
   allianceHealth: {},
   allianceBreakAlerts: [],
+  hordaPreview: null,
   playerCards: [
     { id: "pc1", type: "REINFORCEMENTS", used: false },
     { id: "pc2", type: "INFORMANT", used: false },
@@ -1978,7 +1987,17 @@ export const useGameStore = create<GameState>((set, get) => ({
       const isPlayerTarget = primaryTargetId === "player";
       const hordaWins = hordaStrength > primaryTotalDefense;
       const resultLabel = hordaWins ? "DERROTADO" : "REPELIDO";
-      const territoryLost = hordaWins ? primaryTerritories[0] : null;
+      // Find weakest territory of target clan (recalculated at T — consistent with HordaPreview logic)
+      const weakestPrimaryTerritory = primaryTerritories.reduce<Territory | null>((weakest, t) => {
+        const wall = t.structures.find((s) => s.type === "WALL");
+        const def = getDefensePower(t.units, wall?.level ?? 0);
+        if (!weakest) return t;
+        const weakestWall = weakest.structures.find((s) => s.type === "WALL");
+        const weakestDef = getDefensePower(weakest.units, weakestWall?.level ?? 0);
+        if (def < weakestDef || (def === weakestDef && t.structures.length < weakest.structures.length)) return t;
+        return weakest;
+      }, null);
+      const territoryLost = hordaWins ? (weakestPrimaryTerritory ?? primaryTerritories[0] ?? null) : null;
       const lossLabel = territoryLost ? ` / Perdeu: Território ${territoryLost.position + 1}` : "";
       const nextAttackTurn = newTurn + 3;
       const nextStrength = 50 + (nextAttackTurn - 36) * 20;
@@ -2090,6 +2109,56 @@ export const useGameStore = create<GameState>((set, get) => ({
       };
     }
 
+    // F-068: Compute HordaPreview — show provisional target 1 turn before Horda attack (T-1 preview)
+    const nextHordaTurn = newTurn + 1;
+    let hordaPreview: HordaPreview | null = null;
+    if (newEra === "INVASION" && nextHordaTurn % 3 === 0 && nextHordaTurn <= TOTAL_TURNS) {
+      // Find target clan: most territories (alive)
+      const clanTerritoryCount: Record<string, number> = {};
+      for (const t of updatedTerritories) {
+        if (t.ownerId !== null) {
+          clanTerritoryCount[t.ownerId] = (clanTerritoryCount[t.ownerId] ?? 0) + 1;
+        }
+      }
+      let targetClanId: string | null = null;
+      let maxCount = 0;
+      for (const [clanId, count] of Object.entries(clanTerritoryCount)) {
+        if (count > maxCount) {
+          maxCount = count;
+          targetClanId = clanId;
+        }
+      }
+      if (targetClanId) {
+        const clanTerritories = updatedTerritories.filter((t) => t.ownerId === targetClanId);
+        // Find territory with lowest defensePower (tie: fewer structures)
+        let weakestTerritory: Territory | null = null;
+        let weakestDefense = Infinity;
+        let weakestStructureCount = Infinity;
+        for (const t of clanTerritories) {
+          const wall = t.structures.find((s) => s.type === "WALL");
+          const wallLevel = wall?.level ?? 0;
+          const defense = getDefensePower(t.units, wallLevel);
+          if (
+            defense < weakestDefense ||
+            (defense === weakestDefense && t.structures.length < weakestStructureCount)
+          ) {
+            weakestDefense = defense;
+            weakestStructureCount = t.structures.length;
+            weakestTerritory = t;
+          }
+        }
+        if (weakestTerritory) {
+          const strength = 50 + (nextHordaTurn - 36) * 20;
+          hordaPreview = {
+            targetClanId,
+            targetTerritoryId: weakestTerritory.id,
+            arrivesTurn: nextHordaTurn,
+            strength,
+          };
+        }
+      }
+    }
+
     // Atualizar territoryIntel: remover expiradas e adicionar novas
     const updatedTerritoryIntel: TerritoryIntel[] = [
       // Manter entradas não expiradas (excluindo territórios com nova intel)
@@ -2131,6 +2200,8 @@ export const useGameStore = create<GameState>((set, get) => ({
         const clan = updatedClans.find((c) => c.id === clanId);
         return { clanId, clanName: clan?.name ?? clanId };
       }),
+      // F-068: Horda preview (null if not T-1 before attack)
+      hordaPreview,
       // F-060: Apply diplomacy breaks from AI (TRUSTED → NEUTRAL)
       diplomacy: diplomacyBreaks.length > 0
         ? diplomacyBreaks.reduce(
@@ -2186,6 +2257,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       allianceTurnFormed: {},
       allianceHealth: {},
       allianceBreakAlerts: [],
+      hordaPreview: null,
     });
   },
 
